@@ -1,23 +1,22 @@
 # WorkSpaceOneImporter
-WorkSpaceOneImporter is an AutoPkg Processor that can automatically import packages into VMWare WorkSpace ONE, as well as assign them to one or multiple smart groups, and set certain deployment options such as Push Mode. 
+WorkSpaceOneImporter is an AutoPkg Processor that can automatically import packages into VMWare WorkSpace ONE, as well as assign them to one or multiple smart groups, and set certain deployment options such as Push Mode.
 Being adapted from [jprichards/AirWatchImporter](https://github.com/jprichards/AirWatchImporter).
 
 ## WORK IN PROGRESS
 
 Done:
- * testing API calls involved for WS1 using Postman
+ * testing API calls involved for WS1 using Postman -> success
  * forked this repo from [jprichards/AirWatchImporter](https://github.com/jprichards/AirWatchImporter)
  * add roadmap to Readme.md
+ * rename files, classes, functions, variable names, and comments to reflect update to WS1 from Airwatch, update license, copyright
+ * added stub recipe so shared processor can be found in recipes from other repos
 
 ToDo:
- * rename files, classes and functions to reflect update to WS1 from Airwatch, update license, copyright
+ * get call as Autopkg Shared Processor stub to work from other repo
  * try library depencency install for Autopkg as suggested [here](https://blog.eisenschmiede.com/posts/install-python-modules-in-autopkg-context/)
- * get call as Autopkg Shared Processor stub to work
  * update for Python3
  * update API calls for WS1 as tested with Postman
- * update comments to reflect update to WS1 from Airwatch
  * **milestone: get POC working**
- * maybe update variable names to reflect update to WS1 from Airwatch
  * implement Force Install
  * maybe add ability to update WS1 metadata and assignment settings
  * maybe add ability to use keychain - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)

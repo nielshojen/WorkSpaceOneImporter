@@ -1,6 +1,9 @@
-#!/usr/bin/python
+#!/usr/local/autopkg/python
 #
-# Copyright 2013 Greg Neagle
+# Copyright 2022 Martinus Verburg
+# Adapted from WorkSpaceOneImporter by
+#     John Richards https://github.com/jprichards and
+#     Jeremy Baker https://github.com/jbaker10
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +16,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""autopkg processor to upload files from a munki repo to AirWatch"""
+"""Autopkg processor to upload files from a Munki repo to VMWare Workspace ONE using REST API"""
 
 import base64
 import os.path
@@ -25,10 +28,10 @@ import datetime
 from autopkglib import Processor, ProcessorError, get_pref
 from requests_toolbelt import StreamingIterator #dependency from requests
 
-__all__ = ["AirWatchImporter"]
+__all__ = ["WorkSpaceOneImporter"]
 
-class AirWatchImporter(Processor):
-    """Uploads apps from munki repo to AirWatch"""
+class WorkSpaceOneImporter(Processor):
+    """Uploads apps from Munki repo to WorkSpace ONE"""
     input_variables = {
         "munki_repo_path": {
             "required": True,
@@ -37,29 +40,34 @@ class AirWatchImporter(Processor):
         "force_import": {
             "required": False,
             "description":
-                "If not false or empty or undefined, force an AW import",
+                "If not false or empty or undefined, force a WS1 import",
         },
-        "airwatch_url": {
+        "ws1_api_url": {
             "required": True,
-            "description": "Base url of your AirWatch server \
+            "description": "Base url of your WorkSpace ONE UEM REST API server \
                             (eg. https://myorg.awmdm.com)"
         },
-        "airwatch_groupid": {
+        "ws1_console_url": {
+            "required": False,
+            "description": "Base url of your WorkSpace ONE UEM Console server for easy result lookup \
+                            (eg. https://admin-mobile.myorg.com)"
+        },
+        "ws1_groupid": {
             "required": True,
-            "description": "Group ID of AirWatch Organization Group \
+            "description": "Group ID of WorkSpace ONE Organization Group \
                             where files will be uploaded"
         },
         "api_token": {
             "required": True,
-            "description": "AirWatch API Token",
+            "description": "WorkSpace ONE REST API Token",
         },
         "api_username": {
             "required": True,
-            "description": "AirWatch API Username",
+            "description": "WorkSpace ONE API Username",
         },
         "api_password": {
             "required": True,
-            "description": "AirWatch API User Password",
+            "description": "WorkSpace ONE API User Password",
         },
         "smart_group_name": {
             "required": False,
@@ -68,7 +76,7 @@ class AirWatchImporter(Processor):
         },
         "push_mode": {
             "required": False,
-            "description": "Tells AirWatch how to deploy the app, Auto \
+            "description": "Tells WorkSpace ONE how to deploy the app, Auto \
                             or On-Demand."
         },
         "deployment_date": {
@@ -84,11 +92,11 @@ class AirWatchImporter(Processor):
         "makecatalogs_stderr": {
             "description": "Error output (if any) from makecatalogs.",
         },
-        "airwatch_resultcode": {
-            "description": "Result code from the AW Import.",
+        "ws1_resultcode": {
+            "description": "Result code from the WorkSpace ONE Import.",
         },
-        "airwatch_stderr": {
-            "description": "Error output (if any) from the AW Import.",
+        "ws1_stderr": {
+            "description": "Error output (if any) from the WorkSpace ONE Import.",
         },
     }
 
@@ -96,7 +104,7 @@ class AirWatchImporter(Processor):
 
 
     def streamFile(self, filepath, url, headers):
-        '''expects headers w/ token, auth, and content-type'''
+        """expects headers w/ token, auth, and content-type"""
         streamer = StreamingIterator(os.path.getsize(filepath), open(filepath, 'rb'))
         r = requests.post(url, data=streamer, headers=headers)
         return r.json()
@@ -120,10 +128,10 @@ class AirWatchImporter(Processor):
         elif int(utc_datetime_formatted) > int(deployment_time):
             sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
 
-    def awimport(self, pkg, pkg_path, pkg_info, pkg_info_path, icon, icon_path):
-        self.output("Beginning the AirWatch import process for %s." % self.env["NAME"] ) ## Add name of app being imported
-        BASEURL = self.env.get("airwatch_url")
-        GROUPID = self.env.get("airwatch_groupid")
+    def ws1_import(self, pkg, pkg_path, pkg_info, pkg_info_path, icon, icon_path):
+        self.output("Beginning the WorkSpace ONE import process for %s." % self.env["NAME"] ) ## Add name of app being imported
+        BASEURL = self.env.get("ws1_api_url")
+        GROUPID = self.env.get("ws1_groupid")
         APITOKEN = self.env.get("api_token")
         USERNAME = self.env.get("api_username")
         PASSWORD = self.env.get("api_password")
@@ -147,9 +155,9 @@ class AirWatchImporter(Processor):
             r = requests.get(BASEURL + '/api/system/groups/search?groupid=' + GROUPID, headers=headers)
             result = r.json()
         except AttributeError:
-            raise ProcessorError('AirWatchImporter: Unable to retrieve an ID for the Organizational Group specified: %s' % GROUPID)
+            raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational Group specified: %s' % GROUPID)
         except:
-            raise ProcessorError('AirwatchImporter: Something went wrong when making the OG ID API call.')
+            raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
 
         if GROUPID in result['LocationGroups'][0]['GroupId']:
             ogid = result['LocationGroups'][0]['Id']['Value']
@@ -167,9 +175,9 @@ class AirWatchImporter(Processor):
                 pkg_id = res['Value']
                 self.output('Pkg ID: {}'.format(pkg_id))
             except KeyError:
-                raise ProcessorError('AirWatchImporter: Something went wrong while uploading the pkg.')
+                raise ProcessorError('WorkSpaceOneImporter: Something went wrong while uploading the pkg.')
         else:
-            raise ProcessorError('AirWatchImporter: Did not receive a pkg_path from munkiimporter.')
+            raise ProcessorError('WorkSpaceOneImporter: Did not receive a pkg_path from munkiimporter.')
 
         if not pkg_info_path == None:
             self.output("Uploading pkg_info...")
@@ -183,9 +191,9 @@ class AirWatchImporter(Processor):
                 pkginfo_id = res['Value']
                 self.output('PkgInfo ID: {}'.format(pkginfo_id))
             except KeyError:
-                raise ProcessorError('AirWatchImporter: Something went wrong while uploading the pkginfo.')
+                raise ProcessorError('WorkSpaceOneImporter: Something went wrong while uploading the pkginfo.')
         else:
-            raise ProcessorError('AirWatchImporter: Did not receive a pkg_info_path from munkiimporter.')
+            raise ProcessorError('WorkSpaceOneImporter: Did not receive a pkg_info_path from munkiimporter.')
 
         if not icon_path == None:
             self.output("Uploading icon...")
@@ -217,11 +225,11 @@ class AirWatchImporter(Processor):
                         "applicationIconId": str(icon_id),
                         "isManagedInstall": True}
 
-        ## Make the API call to create the App object 
-        self.output("Creating App Object in AirWatch...")
+        ## Make the API call to create the App object
+        self.output("Creating App Object in WorkSpaceOne...")
         r = requests.post(BASEURL + '/api/mam/groups/%s/macos/apps' % ogid, headers=headers, json=app_details)
         if not r.status_code == 200 or not r.status_code == 204:
-            raise ProcessorError('AirWatchImporter: Unable to successfully create the App Object.') 
+            raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
         ## Now get the new App ID from the server
         try:
             r = requests.get(BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, app_name), headers=headers)
@@ -232,7 +240,7 @@ class AirWatchImporter(Processor):
                     self.output('App ID: %s' % aw_app_id)
                     break
         except AttributeError:
-            raise ProcessorError('AirWatchImporter: Unable to retrieve the App ID for the newly created app')
+            raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
 
         ## Get the Smart Group ID to assign the package to
         ## we need to replace any spaces with '%20' for the API call
@@ -258,10 +266,10 @@ class AirWatchImporter(Processor):
         r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % aw_app_id, headers=headers, json=app_assignment)
         if not r.status_code == 200 or not r.status_code == 204:
             self.output('Unable to successfully assign the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
-        return "Application was successfully uploaded to AirWatch."
+        return "Application was successfully uploaded to WorkSpaceOne."
 
     def main(self):
-        '''Rebuild Munki catalogs in repo_path'''
+        """Rebuild Munki catalogs in repo_path"""
 
         cache_dir = get_pref("CACHE_DIR") or os.path.expanduser(
             "~/Library/AutoPkg/Cache")
@@ -273,7 +281,7 @@ class AirWatchImporter(Processor):
             run_results = []
 
         something_imported = False
-        
+
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
         except:
@@ -298,21 +306,21 @@ class AirWatchImporter(Processor):
 
         if not something_imported and not self.env.get("force_import"):
             self.output(run_results)
-            self.output("No updates so nothing to import to AirWatch")
-            self.env["airwatch_resultcode"] = 0
-            self.env["airwatch_stderr"] = ""
+            self.output("No updates so nothing to import to WorkSpaceOne")
+            self.env["ws1_resultcode"] = 0
+            self.env["ws1_stderr"] = ""
         elif self.env.get("force_import") and not something_imported:
-            #TODO: Upload all pkgs/pkginfos/icons to AW from munki repo
-            #Look for munki code where it tries to find the icon in the repo
+            #TODO: Upload all pkgs/pkginfos/icons to WS1 from Munki repo
+            #Look for Munki code where it tries to find the icon in the repo
             pass
-        else:  
+        else:
             pi = self.env["pkginfo_repo_path"]
             pkg = self.env["pkg_repo_path"]
             icon_path = None
-            #self.output(self.awimport('pkginfo', pi))
-            #self.output(self.awimport('pkg', pkg))
+            #self.output(self.ws1_import('pkginfo', pi))
+            #self.output(self.ws1_import('pkg', pkg))
 
-            self.output(self.awimport('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
+            self.output(self.ws1_import('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
 
 
 if __name__ == "__main__":
