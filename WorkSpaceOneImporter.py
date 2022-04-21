@@ -146,7 +146,8 @@ class WorkSpaceOneImporter(Processor):
 
         # create baseline headers
         hashed_auth = base64.b64encode(bytes('{}:{}'.format(USERNAME, PASSWORD), "UTF-8"))
-        basicauth = 'Basic {}'.format(hashed_auth.encode('utf-8'))
+        #basicauth = 'Basic {}'.format(hashed_auth.encode('utf-8'))
+		basicauth = 'Basic {}'.format(hashed_auth)
         headers = {'aw-tenant-code': APITOKEN,
                    'Accept': 'application/json',
                    'authorization': basicauth}
