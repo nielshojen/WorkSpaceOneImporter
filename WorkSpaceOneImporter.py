@@ -30,6 +30,7 @@ from requests_toolbelt import StreamingIterator #dependency from requests
 
 __all__ = ["WorkSpaceOneImporter"]
 
+
 class WorkSpaceOneImporter(Processor):
     """Uploads apps from Munki repo to WorkSpace ONE"""
     input_variables = {
@@ -144,7 +145,7 @@ class WorkSpaceOneImporter(Processor):
 
 
         # create baseline headers
-        hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD))
+        hashed_auth = base64.b64encode(bytes('{}:{}'.format(USERNAME, PASSWORD), "UTF-8")
         basicauth = 'Basic {}'.format(hashed_auth.encode('utf-8'))
         headers = {'aw-tenant-code': APITOKEN,
                    'Accept': 'application/json',
