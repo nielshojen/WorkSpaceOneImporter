@@ -21,12 +21,12 @@
 import base64
 import os.path
 import plistlib
-import requests #dependency
+import requests  # dependency
 import subprocess
 import datetime
 
 from autopkglib import Processor, ProcessorError, get_pref
-from requests_toolbelt import StreamingIterator #dependency from requests
+from requests_toolbelt import StreamingIterator  # dependency from requests
 
 __all__ = ["WorkSpaceOneImporter"]
 
@@ -103,7 +103,6 @@ class WorkSpaceOneImporter(Processor):
 
     description = __doc__
 
-
     def streamFile(self, filepath, url, headers):
         """expects headers w/ token, auth, and content-type"""
         streamer = StreamingIterator(os.path.getsize(filepath), open(filepath, 'rb'))
@@ -123,15 +122,17 @@ class WorkSpaceOneImporter(Processor):
         utc_datetime = datetime.datetime.utcnow()
         utc_datetime_formatted = utc_datetime.strftime("%H")
         time_difference = ((int(utc_datetime_formatted) - int(timestamp)) * 60 * 60)
-        #availability_time = datetime.timedelta(hours=int(time_difference))
+        # availability_time = datetime.timedelta(hours=int(time_difference))
         if int(utc_datetime_formatted) < int(deployment_time):
             sec_to_add = int(((int(deployment_time) - int(timestamp)) * 60 * 60) + int(time_difference))
         elif int(utc_datetime_formatted) > int(deployment_time):
             sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
 
     def ws1_import(self, pkg, pkg_path, pkg_info, pkg_info_path, icon, icon_path):
-        self.output("Beginning the WorkSpace ONE import process for %s." % self.env["NAME"] ) ## Add name of app being imported
+        self.output(
+            "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])  ## Add name of app being imported
         BASEURL = self.env.get("ws1_api_url")
+        CONSOLEURL = self.env.get("ws1_console_url")
         GROUPID = self.env.get("ws1_groupid")
         APITOKEN = self.env.get("api_token")
         USERNAME = self.env.get("api_username")
@@ -143,10 +144,9 @@ class WorkSpaceOneImporter(Processor):
         app_version = self.env["munki_importer_summary_result"]["data"]["version"]
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
-
         # create baseline headers
+        USERNAME = USERNAME.replace("\\\\", "\\")   # lose extra backslashes in case username holds quotes ones from AD-style usernames
         hashed_auth = base64.b64encode(bytes('{}:{}'.format(USERNAME, PASSWORD), "UTF-8"))
-        # basicauth = 'Basic {}'.format(hashed_auth.encode('utf-8'))
         basicauth = 'Basic {}'.format(hashed_auth)
         headers = {'aw-tenant-code': APITOKEN,
                    'Accept': 'application/json',
@@ -154,16 +154,17 @@ class WorkSpaceOneImporter(Processor):
 
         # get OG ID from GROUPID
         try:
-            r = requests.get(BASEURL + '/api/system/groups/search?groupid=' + GROUPID, headers=headers)
+            r = requests.get(BASEURL + '/api/system/groups/search?name=' + GROUPID, headers=headers)
             result = r.json()
         except AttributeError:
-            raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational Group specified: %s' % GROUPID)
+            raise ProcessorError(
+                'WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational Group specified: %s' % GROUPID)
         except:
             raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
 
         if GROUPID in result['LocationGroups'][0]['GroupId']:
             ogid = result['LocationGroups'][0]['Id']['Value']
-        self.output('OG ID: {}'.format(ogid))
+        self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
 
         if not pkg_path == None:
             self.output("Uploading pkg...")
@@ -171,7 +172,7 @@ class WorkSpaceOneImporter(Processor):
             headers['Content-Type'] = 'application/octet-stream'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_path) + '&organizationgroup=' + \
-                      str(ogid) + '&moduleType=Application' # Application only for pkg/dmg upload
+                      str(ogid) + '&moduleType=Application'  # Application only for pkg/dmg upload
             try:
                 res = self.streamFile(pkg_path, posturl, headers)
                 pkg_id = res['Value']
@@ -187,7 +188,7 @@ class WorkSpaceOneImporter(Processor):
             headers['Content-Type'] = 'text/xml'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_info_path) + '&organizationgroup=' + \
-                      str(ogid) + '&moduleType=General' # General for pkginfo and icon
+                      str(ogid) + '&moduleType=General'  # General for pkginfo and icon
             try:
                 res = self.streamFile(pkg_info_path, posturl, headers)
                 pkginfo_id = res['Value']
@@ -203,7 +204,7 @@ class WorkSpaceOneImporter(Processor):
             headers['Content-Type'] = 'image/png'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(icon_path) + '&organizationgroup=' + \
-                      str(ogid) + '&moduleType=General' # General for pkginfo and icon
+                      str(ogid) + '&moduleType=General'  # General for pkginfo and icon
             try:
                 res = self.streamFile(icon_path, posturl, headers)
                 icon_id = res['Value']
@@ -223,23 +224,35 @@ class WorkSpaceOneImporter(Processor):
         ## Create a dict with the app details to be passed to AW
         ## to create the App object
         app_details = {"pkgInfoBlobId": str(pkginfo_id),
-                        "applicationBlobId": str(pkg_id),
-                        "applicationIconId": str(icon_id),
-                        "isManagedInstall": True}
+                       "applicationBlobId": str(pkg_id),
+                       "applicationIconId": str(icon_id),
+                       "isManagedInstall": True}
 
         ## Make the API call to create the App object
         self.output("Creating App Object in WorkSpaceOne...")
         r = requests.post(BASEURL + '/api/mam/groups/%s/macos/apps' % ogid, headers=headers, json=app_details)
-        if not r.status_code == 200 or not r.status_code == 204:
+        if not r.status_code == 201:
             raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
+
+        # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
+        application_id = r.headers["Location"].rsplit('/', 1)[-1]
+        self.output("Published ApplicationId: ".format(application_id), verbose_level=3)
+        if CONSOLEURL:
+            app_ws1console_loc = CONSOLEURL + r.headers["Location"].rsplit("//", 1)[-1]
+            self.output("Application published, lookup in WS1 console at: ".format(app_ws1console_loc))
+
         ## Now get the new App ID from the server
+        # TODO: move lookup to precede upload sections and make upload and smartgroup assignment conditional on results
         try:
-            r = requests.get(BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, app_name), headers=headers)
+            condensed_app_name = app_name.replace(" ", "%20")
+            r = requests.get(BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
+                             headers=headers)
             search_results = r.json()
             for app in search_results["Application"]:
                 if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
-                    aw_app_id = app["Id"]["Value"]
-                    self.output('App ID: %s' % aw_app_id)
+                    ws1_app_id = app["Id"]["Value"]
+                    self.output('App ID: %s' % ws1_app_id, verbose_level=2)
+                    self.output("App platform: ".format(app["Platform"]), verbose_level=3)
                     break
         except AttributeError:
             raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
@@ -256,16 +269,21 @@ class WorkSpaceOneImporter(Processor):
 
         ## Create the app assignment details
         app_assignment = {
-                          "SmartGroupIds": [
-                            sg_id
-                          ],
-                          "DeploymentParameters": {
-                            "PushMode": PUSHMODE
-                            }
-                        }
+            "SmartGroupIds": [
+                sg_id
+            ],
+            "DeploymentParameters": {
+                "PushMode": PUSHMODE
+            },
+            "RemoveOnUnEnroll": "false",                     # TODO: maybe expose as input var
+            "MacOsDesiredStateManagement": "false",          # TODO: maybe expose as input var
+            "AutoUpdateDevicesWithPreviousVersion": "true",  # TODO: maybe expose as input var
+            "VisibleInAppCatalog": "true"                    # TODO: maybe expose as input var
+        }
 
         ## Make the API call to assign the App
-        r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % aw_app_id, headers=headers, json=app_assignment)
+        r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
+                          json=app_assignment)
         if not r.status_code == 200 or not r.status_code == 204:
             self.output('Unable to successfully assign the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
         return "Application was successfully uploaded to WorkSpaceOne."
@@ -295,14 +313,14 @@ class WorkSpaceOneImporter(Processor):
         # something was imported
         # this could probably be done as an array comprehension
         # but might be harder to grasp...
-#        for result in run_results:
-#            self.output(result)
-#            for item in result:
-#                if "MunkiImporter" in item.get("Processor"):
-#                    self.output("We found MunkiImporter")
-#                    if item["Output"]["pkginfo_repo_path"]:
-#                        something_imported = True
-#                        break
+        #        for result in run_results:
+        #            self.output(result)
+        #            for item in result:
+        #                if "MunkiImporter" in item.get("Processor"):
+        #                    self.output("We found MunkiImporter")
+        #                    if item["Output"]["pkginfo_repo_path"]:
+        #                        something_imported = True
+        #                        break
         if pkginfo_path:
             something_imported = True
 
@@ -312,15 +330,19 @@ class WorkSpaceOneImporter(Processor):
             self.env["ws1_resultcode"] = 0
             self.env["ws1_stderr"] = ""
         elif self.env.get("force_import") and not something_imported:
-            #TODO: Upload all pkgs/pkginfos/icons to WS1 from Munki repo
-            #Look for Munki code where it tries to find the icon in the repo
+            # TODO: Find latest pkgs/pkginfos version and icon to upload to WS1 from Munki repo
+            # Look for Munki code where it finds latest pkg, pkginfo
+            # Look for Munki code where it tries to find the icon in the repo
+            # need to delete app from WS1 before upload attempt
             pass
         else:
+            # TODO: Find icon to upload to WS1 from Munki repo
+            # Look for Munki code where it tries to find the icon in the repo
             pi = self.env["pkginfo_repo_path"]
             pkg = self.env["pkg_repo_path"]
             icon_path = None
-            #self.output(self.ws1_import('pkginfo', pi))
-            #self.output(self.ws1_import('pkg', pkg))
+            # self.output(self.ws1_import('pkginfo', pi))
+            # self.output(self.ws1_import('pkg', pkg))
 
             self.output(self.ws1_import('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
 
