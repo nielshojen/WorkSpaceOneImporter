@@ -147,7 +147,7 @@ class WorkSpaceOneImporter(Processor):
         # create baseline headers
         USERNAME = USERNAME.replace("\\\\", "\\")   # lose extra backslashes in case username holds quotes ones from AD-style usernames
         hashed_auth = base64.b64encode(bytes('{}:{}'.format(USERNAME, PASSWORD), "UTF-8"))
-        basicauth = 'Basic {}'.format(hashed_auth)
+        basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
         headers = {'aw-tenant-code': APITOKEN,
                    'Accept': 'application/json',
                    'authorization': basicauth}
@@ -160,6 +160,10 @@ class WorkSpaceOneImporter(Processor):
             raise ProcessorError(
                 'WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational Group specified: %s' % GROUPID)
         except:
+            raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
+
+        if not r.status_code == 200
+            self.output('Organisation group ID Search result: {}'.format(result), verbose_level=3)
             raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
 
         if GROUPID in result['LocationGroups'][0]['GroupId']:

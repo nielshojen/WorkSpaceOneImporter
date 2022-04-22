@@ -113,7 +113,7 @@ api_password
 			<key>smart_group_name</key>
 			<string>SMART_GROUP_NAME</string>
 			<key>push_mode</key>
-			<string>PUSH_MODE</string>
+			<string>PUSH_MODE, Auto or On-Demand</string>
 		</dict>
 	</dict>
 </array>
@@ -129,45 +129,59 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Description</key>
-    <string>Creates a munki package for Suspicious Package, imports it into WorkSpace ONE.</string>
-    <key>Identifier</key>
-    <string>com.github.codeskipper.ws1.SuspiciousPackage</string>
-    <key>Input</key>
-    <dict>
-        <key>NAME</key>
-        <string>Suspicious Package</string>
-    </dict>
-    <key>ParentRecipe</key>
-    <string>com.github.codeskipper.munki.SuspiciousPackage</string>
-    <key>MinimumVersion</key>
-    <string>0.4.0</string>
-    <key>Process</key>
-    <array>
-        <dict>
-            <key>Processor</key>
-            <string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
-            <key>Arguments</key>
-            <dict>
-                <key>munki_repo_path</key>
-                <string>MUNKI_REPO_PATH_HERE</string>
-                <key>ws1_api_url</key>
-                <string>WORKSPACEONE_API_URL_HERE</string>
-                <key>ws1_groupid</key>
-                <string>GROUP_ID_HERE</string>
-                <key>api_token</key>
-                <string>API_TOKEN_HERE</string>
-                <key>api_username</key>
-                <string>API_USERNAME_HERE</string>
-                <key>api_password</key>
-                <string>API_PASSWORD_HERE</string>
-                <key>smart_group_name</key>
-                <string>SMART_GROUP_NAME</string>
-                <key>push_mode</key>
-                <string>PUSH_MODE</string>
-            </dict>
-        </dict>
-    </array>
+	<key>Description</key>
+	<string>Creates a munki package for Suspicious Package, imports it into WorkSpace ONE.</string>
+	<key>Identifier</key>
+	<string>com.github.codeskipper.ws1.SuspiciousPackage</string>
+	<key>Input</key>
+	<dict>
+		<key>MUNKI_REPO_PATH</key>
+		<string>MUNKI_REPO_PATH_HERE</string>
+		<key>WS1_API_URL</key>
+		<string>WORKSPACEONE_API_URL_HERE</string>
+		<key>WS1_GROUPID</key>
+		<string>GROUP_ID_HERE</string>
+		<key>API_TOKEN</key>
+		<string>API_TOKEN_HERE</string>
+		<key>API_USERNAME</key>
+		<string>API_USERNAME_HERE</string>
+		<key>API_PASSWORD</key>
+		<string>API_PASSWORD_HERE</string>
+		<key>SMART_GROUP_NAME</key>
+		<string>SMART_GROUP_NAME</string>
+		<key>PUSH_MODE</key>
+		<string>PUSH_MODE</string>
+	</dict>
+	<key>ParentRecipe</key>
+	<string>com.github.codeskipper.munki.SuspiciousPackage</string>
+	<key>MinimumVersion</key>
+	<string>0.4.0</string>
+	<key>Process</key>
+	<array>
+		<dict>
+			<key>Processor</key>
+			<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
+			<key>Arguments</key>
+			<dict>
+				<key>munki_repo_path</key>
+				<string>%MUNKI_REPO_PATH%</string>
+				<key>ws1_api_url</key>
+				<string>%WS1_API_URL%</string>
+				<key>ws1_groupid</key>
+				<string>%WS1_GROUPID%</string>
+				<key>api_token</key>
+				<string>%API_TOKEN%</string>
+				<key>api_username</key>
+				<string>%API_USERNAME%</string>
+				<key>api_password</key>
+				<string>%API_PASSWORD%</string>
+				<key>smart_group_name</key>
+				<string>%SMART_GROUP_NAME%</string>
+				<key>push_mode</key>
+				<string>%PUSH_MODE%</string>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>
 ```
