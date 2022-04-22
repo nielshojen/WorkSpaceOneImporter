@@ -162,7 +162,7 @@ class WorkSpaceOneImporter(Processor):
         except:
             raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
 
-        if not r.status_code == 200
+        if not r.status_code == 200:
             self.output('Organisation group ID Search result: {}'.format(result), verbose_level=3)
             raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
 
