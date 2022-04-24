@@ -190,8 +190,8 @@ class WorkSpaceOneImporter(Processor):
 
         if not pkg_info_path == None:
             self.output("Uploading pkg_info...")
-            # upload pkginfo plist (text/xml)
-            headers['Content-Type'] = 'text/json'
+            # upload pkginfo plist (application/json)
+            headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_info_path) + '&organizationgroup=' + \
                       str(ogid) + '&moduleType=General'  # General for pkginfo and icon
