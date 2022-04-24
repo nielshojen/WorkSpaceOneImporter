@@ -243,9 +243,11 @@ class WorkSpaceOneImporter(Processor):
 
         ## Make the API call to create the App object
         self.output("Creating App Object in WorkSpaceOne...")
+        self.output('app_details: {}'.format(app_details), verbose_level=3)
         r = requests.post(BASEURL + '/api/mam/groups/%s/macos/apps' % ogid, headers=headers, json=app_details)
         if not r.status_code == 201:
-            self.output('App publish result: {}'.format(result), verbose_level=3)
+            result = r.json()
+            self.output('App create result: {}'.format(result), verbose_level=3)
             raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
 
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
