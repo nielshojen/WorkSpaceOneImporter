@@ -145,11 +145,13 @@ class WorkSpaceOneImporter(Processor):
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
         # create baseline headers
-        USERNAME = USERNAME.replace("\\\\", "\\")   # lose extra backslashes in case username holds quotes ones from AD-style usernames
-        hashed_auth = base64.b64encode(bytes('{}:{}'.format(USERNAME, PASSWORD), "UTF-8"))
+        #USERNAME = USERNAME.replace("\\\\", "\\")   # lose extra backslashes in case username holds quotes ones from old AD-style usernames
+        hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
         basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
+        self.output('Authorization header: {}'.format(basicauth), verbose_level=4)
         headers = {'aw-tenant-code': APITOKEN,
-                   'Accept': 'application/json',
+                   'Accept': 'octet-stream',
+                   'Content-Type': 'application/json',
                    'authorization': basicauth}
 
         # get OG ID from GROUPID
@@ -172,8 +174,8 @@ class WorkSpaceOneImporter(Processor):
 
         if not pkg_path == None:
             self.output("Uploading pkg...")
-            # upload pkg, dmg, mpkg file (application/octet-stream)
-            headers['Content-Type'] = 'application/octet-stream'
+            # upload pkg, dmg, mpkg file (application/json)
+            headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_path) + '&organizationgroup=' + \
                       str(ogid) + '&moduleType=Application'  # Application only for pkg/dmg upload
@@ -189,7 +191,7 @@ class WorkSpaceOneImporter(Processor):
         if not pkg_info_path == None:
             self.output("Uploading pkg_info...")
             # upload pkginfo plist (text/xml)
-            headers['Content-Type'] = 'text/xml'
+            headers['Content-Type'] = 'text/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_info_path) + '&organizationgroup=' + \
                       str(ogid) + '&moduleType=General'  # General for pkginfo and icon
