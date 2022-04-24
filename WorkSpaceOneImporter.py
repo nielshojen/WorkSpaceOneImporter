@@ -178,7 +178,7 @@ class WorkSpaceOneImporter(Processor):
             headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_path) + '&organizationgroup=' + \
-                      str(ogid) + '&moduleType=Application'  # Application only for pkg/dmg upload
+                      str(ogid)
             try:
                 res = self.streamFile(pkg_path, posturl, headers)
                 pkg_id = res['Value']
@@ -194,7 +194,7 @@ class WorkSpaceOneImporter(Processor):
             headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_info_path) + '&organizationgroup=' + \
-                      str(ogid) + '&moduleType=General'  # General for pkginfo and icon
+                      str(ogid)
             try:
                 res = self.streamFile(pkg_info_path, posturl, headers)
                 pkginfo_id = res['Value']
@@ -206,11 +206,11 @@ class WorkSpaceOneImporter(Processor):
 
         if not icon_path == None:
             self.output("Uploading icon...")
-            # upload icon file (image/png)
-            headers['Content-Type'] = 'image/png'
+            # upload icon file (application/json)
+            headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(icon_path) + '&organizationgroup=' + \
-                      str(ogid) + '&moduleType=General'  # General for pkginfo and icon
+                      str(ogid)
             try:
                 res = self.streamFile(icon_path, posturl, headers)
                 icon_id = res['Value']
@@ -227,17 +227,25 @@ class WorkSpaceOneImporter(Processor):
                    'authorization': basicauth,
                    'Content-Type': 'application/json'}
 
-        ## Create a dict with the app details to be passed to AW
+        ## Create a dict with the app details to be passed to WS1
         ## to create the App object
-        app_details = {"pkgInfoBlobId": str(pkginfo_id),
-                       "applicationBlobId": str(pkg_id),
-                       "applicationIconId": str(icon_id),
-                       "isManagedInstall": True}
+        ## include applicationIconId only if we have one
+        if icon_id:
+
+            app_details = {"pkgInfoBlobId": str(pkginfo_id),
+                           "applicationBlobId": str(pkg_id),
+                           "applicationIconId": str(icon_id),
+                           "version": str(app_version)}
+        else:
+            app_details = {"pkgInfoBlobId": str(pkginfo_id),
+                           "applicationBlobId": str(pkg_id),
+                           "version": str(app_version)}
 
         ## Make the API call to create the App object
         self.output("Creating App Object in WorkSpaceOne...")
         r = requests.post(BASEURL + '/api/mam/groups/%s/macos/apps' % ogid, headers=headers, json=app_details)
         if not r.status_code == 201:
+            self.output('App publish result: {}'.format(result), verbose_level=3)
             raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
 
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
