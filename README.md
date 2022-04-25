@@ -17,6 +17,7 @@ Done:
  * **milestone: get POC working**
 
 ToDo:
+ * test new input "ws1_console_url" and code that produces link to imported app
  * add code to find icon file
  * implement Force Install
  * maybe expose more app assignment settings as input vars than just PushMode

@@ -358,12 +358,16 @@ class WorkSpaceOneImporter(Processor):
             # Look for Munki code where it finds latest pkg, pkginfo
             # Look for Munki code where it tries to find the icon in the repo
             # need to delete app from WS1 before upload attempt
+            self.output("force_import is not implemented yet. Workaround: delete manually from WS1 console first.")
             pass
         else:
-            # TODO: Find icon to upload to WS1 from Munki repo
-            # Look for Munki code where it tries to find the icon in the repo
             pi = self.env["pkginfo_repo_path"]
             pkg = self.env["pkg_repo_path"]
+
+            # TODO: Find icon to upload to WS1 from Munki repo
+            # Either look for Munki code where it tries to find the icon in the repo
+            # Or maybe read pkginfo file to find location, check if file exists, and if not see if file with app Name
+            # exists in icon folder in Munki repo, pass first hit to ws1_import()
             icon_path = None
             # self.output(self.ws1_import('pkginfo', pi))
             # self.output(self.ws1_import('pkg', pkg))
