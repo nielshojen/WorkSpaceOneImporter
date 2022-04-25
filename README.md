@@ -14,9 +14,9 @@ Done:
  * try library dependency install for Autopkg as suggested [here](https://blog.eisenschmiede.com/posts/install-python-modules-in-autopkg-context/) -> working
  * update for Python3
  * update API calls for WS1 as tested with Postman
+ * **milestone: get POC working**
 
 ToDo:
- * **milestone: get POC working**
  * add code to find icon file
  * implement Force Install
  * maybe expose more app assignment settings as input vars than just PushMode

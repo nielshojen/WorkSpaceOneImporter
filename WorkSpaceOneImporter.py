@@ -1,7 +1,8 @@
 #!/usr/local/autopkg/python
 #
-# Copyright 2022 Martinus Verburg
-# Adapted from WorkSpaceOneImporter by
+# WorkSpaceOneImporter.py - a custom Autopkg processor
+# Copyright 2022 Martinus Verburg https://github.com/codeskipper
+# Adapted from https://github.com/jprichards/AirWatchImporter/blob/master/AirWatchImporter.py by
 #     John Richards https://github.com/jprichards and
 #     Jeremy Baker https://github.com/jbaker10
 #
@@ -250,9 +251,10 @@ class WorkSpaceOneImporter(Processor):
             self.output('App create result: {}'.format(result), verbose_level=3)
             raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
 
+        self.output("App create Location header: ".format(r.headers["Location"]), verbose_level=4)
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
         application_id = r.headers["Location"].rsplit('/', 1)[-1]
-        self.output("Published ApplicationId: ".format(application_id), verbose_level=3)
+        self.output("App create ApplicationId: ".format(application_id), verbose_level=3)
         if CONSOLEURL:
             app_ws1console_loc = CONSOLEURL + r.headers["Location"].rsplit("//", 1)[-1]
             self.output("Application published, lookup in WS1 console at: ".format(app_ws1console_loc))
@@ -296,12 +298,18 @@ class WorkSpaceOneImporter(Processor):
             "AutoUpdateDevicesWithPreviousVersion": "true",  # TODO: maybe expose as input var
             "VisibleInAppCatalog": "true"                    # TODO: maybe expose as input var
         }
+        self.output("App assignments data to send: ".format(app_assignment), verbose_level=4)
 
         ## Make the API call to assign the App
         r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
                           json=app_assignment)
-        if not r.status_code == 200 or not r.status_code == 204:
+        if not r.status_code == 201:
+            result = r.json()
+            self.output("App assignments failed, result errorCode: {} - {} ".format(result['errorCode'],
+                                                                                    result['message']),
+                        verbose_level=4)
             self.output('Unable to successfully assign the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
+        self.output('Successfully assigned the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
         return "Application was successfully uploaded to WorkSpaceOne."
 
     def main(self):
