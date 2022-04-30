@@ -132,7 +132,7 @@ class WorkSpaceOneImporter(Processor):
             sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
 
     # validate if a URL was supplied (in input variable) - thanks https://stackoverflow.com/a/52455972
-    def is_url(url):
+    def is_url(self, url):
         try:
             result = urlparse(url)
             return all([result.scheme, result.netloc])
