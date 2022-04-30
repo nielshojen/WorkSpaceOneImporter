@@ -131,7 +131,6 @@ class WorkSpaceOneImporter(Processor):
         elif int(utc_datetime_formatted) > int(deployment_time):
             sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
 
-
     # validate if a URL was supplied (in input variable) - thanks https://stackoverflow.com/a/52455972
     def is_url(url):
         try:
@@ -139,7 +138,6 @@ class WorkSpaceOneImporter(Processor):
             return all([result.scheme, result.netloc])
         except ValueError:
             return False
-
 
     def ws1_import(self, pkg, pkg_path, pkg_info, pkg_info_path, icon, icon_path):
         self.output(
@@ -153,7 +151,7 @@ class WorkSpaceOneImporter(Processor):
         SMARTGROUP = self.env.get("smart_group_name")
         PUSHMODE = self.env.get("push_mode")
 
-        if not is_url(CONSOLEURL):
+        if not self.is_url(CONSOLEURL):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
                         .format(CONSOLEURL), verbose_level=4)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
@@ -163,7 +161,7 @@ class WorkSpaceOneImporter(Processor):
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
         # create baseline headers
-        #USERNAME = USERNAME.replace("\\\\", "\\")   # lose extra backslashes in case username holds quotes ones from old AD-style usernames
+        # USERNAME = USERNAME.replace("\\\\", "\\")   # lose extra backslashes in case username holds quotes ones from old AD-style usernames
         hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
         basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
         self.output('Authorization header: {}'.format(basicauth), verbose_level=4)
@@ -279,8 +277,9 @@ class WorkSpaceOneImporter(Processor):
         # TODO: move lookup to precede upload sections and make upload and smartgroup assignment conditional on results
         try:
             condensed_app_name = app_name.replace(" ", "%20")
-            r = requests.get(BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
-                             headers=headers)
+            r = requests.get(
+                BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
+                headers=headers)
             search_results = r.json()
             for app in search_results["Application"]:
                 if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
@@ -309,10 +308,10 @@ class WorkSpaceOneImporter(Processor):
             "DeploymentParameters": {
                 "PushMode": PUSHMODE
             },
-            "RemoveOnUnEnroll": "false",                     # TODO: maybe expose as input var
-            "MacOsDesiredStateManagement": "false",          # TODO: maybe expose as input var
+            "RemoveOnUnEnroll": "false",  # TODO: maybe expose as input var
+            "MacOsDesiredStateManagement": "false",  # TODO: maybe expose as input var
             "AutoUpdateDevicesWithPreviousVersion": "true",  # TODO: maybe expose as input var
-            "VisibleInAppCatalog": "true"                    # TODO: maybe expose as input var
+            "VisibleInAppCatalog": "true"  # TODO: maybe expose as input var
         }
         self.output("App assignments data to send: {}".format(app_assignment), verbose_level=4)
 
