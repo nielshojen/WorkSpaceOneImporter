@@ -145,17 +145,17 @@ class WorkSpaceOneImporter(Processor):
         self.output(
             "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])  ## Add name of app being imported
         BASEURL = self.env.get("ws1_api_url")
-         = self.env.get("ws1_console_url")
+        CONSOLEURL = self.env.get("ws1_console_url")
         GROUPID = self.env.get("ws1_groupid")
         APITOKEN = self.env.get("api_token")
         USERNAME = self.env.get("api_username")
         PASSWORD = self.env.get("api_password")
-        SMARTGROUP = self.enCONSOLEURLv.get("smart_group_name")
+        SMARTGROUP = self.env.get("smart_group_name")
         PUSHMODE = self.env.get("push_mode")
 
         if not is_url(CONSOLEURL):
-            self.output('Console URL [{}] does not look like a valid URL, setting example value'
-                        .format(basicauth), verbose_level=4)
+            self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
+                        .format(CONSOLEURL), verbose_level=4)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
         ## Get some global variables for later use
