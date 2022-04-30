@@ -29,6 +29,8 @@ import datetime
 from autopkglib import Processor, ProcessorError, get_pref
 from requests_toolbelt import StreamingIterator  # dependency from requests
 
+from urllib.parse import urlparse
+
 __all__ = ["WorkSpaceOneImporter"]
 
 
@@ -129,17 +131,32 @@ class WorkSpaceOneImporter(Processor):
         elif int(utc_datetime_formatted) > int(deployment_time):
             sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
 
+
+    # validate if a URL was supplied (in input variable) - thanks https://stackoverflow.com/a/52455972
+    def is_url(url):
+        try:
+            result = urlparse(url)
+            return all([result.scheme, result.netloc])
+        except ValueError:
+            return False
+
+
     def ws1_import(self, pkg, pkg_path, pkg_info, pkg_info_path, icon, icon_path):
         self.output(
             "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])  ## Add name of app being imported
         BASEURL = self.env.get("ws1_api_url")
-        CONSOLEURL = self.env.get("ws1_console_url")
+         = self.env.get("ws1_console_url")
         GROUPID = self.env.get("ws1_groupid")
         APITOKEN = self.env.get("api_token")
         USERNAME = self.env.get("api_username")
         PASSWORD = self.env.get("api_password")
-        SMARTGROUP = self.env.get("smart_group_name")
+        SMARTGROUP = self.enCONSOLEURLv.get("smart_group_name")
         PUSHMODE = self.env.get("push_mode")
+
+        if not is_url(CONSOLEURL):
+            self.output('Console URL [{}] does not look like a valid URL, setting example value'
+                        .format(basicauth), verbose_level=4)
+            CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
         ## Get some global variables for later use
         app_version = self.env["munki_importer_summary_result"]["data"]["version"]
@@ -251,13 +268,12 @@ class WorkSpaceOneImporter(Processor):
             self.output('App create result: {}'.format(result), verbose_level=3)
             raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
 
-        self.output("App create Location header: ".format(r.headers["Location"]), verbose_level=4)
+        self.output("App create response headers: {}".format(r.headers), verbose_level=4)
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
         application_id = r.headers["Location"].rsplit('/', 1)[-1]
-        self.output("App create ApplicationId: ".format(application_id), verbose_level=3)
-        if CONSOLEURL:
-            app_ws1console_loc = CONSOLEURL + r.headers["Location"].rsplit("//", 1)[-1]
-            self.output("Application published, lookup in WS1 console at: ".format(app_ws1console_loc))
+        self.output("App create ApplicationId: {}".format(application_id), verbose_level=3)
+        app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, application_id)
+        self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
 
         ## Now get the new App ID from the server
         # TODO: move lookup to precede upload sections and make upload and smartgroup assignment conditional on results
@@ -270,7 +286,7 @@ class WorkSpaceOneImporter(Processor):
                 if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
                     ws1_app_id = app["Id"]["Value"]
                     self.output('App ID: %s' % ws1_app_id, verbose_level=2)
-                    self.output("App platform: ".format(app["Platform"]), verbose_level=3)
+                    self.output("App platform: {}".format(app["Platform"]), verbose_level=3)
                     break
         except AttributeError:
             raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
@@ -298,7 +314,7 @@ class WorkSpaceOneImporter(Processor):
             "AutoUpdateDevicesWithPreviousVersion": "true",  # TODO: maybe expose as input var
             "VisibleInAppCatalog": "true"                    # TODO: maybe expose as input var
         }
-        self.output("App assignments data to send: ".format(app_assignment), verbose_level=4)
+        self.output("App assignments data to send: {}".format(app_assignment), verbose_level=4)
 
         ## Make the API call to assign the App
         r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
