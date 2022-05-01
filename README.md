@@ -15,11 +15,11 @@ Done:
  * update for Python3
  * update API calls for WS1 as tested with Postman
  * **milestone: get POC working**
+ * test new input "ws1_console_url" and code that produces link to imported app
 
 ToDo:
- * test new input "ws1_console_url" and code that produces link to imported app
  * add code to find icon file
- * implement Force Install
+ * implement Force Install option
  * maybe expose more app assignment settings as input vars than just PushMode
  * maybe add (optimization) ability to update WS1 metadata and assignment settings
  * maybe add ability to use keychain - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)
@@ -61,10 +61,6 @@ Then use this as the processor in your recipes:
 com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter
 ```
 
-See this wiki for more information on shared processor:
-https://github.com/autopkg/autopkg/wiki/Processor-Locations
-
-
 ## Sensitive input variables
 The processor requires the following sensitive keys to be populated in your recipe (override) Input variables, or by command line keys. I'm told you can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script).
 
@@ -78,12 +74,13 @@ api_password
 ## Available Input Variables
 ** ToDo: update WiKi **
 * [`munki_repo_path`](https://github.com/jprichards/AirWatchImporter/wiki/munki_repo_path)
-* [`force_import`](https://github.com/jprichards/AirWatchImporter/wiki/force_import)
-* [`ws1_api_url`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_url)
-* [`ws1_groupid`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_groupid)
 * [`api_token`](https://github.com/jprichards/AirWatchImporter/wiki/api_token)
 * [`api_username`](https://github.com/jprichards/AirWatchImporter/wiki/api_username)
 * [`api_password`](https://github.com/jprichards/AirWatchImporter/wiki/api_password)
+* [`ws1_api_url`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_url)
+* [`ws1_console_url`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_url)
+* [`ws1_groupid`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_groupid)
+* [`force_import`](https://github.com/jprichards/AirWatchImporter/wiki/force_import)
 * [`smart_group_name`](https://github.com/jprichards/AirWatchImporter/wiki/smart_group_name)
 * [`push_mode`](https://github.com/jprichards/AirWatchImporter/wiki/push_mode)
 
@@ -99,18 +96,20 @@ api_password
 		<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
 		<key>Arguments</key>
 		<dict>
-			<key>munki_repo_path</key>
-			<string>MUNKI_REPO_PATH_HERE</string>
-			<key>ws1_api_url</key>
-			<string>WORKSPACEONE_API_URL_HERE</string>
-			<key>ws1_groupid</key>
-			<string>GROUP_ID_HERE</string>
 			<key>api_token</key>
 			<string>API_TOKEN_HERE</string>
 			<key>api_username</key>
 			<string>API_USERNAME_HERE</string>
 			<key>api_password</key>
 			<string>API_PASSWORD_HERE</string>
+			<key>munki_repo_path</key>
+			<string>MUNKI_REPO_PATH_HERE</string>
+			<key>ws1_api_url</key>
+			<string>WORKSPACEONE_API_URL_HERE</string>
+			<key>ws1_console_url</key>
+			<string>WORKSPACEONE_CONSOLE_URL_HERE</string>
+			<key>ws1_groupid</key>
+			<string>GROUP_ID_HERE</string>
 			<key>smart_group_name</key>
 			<string>SMART_GROUP_NAME</string>
 			<key>push_mode</key>
@@ -136,18 +135,20 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 	<string>com.github.codeskipper.ws1.SuspiciousPackage</string>
 	<key>Input</key>
 	<dict>
-		<key>MUNKI_REPO_PATH</key>
-		<string>MUNKI_REPO_PATH_HERE</string>
-		<key>WS1_API_URL</key>
-		<string>WORKSPACEONE_API_URL_HERE</string>
-		<key>WS1_GROUPID</key>
-		<string>GROUP_ID_HERE</string>
 		<key>API_TOKEN</key>
 		<string>API_TOKEN_HERE</string>
 		<key>API_USERNAME</key>
 		<string>API_USERNAME_HERE</string>
 		<key>API_PASSWORD</key>
 		<string>API_PASSWORD_HERE</string>
+		<key>MUNKI_REPO_PATH</key>
+		<string>MUNKI_REPO_PATH_HERE</string>
+		<key>WS1_API_URL</key>
+		<string>WORKSPACEONE_API_URL_HERE</string>
+		<key>WS1_CONSOLE_URL</key>
+		<string>WORKSPACEONE_CONSOLE_URL_HERE</string>
+		<key>WS1_GROUPID</key>
+		<string>GROUP_ID_HERE</string>
 		<key>SMART_GROUP_NAME</key>
 		<string>SMART_GROUP_NAME</string>
 		<key>PUSH_MODE</key>
@@ -166,16 +167,18 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 			<dict>
 				<key>munki_repo_path</key>
 				<string>%MUNKI_REPO_PATH%</string>
-				<key>ws1_api_url</key>
-				<string>%WS1_API_URL%</string>
-				<key>ws1_groupid</key>
-				<string>%WS1_GROUPID%</string>
 				<key>api_token</key>
 				<string>%API_TOKEN%</string>
 				<key>api_username</key>
 				<string>%API_USERNAME%</string>
 				<key>api_password</key>
 				<string>%API_PASSWORD%</string>
+				<key>ws1_api_url</key>
+				<string>%WS1_API_URL%</string>
+				<key>ws1_groupid</key>
+				<string>%WS1_GROUPID%</string>
+				<key>ws1_console_url</key>
+				<string>%WS1_CONSOLE_URL%</string>
 				<key>smart_group_name</key>
 				<string>%SMART_GROUP_NAME%</string>
 				<key>push_mode</key>
