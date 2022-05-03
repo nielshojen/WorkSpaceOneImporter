@@ -301,6 +301,10 @@ class WorkSpaceOneImporter(Processor):
                 self.output('Smart Group ID: %s' % sg_id)
 
         ## Create the app assignment details
+        if PUSHMODE == 'Auto':
+            setMacOsDesiredStateManagement = "true"
+        else:
+            setMacOsDesiredStateManagement = "false",
         app_assignment = {
             "SmartGroupIds": [
                 sg_id
@@ -308,8 +312,8 @@ class WorkSpaceOneImporter(Processor):
             "DeploymentParameters": {
                 "PushMode": PUSHMODE
             },
+            "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,  # TODO: maybe expose as input var
             "RemoveOnUnEnroll": "false",  # TODO: maybe expose as input var
-            "MacOsDesiredStateManagement": "false",  # TODO: maybe expose as input var
             "AutoUpdateDevicesWithPreviousVersion": "true",  # TODO: maybe expose as input var
             "VisibleInAppCatalog": "true"  # TODO: maybe expose as input var
         }
@@ -326,6 +330,7 @@ class WorkSpaceOneImporter(Processor):
             self.output('Unable to successfully assign the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
         self.output('Successfully assigned the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
         return "Application was successfully uploaded to WorkSpaceOne."
+
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""

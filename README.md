@@ -20,8 +20,8 @@ Done:
 ToDo:
  * add code to find icon file
  * implement Force Install option
- * maybe expose more app assignment settings as input vars than just PushMode
- * maybe add (optimization) ability to update WS1 metadata and assignment settings
+ * maybe expose more app assignment settings as input vars
+ * maybe add ability to update WS1 metadata and assignment settings
  * maybe add ability to use keychain - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)
  * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
 
