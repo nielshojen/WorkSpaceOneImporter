@@ -67,11 +67,11 @@ class WorkSpaceOneImporter(Processor):
         },
         "api_username": {
             "required": True,
-            "description": "WorkSpace ONE API Username",
+            "description": "WorkSpace ONE REST API Username",
         },
         "api_password": {
             "required": True,
-            "description": "WorkSpace ONE API User Password",
+            "description": "WorkSpace ONE REST API User Password",
         },
         "smart_group_name": {
             "required": False,

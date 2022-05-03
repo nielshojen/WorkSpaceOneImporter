@@ -73,16 +73,16 @@ api_password
 
 ## Available Input Variables
 ** ToDo: update WiKi **
-* [`munki_repo_path`](https://github.com/jprichards/AirWatchImporter/wiki/munki_repo_path)
-* [`api_token`](https://github.com/jprichards/AirWatchImporter/wiki/api_token)
-* [`api_username`](https://github.com/jprichards/AirWatchImporter/wiki/api_username)
-* [`api_password`](https://github.com/jprichards/AirWatchImporter/wiki/api_password)
-* [`ws1_api_url`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_url)
-* [`ws1_console_url`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_url)
-* [`ws1_groupid`](https://github.com/jprichards/AirWatchImporter/wiki/airwatch_groupid)
-* [`force_import`](https://github.com/jprichards/AirWatchImporter/wiki/force_import)
-* [`smart_group_name`](https://github.com/jprichards/AirWatchImporter/wiki/smart_group_name)
-* [`push_mode`](https://github.com/jprichards/AirWatchImporter/wiki/push_mode)
+* [`munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/munki_repo_path)
+* [`api_token`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_token)
+* [`api_username`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_username)
+* [`api_password`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_password)
+* [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
+* [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
+* [`ws1_groupid`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_groupid)
+* [`force_import`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/force_import)
+* [`smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/smart_group_name)
+* [`push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/push_mode)
 
 * ** ToDo: update WiKi **
 
