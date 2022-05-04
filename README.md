@@ -185,3 +185,14 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 </dict>
 </plist>
 ```
+___
+<br/>Create a recipe override first:<br/>
+```autopkg make-override SuspiciousPackage.ws1.recipe```
+
+<br/>Edit it for settings to fit your environment<br/>
+```open -a bbedit SuspiciousPackage.ws1.recipe```
+
+<br/>Test like this, and beware: verbose level 4 will show your password etc in plaintext on screen
+````
+autopkg run -vvvv --key force_munkiimport=true --key force_import=false SuspiciousPackage.ws1.recipe
+````

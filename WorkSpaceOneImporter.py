@@ -188,6 +188,37 @@ class WorkSpaceOneImporter(Processor):
             ogid = result['LocationGroups'][0]['Id']['Value']
         self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
 
+
+        ## Check if app version is already present on WS1 server
+        # TODO: test app lookup to precede upload sections, and make upload and
+        #  SmartGroup assignment conditional on results
+        try:
+            condensed_app_name = app_name.replace(" ", "%20")
+            r = requests.get(
+                BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
+                headers=headers)
+            search_results = r.json()
+            for app in search_results["Application"]:
+                if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
+                    ws1_app_id = app["Id"]["Value"]
+                    self.output('App ID: %s' % ws1_app_id, verbose_level=2)
+                    self.output("App platform: {}".format(app["Platform"]), verbose_level=3)
+                    if not self.env.get("force_import"):
+                        raise ProcessorError('App [{}] version [{}] is already present on server, '
+                                             'and force_import is not set'.format(app_name, app_version))
+                    else:
+                        self.output(
+                            'App [{}] version [{}] already present on server and force_import is not implemented yet.'
+                            'Workaround: delete manually from WS1 console first.'.format(app_name, app_version))
+                    break
+        except AttributeError:
+            # app not found on WS1 server, so we're fine to proceed with upload
+            self.output('App [{}] version [{}] is not yet present on server, will attempt upload'
+                        .format(app_name, app_version))
+            # raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
+        except:
+            raise ProcessorError('Something went wrong checking for pre-existing app version on server')
+
         if not pkg_path == None:
             self.output("Uploading pkg...")
             # upload pkg, dmg, mpkg file (application/json)
@@ -266,29 +297,13 @@ class WorkSpaceOneImporter(Processor):
             self.output('App create result: {}'.format(result), verbose_level=3)
             raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
 
-        self.output("App create response headers: {}".format(r.headers), verbose_level=4)
-        # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
-        application_id = r.headers["Location"].rsplit('/', 1)[-1]
-        self.output("App create ApplicationId: {}".format(application_id), verbose_level=3)
-        app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, application_id)
-        self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
-
         ## Now get the new App ID from the server
-        # TODO: move lookup to precede upload sections and make upload and smartgroup assignment conditional on results
-        try:
-            condensed_app_name = app_name.replace(" ", "%20")
-            r = requests.get(
-                BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
-                headers=headers)
-            search_results = r.json()
-            for app in search_results["Application"]:
-                if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
-                    ws1_app_id = app["Id"]["Value"]
-                    self.output('App ID: %s' % ws1_app_id, verbose_level=2)
-                    self.output("App platform: {}".format(app["Platform"]), verbose_level=3)
-                    break
-        except AttributeError:
-            raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
+        # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
+        self.output("App create response headers: {}".format(r.headers), verbose_level=4)
+        ws1_app_id = r.headers["Location"].rsplit('/', 1)[-1]
+        self.output("App create ApplicationId: {}".format(ws1_app_id), verbose_level=3)
+        app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, ws1_app_id)
+        self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
 
         ## Get the Smart Group ID to assign the package to
         ## we need to replace any spaces with '%20' for the API call
@@ -322,7 +337,7 @@ class WorkSpaceOneImporter(Processor):
         ## Make the API call to assign the App
         try:
             r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
-                          json=app_assignment)
+                              json=app_assignment)
         except:
             raise ProcessorError('Something went wrong attempting to assign the app [%s] to the group [%s]' % (
                 self.env['NAME'], SMARTGROUP))
@@ -332,7 +347,7 @@ class WorkSpaceOneImporter(Processor):
                                                                                     result['message']),
                         verbose_level=2)
             raise ProcessorError('Unable to successfully assign the app [%s] to the group [%s]' % (
-                self.env['NAME'], SMARTGROUP)')
+                self.env['NAME'], SMARTGROUP))
         self.output('Successfully assigned the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
 
         ## Workaround - make extra API call PUT in attempt to modify the App assignment details
@@ -341,7 +356,7 @@ class WorkSpaceOneImporter(Processor):
         #  RemoveOnUnEnroll, even if app was deleted first...
         try:
             r = requests.put(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
-                          json=app_assignment)
+                             json=app_assignment)
         except:
             raise ProcessorError('Something went wrong attempting to modify app [%s] assignment to group [%s]' % (
                 self.env['NAME'], SMARTGROUP))
@@ -355,7 +370,6 @@ class WorkSpaceOneImporter(Processor):
         self.output('Successfully modified the app [%s] assignment to the group [%s]' % (self.env['NAME'], SMARTGROUP))
 
         return "Application was successfully uploaded to WorkSpaceOne."
-
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
@@ -403,7 +417,7 @@ class WorkSpaceOneImporter(Processor):
             # Look for Munki code where it finds latest pkg, pkginfo
             # Look for Munki code where it tries to find the icon in the repo
             # need to delete app from WS1 before upload attempt
-            self.output("force_import is not implemented yet. Workaround: delete manually from WS1 console first.")
+            self.output("Nothing imported in Munki, and processor can\'t lookup latest version for force_import yet")
             pass
         else:
             pi = self.env["pkginfo_repo_path"]
