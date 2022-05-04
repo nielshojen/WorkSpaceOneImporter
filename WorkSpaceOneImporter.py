@@ -44,7 +44,7 @@ class WorkSpaceOneImporter(Processor):
         "force_import": {
             "required": False,
             "description":
-                "If not false or empty or undefined, force a WS1 import",
+                "If \"true\", force a WS1 import",
         },
         "ws1_api_url": {
             "required": True,
@@ -203,12 +203,12 @@ class WorkSpaceOneImporter(Processor):
                     ws1_app_id = app["Id"]["Value"]
                     self.output('App ID: %s' % ws1_app_id, verbose_level=2)
                     self.output("App platform: {}".format(app["Platform"]), verbose_level=3)
-                    if not self.env.get("force_import"):
+                    if not self.env.get("force_import").lower() == "true":
                         raise ProcessorError('App [{}] version [{}] is already present on server, '
                                              'and force_import is not set'.format(app_name, app_version))
                     else:
                         self.output(
-                            'App [{}] version [{}] already present on server and force_import is not implemented yet.'
+                            'App [{}] version [{}] already present on server and force_import is not implemented yet. '
                             'Workaround: delete manually from WS1 console first.'.format(app_name, app_version))
                     break
         except AttributeError:
