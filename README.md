@@ -16,9 +16,9 @@ Done:
  * update API calls for WS1 as tested with Postman
  * **milestone: get POC working**
  * test new input "ws1_console_url" and code that produces link to imported app
+ * get force_import working
 
 ToDo:
- * test force_import
  * add code to find icon file to upload
  * cleanup code
  * maybe expose more app assignment settings as input vars

@@ -162,6 +162,17 @@ class WorkSpaceOneImporter(Processor):
                         .format(CONSOLEURL), verbose_level=4)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
+        ## get import_new_only, defaults to True
+        if self.env.get("import_new_only") is None:
+            self.output('No value supplied for import_new_only, setting default value of'
+                        ': true', verbose_level=3)
+            IMPORTNEWONLY = True
+        else:
+            if self.env.get("import_new_only").lower() == 'false':
+                IMPORTNEWONLY = False
+            else:
+                IMPORTNEWONLY = True
+
         ## Get some global variables for later use
         app_version = self.env["munki_importer_summary_result"]["data"]["version"]
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
@@ -201,36 +212,38 @@ class WorkSpaceOneImporter(Processor):
             r = requests.get(
                 BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
                 headers=headers)
-            search_results = r.json()
-            for app in search_results["Application"]:
-                if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
-                    ws1_app_id = app["Id"]["Value"]
-                    self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
-                    self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
-                    if not self.env.get("force_import").lower() == "true":
-                        raise ProcessorError('App [{}] version [{}] is already present on server, '
-                                             'and force_import is not set.'.format(app_name, app_version))
-                    else:
-                        self.output(
-                            'App [{}] version [{}] already present on server, and force_import==true, attempting to '
-                            'delete on server first.'.format(app_name, app_version))
-                        try:
-                            r = requests.delete('{}/apps/internal/{}'.format(BASEURL, ws1_app_id), headers=headers)
-                        except:
-                            raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
-                        if not r.status_code == 202:
-                            result = r.json()
-                            self.output('App delete result: {}'.format(result), verbose_level=3)
-                            raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
-                        break
-        except AttributeError:
-            # app not found on WS1 server, so we're fine to proceed with upload
-            # raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
-            self.output('App [{}] version [{}] is not yet present on server, will attempt upload'
-                        .format(app_name, app_version))
+            if r.status_code == 200:
+                search_results = r.json()
+                for app in search_results["Application"]:
+                    if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
+                        ws1_app_id = app["Id"]["Value"]
+                        self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
+                        self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
+                        if not self.env.get("force_import").lower() == "true":
+                            raise ProcessorError('App [{}] version [{}] is already present on server, '
+                                                 'and force_import is not set.'.format(app_name, app_version))
+                        else:
+                            self.output(
+                                'App [{}] version [{}] already present on server, and force_import==true, attempting to '
+                                'delete on server first.'.format(app_name, app_version))
+                            try:
+                                r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id), headers=headers)
+                            except:
+                                raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
+                            if not r.status_code == 202 and not r.status_code == 204:
+                                result = r.json()
+                                self.output('App delete result: {}'.format(result), verbose_level=3)
+                                raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
+                            self.output('Pre-existing App [ID: {}] now successfully deleted'.format(ws1_app_id))
+                            break
+            elif r.status_code == 204:
+                # app not found on WS1 server, so we're fine to proceed with upload
+                self.output('App [{}] version [{}] is not yet present on server, will attempt upload'
+                            .format(app_name, app_version))
         except:
             raise ProcessorError('Something went wrong checking for pre-existing app version on server')
 
+        ## proceed with upload
         if not pkg_path == None:
             self.output("Uploading pkg...")
             # upload pkg, dmg, mpkg file (application/json)
@@ -397,12 +410,6 @@ class WorkSpaceOneImporter(Processor):
 
         munkiimported_new = False
 
-        ## get import_new_only, defaults to True
-        IMPORTNEWONLY = self.env.get(import_new_only).lower()
-        if IMPORTNEWONLY == None:
-            IMPORTNEWONLY = True
-        else:
-            IMPORTNEWONLY = False
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
