@@ -18,12 +18,14 @@ Done:
  * test new input "ws1_console_url" and code that produces link to imported app
 
 ToDo:
- * add code to find icon file
- * implement Force Install option
+ * test force_import
+ * add code to find icon file to upload
+ * cleanup code
  * maybe expose more app assignment settings as input vars
  * maybe add ability to update WS1 metadata and assignment settings
  * maybe add ability to use keychain - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)
  * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
+ * maybe add ability and input setting whether to upload all versions of a software title
 
 
 ## Dependencies
@@ -80,6 +82,7 @@ api_password
 * [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
 * [`ws1_groupid`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_groupid)
 * [`force_import`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/force_import)
+* [`import_new_only`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/import_new_only)
 * [`smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/smart_group_name)
 * [`push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/push_mode)
 

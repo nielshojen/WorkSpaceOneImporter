@@ -39,39 +39,45 @@ class WorkSpaceOneImporter(Processor):
     input_variables = {
         "munki_repo_path": {
             "required": True,
-            "description": "Path to the munki repo.",
+            "description": "Path to Munki repo.",
         },
         "force_import": {
             "required": False,
             "description":
-                "If \"true\", force a WS1 import",
+                "If \"true\", force import into WS1 if version already exists. Default:false",
+        },
+        "import_new_only": {
+            "required": False,
+            "description":
+                "If \"false\", in case no version was imported into Munki in this session, find latest version in "
+                "munki_repo and import into WS1. Default: true",
         },
         "ws1_api_url": {
             "required": True,
-            "description": "Base url of your WorkSpace ONE UEM REST API server \
+            "description": "Base url of WorkSpace ONE UEM REST API server \
                             (eg. https://myorg.awmdm.com)"
         },
         "ws1_console_url": {
             "required": False,
-            "description": "Base url of your WorkSpace ONE UEM Console server for easy result lookup \
+            "description": "Base url of WorkSpace ONE UEM Console server for easy result lookup \
                             (eg. https://admin-mobile.myorg.com)"
         },
         "ws1_groupid": {
             "required": True,
             "description": "Group ID of WorkSpace ONE Organization Group \
-                            where files will be uploaded"
+                            where files should be uploaded."
         },
         "api_token": {
             "required": True,
-            "description": "WorkSpace ONE REST API Token",
+            "description": "WorkSpace ONE REST API Token.",
         },
         "api_username": {
             "required": True,
-            "description": "WorkSpace ONE REST API Username",
+            "description": "WorkSpace ONE REST API Username.",
         },
         "api_password": {
             "required": True,
-            "description": "WorkSpace ONE REST API User Password",
+            "description": "WorkSpace ONE REST API User Password.",
         },
         "smart_group_name": {
             "required": False,
@@ -188,10 +194,8 @@ class WorkSpaceOneImporter(Processor):
             ogid = result['LocationGroups'][0]['Id']['Value']
         self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
 
-
         ## Check if app version is already present on WS1 server
-        # TODO: test app lookup to precede upload sections, and make upload and
-        #  SmartGroup assignment conditional on results
+        # TODO: maybe make SmartGroup assignment conditional on results
         try:
             condensed_app_name = app_name.replace(" ", "%20")
             r = requests.get(
@@ -201,21 +205,29 @@ class WorkSpaceOneImporter(Processor):
             for app in search_results["Application"]:
                 if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
                     ws1_app_id = app["Id"]["Value"]
-                    self.output('App ID: %s' % ws1_app_id, verbose_level=2)
-                    self.output("App platform: {}".format(app["Platform"]), verbose_level=3)
+                    self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
+                    self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                     if not self.env.get("force_import").lower() == "true":
                         raise ProcessorError('App [{}] version [{}] is already present on server, '
-                                             'and force_import is not set'.format(app_name, app_version))
+                                             'and force_import is not set.'.format(app_name, app_version))
                     else:
                         self.output(
-                            'App [{}] version [{}] already present on server and force_import is not implemented yet. '
-                            'Workaround: delete manually from WS1 console first.'.format(app_name, app_version))
-                    break
+                            'App [{}] version [{}] already present on server, and force_import==true, attempting to '
+                            'delete on server first.'.format(app_name, app_version))
+                        try:
+                            r = requests.delete('{}/apps/internal/{}'.format(BASEURL, ws1_app_id), headers=headers)
+                        except:
+                            raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
+                        if not r.status_code == 202:
+                            result = r.json()
+                            self.output('App delete result: {}'.format(result), verbose_level=3)
+                            raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
+                        break
         except AttributeError:
             # app not found on WS1 server, so we're fine to proceed with upload
+            # raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
             self.output('App [{}] version [{}] is not yet present on server, will attempt upload'
                         .format(app_name, app_version))
-            # raise ProcessorError('WorkSpaceOneImporter: Unable to retrieve the App ID for the newly created app')
         except:
             raise ProcessorError('Something went wrong checking for pre-existing app version on server')
 
@@ -383,7 +395,14 @@ class WorkSpaceOneImporter(Processor):
         except IOError:
             run_results = []
 
-        something_imported = False
+        munkiimported_new = False
+
+        ## get import_new_only, defaults to True
+        IMPORTNEWONLY = self.env.get(import_new_only).lower()
+        if IMPORTNEWONLY == None:
+            IMPORTNEWONLY = True
+        else:
+            IMPORTNEWONLY = False
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
@@ -402,22 +421,21 @@ class WorkSpaceOneImporter(Processor):
         #                if "MunkiImporter" in item.get("Processor"):
         #                    self.output("We found MunkiImporter")
         #                    if item["Output"]["pkginfo_repo_path"]:
-        #                        something_imported = True
+        #                        munkiimported_new = True
         #                        break
         if pkginfo_path:
-            something_imported = True
+            munkiimported_new = True
 
-        if not something_imported and not self.env.get("force_import"):
+        if not munkiimported_new and not IMPORTNEWONLY:
             self.output(run_results)
             self.output("No updates so nothing to import to WorkSpaceOne")
             self.env["ws1_resultcode"] = 0
             self.env["ws1_stderr"] = ""
-        elif self.env.get("force_import") and not something_imported:
-            # TODO: Find latest pkgs/pkginfos version and icon to upload to WS1 from Munki repo
-            # Look for Munki code where it finds latest pkg, pkginfo
-            # Look for Munki code where it tries to find the icon in the repo
-            # need to delete app from WS1 before upload attempt
-            self.output("Nothing imported in Munki, and processor can\'t lookup latest version for force_import yet")
+        elif not munkiimported_new and not IMPORTNEWONLY:
+            # TODO: Find (latest) pkgs/pkginfos version and icon to upload to WS1 from Munki repo
+            # Look for Munki code where it finds latest pkg, pkginfo, icon in the repo
+            self.output("Nothing new imported into Munki, and processor can\'t find existing version(s) for "
+                        "import_new_only==False yet")
             pass
         else:
             pi = self.env["pkginfo_repo_path"]
