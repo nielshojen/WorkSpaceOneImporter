@@ -445,8 +445,8 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError("Could not read pkg_info file [{}] to check icon_name ".format(pi))
             except:
                 raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pi))
-            if pkg_info["icon_name"] is None:
-                # if empty, look for common icon file with same 'first' name as installer item
+            if "icon_name" in pkg_info:
+                # if key isn't present, look for common icon file with same 'first' name as installer item
                 icon_path = self.env["munki_repo_path"] + "/icons/" + self.env["NAME"] + ".png"
                 self.output("Looking for icon file [{}]".format(icon_path), verbose_level=2)
             else:
