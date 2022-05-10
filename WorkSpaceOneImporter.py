@@ -442,22 +442,23 @@ class WorkSpaceOneImporter(Processor):
                 with open(pi, 'rb') as fp:
                     pkg_info = plistlib.load(fp)
             except IOError:
-                raise ProcessorError("Could not read pkg_info file [{}] to check icon_name ".format(pkg_info))
+                raise ProcessorError("Could not read pkg_info file [{}] to check icon_name ".format(pi))
             except:
-                raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pkg_info))
+                raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pi))
             if pkg_info["icon_name"] is None:
                 # if empty, look for common icon file with same 'first' name as installer item
                 icon_path = self.env["munki_repo_path"] + "/icons/" + self.env["NAME"] + ".png"
                 self.output("Looking for icon file [{}]".format(icon_path), verbose_level=2)
             else:
                 # when icon was specified for this installer version
-                icon_path = self.env["munki_repo_path"] + "/icons/" + pkginfo_path["icon_name"]
+                icon_path = self.env["munki_repo_path"] + "/icons/" + pkg_info["icon_name"]
                 self.output("Icon file for this installer version was specified as [{}]".format(icon_path), verbose_level=2)
-            if icon_path is None or not path.exists(icon_path):
+            # if we can't read or find any icon, proceed with upload regardless
+            if not os.path.exists(icon_path):
                 self.output("Could not read icon file [{}] - skipping.".format(icon_path))
                 icon_path = None
-            # if we can't find any icon, proceed with upload regardless
-            self.output("Could not find any icon file - skipping.")
+            elif icon_path is None:
+                self.output("Could not find any icon file - skipping.")
             self.output(self.ws1_import('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
 
 
