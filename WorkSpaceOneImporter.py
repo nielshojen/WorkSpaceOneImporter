@@ -439,9 +439,12 @@ class WorkSpaceOneImporter(Processor):
             # exists in icon folder in Munki repo, pass first hit to ws1_import()
             icon_path = None
             try:
-                pkg_info = plistlib.load(pi)
+                with open(pi, 'rb') as fp:
+                    pkg_info = plistlib.load(fp)
             except IOError:
-                raise ProcessorError("Could not read pkg_info file to check icon_name [{}]".format(pkg_info))
+                raise ProcessorError("Could not read pkg_info file [{}] to check icon_name ".format(pkg_info))
+            except:
+                raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pkg_info))
             if pkg_info["icon_name"] is None:
                 # if empty, look for common icon file with same 'first' name as installer item
                 icon_path = self.env["munki_repo_path"] + "/icons/" + self.env["NAME"] + ".png"
