@@ -17,9 +17,9 @@ Done:
  * **milestone: get POC working**
  * test new input "ws1_console_url" and code that produces link to imported app
  * get force_import working
+ * add code to find icon file to upload
 
 ToDo:
- * add code to find icon file to upload
  * cleanup code
  * maybe expose more app assignment settings as input vars
  * maybe add ability to update WS1 metadata and assignment settings
