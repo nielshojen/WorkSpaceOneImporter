@@ -23,7 +23,7 @@ ToDo:
  * cleanup code
  * maybe expose more app assignment settings as input vars
  * maybe add ability to update WS1 metadata and assignment settings
- * maybe add ability to use keychain - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)
+ * maybe add ability to use keychain
  * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
  * maybe add ability and input setting whether to upload all versions of a software title
 
@@ -64,13 +64,12 @@ com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter
 ```
 
 ## Sensitive input variables
-The processor requires the following sensitive keys to be populated in your recipe (override) Input variables, or by command line keys. I'm told you can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script).
+The processor currently requires sensitive keys like password and API token to be populated in your recipe (override) Input variables, or by command line keys.
 
-ws1_api_url
+It might be feasible for standalone use to create the ability to use the Keychain to improve security for standalone use.  I took a peek at - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)
 
-api_username
+I'm told you can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script).
 
-api_password
 
 
 ## Available Input Variables

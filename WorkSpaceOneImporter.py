@@ -23,7 +23,6 @@ import base64
 import os.path
 import plistlib
 import requests  # dependency
-import subprocess
 import datetime
 
 from autopkglib import Processor, ProcessorError, get_pref
@@ -178,7 +177,6 @@ class WorkSpaceOneImporter(Processor):
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
         # create baseline headers
-        # USERNAME = USERNAME.replace("\\\\", "\\")   # lose extra backslashes in case username holds quotes ones from old AD-style usernames
         hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
         basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
         self.output('Authorization header: {}'.format(basicauth), verbose_level=4)
@@ -396,6 +394,7 @@ class WorkSpaceOneImporter(Processor):
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
+
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
 
@@ -410,30 +409,17 @@ class WorkSpaceOneImporter(Processor):
 
         munkiimported_new = False
 
+        IMPORTNEWONLY = True
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
         except:
             pkginfo_path = None
 
-        # run_results is an array of autopackager.results,
-        # which is itself an array.
-        # look through all the results for evidence that
-        # something was imported
-        # this could probably be done as an array comprehension
-        # but might be harder to grasp...
-        #        for result in run_results:
-        #            self.output(result)
-        #            for item in result:
-        #                if "MunkiImporter" in item.get("Processor"):
-        #                    self.output("We found MunkiImporter")
-        #                    if item["Output"]["pkginfo_repo_path"]:
-        #                        munkiimported_new = True
-        #                        break
         if pkginfo_path:
             munkiimported_new = True
 
-        if not munkiimported_new and not IMPORTNEWONLY:
+        if not munkiimported_new and IMPORTNEWONLY:
             self.output(run_results)
             self.output("No updates so nothing to import to WorkSpaceOne")
             self.env["ws1_resultcode"] = 0
@@ -448,14 +434,27 @@ class WorkSpaceOneImporter(Processor):
             pi = self.env["pkginfo_repo_path"]
             pkg = self.env["pkg_repo_path"]
 
-            # TODO: Find icon to upload to WS1 from Munki repo
-            # Either look for Munki code where it tries to find the icon in the repo
-            # Or maybe read pkginfo file to find location, check if file exists, and if not see if file with app Name
+            # TODO: test code to find icon and to upload to WS1 from Munki repo
+            # read pkginfo file to find location, if not check if file exists, and if not see if file with app Name
             # exists in icon folder in Munki repo, pass first hit to ws1_import()
             icon_path = None
-            # self.output(self.ws1_import('pkginfo', pi))
-            # self.output(self.ws1_import('pkg', pkg))
-
+            try:
+                pkg_info = plistlib.load(pi)
+            except IOError:
+                raise ProcessorError("Could not read pkg_info file to check icon_name [{}]".format(pkg_info))
+            if pkg_info["icon_name"] is None:
+                # if empty, look for common icon file with same 'first' name as installer item
+                icon_path = self.env["munki_repo_path"] + "/icons/" + self.env["NAME"] + ".png"
+                self.output("Looking for icon file [{}]".format(icon_path), verbose_level=2)
+            else:
+                # when icon was specified for this installer version
+                icon_path = self.env["munki_repo_path"] + "/icons/" + pkginfo_path["icon_name"]
+                self.output("Icon file for this installer version was specified as [{}]".format(icon_path), verbose_level=2)
+            if icon_path is None or not path.exists(icon_path):
+                self.output("Could not read icon file [{}] - skipping.".format(icon_path))
+                icon_path = None
+            # if we can't find any icon, proceed with upload regardless
+            self.output("Could not find any icon file - skipping.")
             self.output(self.ws1_import('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
 
 
