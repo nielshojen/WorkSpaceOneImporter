@@ -193,7 +193,7 @@ class WorkSpaceOneImporter(Processor):
 
         # get OG ID from GROUPID
         try:
-            r = requests.get(BASEURL + '/api/system/groups/search?name=' + GROUPID, headers=headers)
+            r = requests.get(BASEURL + '/api/system/groups/search?groupid=' + GROUPID, headers=headers)
             result = r.json()
         except AttributeError:
             raise ProcessorError(
