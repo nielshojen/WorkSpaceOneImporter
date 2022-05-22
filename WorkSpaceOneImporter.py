@@ -92,6 +92,10 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "description": "This sets the date that the deployment of \
                             the app should begin."
+        },
+        "b64encoded_api_credentials": {
+            "required": False,
+            "description": "Base64 encoded username:password.",
         }
     }
     output_variables = {
@@ -155,6 +159,7 @@ class WorkSpaceOneImporter(Processor):
         PASSWORD = self.env.get("api_password")
         SMARTGROUP = self.env.get("smart_group_name")
         PUSHMODE = self.env.get("push_mode")
+        basicauth = self.env.get("b64encoded_api_credentials")
 
         if not self.is_url(CONSOLEURL):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
@@ -177,8 +182,9 @@ class WorkSpaceOneImporter(Processor):
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
         # create baseline headers
-        hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
-        basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
+        if not basicauth:
+            hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
+            basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
         self.output('Authorization header: {}'.format(basicauth), verbose_level=4)
         headers = {'aw-tenant-code': APITOKEN,
                    'Accept': 'octet-stream',
