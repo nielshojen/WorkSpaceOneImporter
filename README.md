@@ -2,7 +2,8 @@
 WorkSpaceOneImporter is an AutoPkg Processor that can automatically import packages into VMWare WorkSpace ONE, as well as assign them to one or multiple smart groups, and set certain deployment options such as Push Mode.
 Being adapted from [jprichards/AirWatchImporter](https://github.com/jprichards/AirWatchImporter).
 
-## WORK IN PROGRESS
+## WORKING
+Project is now working. You can reach me as @mart in MacAdmins Slack. Issues and PRs welcome in GitHub.
 
 Done:
  * testing API calls involved for WS1 using Postman -> success
@@ -18,11 +19,11 @@ Done:
  * test new input "ws1_console_url" and code that produces link to imported app
  * get force_import working
  * add code to find icon file to upload
+ * merged PR#1 from @SoxIn4 - ability to supply base64 pre-encoded api username and password
 
 ToDo:
  * cleanup code
- * maybe expose more app assignment settings as input vars
- * maybe add ability to update WS1 metadata and assignment settings
+ * maybe expose more app assignment settings details as input vars
  * maybe add ability to use keychain
  * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
  * maybe add ability and input setting whether to upload all versions of a software title
@@ -74,16 +75,24 @@ I'm told you can use a CI/CD tool like Github actions to wrap credentials secure
 
 ## Available Input Variables
 * [`munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/munki_repo_path)
+* [`import_new_only`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/import_new_only)
+* [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
+* [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
 * [`api_token`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_token)
 * [`api_username`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_username)
 * [`api_password`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_password)
-* [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
-* [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
-* [`ws1_groupid`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_groupid)
+* [`b64encoded_api_credentials`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/b64encoded_api_credentials)
 * [`force_import`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/force_import)
-* [`import_new_only`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/import_new_only)
+* [`ws1_groupid`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_groupid)
 * [`smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/smart_group_name)
 * [`push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/push_mode)
+
+<br>
+You can list the custom processor info, including input variables from cli like so:
+
+````
+autopkg processor-info WorkSpaceOneImporter --recipe com.github.codeskipper.WorkSpaceOneImporter
+````
 
 ## Sample Processor
 ```
@@ -94,18 +103,20 @@ I'm told you can use a CI/CD tool like Github actions to wrap credentials secure
 		<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
 		<key>Arguments</key>
 		<dict>
-			<key>api_token</key>
-			<string>API_TOKEN_HERE</string>
-			<key>api_username</key>
-			<string>API_USERNAME_HERE</string>
-			<key>api_password</key>
-			<string>API_PASSWORD_HERE</string>
 			<key>munki_repo_path</key>
 			<string>MUNKI_REPO_PATH_HERE</string>
+			<key>api_token</key>
+			<string>API_TOKEN_HERE</string>
 			<key>ws1_api_url</key>
 			<string>WORKSPACEONE_API_URL_HERE</string>
 			<key>ws1_console_url</key>
 			<string>WORKSPACEONE_CONSOLE_URL_HERE</string>
+			<key>api_username</key>
+			<string>API_USERNAME_HERE</string>
+			<key>api_password</key>
+			<string>API_PASSWORD_HERE</string>
+			<key>b64encoded_api_credentials</key>
+		    <string>Basic QVBJX1VTRVJOQU1FX0hFUkU6QVBJX1BBU1NXT1JEX0hFUkU=</string>
 			<key>ws1_groupid</key>
 			<string>GROUP_ID_HERE</string>
 			<key>smart_group_name</key>

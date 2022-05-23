@@ -40,62 +40,62 @@ class WorkSpaceOneImporter(Processor):
             "required": True,
             "description": "Path to Munki repo.",
         },
-        "force_import": {
-            "required": False,
-            "description":
-                "If \"true\", force import into WS1 if version already exists. Default:false",
-        },
         "import_new_only": {
             "required": False,
             "description":
                 "If \"false\", in case no version was imported into Munki in this session, find latest version in "
-                "munki_repo and import into WS1. Default: true",
+                "munki_repo to import into WS1. Default: true",
         },
         "ws1_api_url": {
             "required": True,
-            "description": "Base url of WorkSpace ONE UEM REST API server \
-                            (eg. https://myorg.awmdm.com)"
+            "description": "Base url of WorkSpace ONE UEM REST API server "
+                           "(eg. https://myorg.awmdm.com)"
         },
         "ws1_console_url": {
             "required": False,
-            "description": "Base url of WorkSpace ONE UEM Console server for easy result lookup \
-                            (eg. https://admin-mobile.myorg.com)"
+            "description": "Base url of WorkSpace ONE UEM Console server for easy result lookup "
+                           "(eg. https://admin-mobile.myorg.com)"
         },
         "ws1_groupid": {
             "required": True,
-            "description": "Group ID of WorkSpace ONE Organization Group \
-                            where files should be uploaded."
+            "description": "Group ID of WorkSpace ONE Organization Group "
+                           "where files should be uploaded."
         },
         "api_token": {
             "required": True,
             "description": "WorkSpace ONE REST API Token.",
         },
         "api_username": {
-            "required": True,
-            "description": "WorkSpace ONE REST API Username.",
+            "required": False,
+            "description": "WorkSpace ONE REST API Username. Either api_username and api_password or "
+                           "b64encoded_api_credentials are required",
         },
         "api_password": {
-            "required": True,
-            "description": "WorkSpace ONE REST API User Password.",
-        },
-        "smart_group_name": {
             "required": False,
-            "description": "The name of the group that the app should \
-                            be assigned to."
-        },
-        "push_mode": {
-            "required": False,
-            "description": "Tells WorkSpace ONE how to deploy the app, Auto \
-                            or On-Demand."
-        },
-        "deployment_date": {
-            "required": False,
-            "description": "This sets the date that the deployment of \
-                            the app should begin."
+            "description": "WorkSpace ONE REST API User Password. Either api_username and api_password or "
+                           "b64encoded_api_credentials are required",
         },
         "b64encoded_api_credentials": {
             "required": False,
-            "description": "Base64 encoded username:password.",
+            "description": "\"Basic \" + Base64 encoded username:password. Either api_username and api_password or "
+                           "b64encoded_api_credentials are required",
+        },
+        "force_import": {
+            "required": False,
+            "description":
+                "If \"true\", force import into WS1 if version already exists. Default:false",
+        },
+        "smart_group_name": {
+            "required": False,
+            "description": "The name of the group that the app should be assigned to."
+        },
+        "push_mode": {
+            "required": False,
+            "description": "Tells WorkSpace ONE how to deploy the app, Auto or On-Demand."
+        },
+        "deployment_date": {
+            "required": False,
+            "description": "This sets the date that the deployment of the app should begin."
         }
     }
     output_variables = {
@@ -159,7 +159,7 @@ class WorkSpaceOneImporter(Processor):
         PASSWORD = self.env.get("api_password")
         SMARTGROUP = self.env.get("smart_group_name")
         PUSHMODE = self.env.get("push_mode")
-        basicauth = self.env.get("b64encoded_api_credentials")
+        BASICAUTH = self.env.get("b64encoded_api_credentials")
 
         if not self.is_url(CONSOLEURL):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
@@ -182,7 +182,11 @@ class WorkSpaceOneImporter(Processor):
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
         # create baseline headers
-        if not basicauth:
+        if BASICAUTH:  # if specified, take precedence over USERNAME and PASSWORD
+            basicauth = BASICAUTH
+            self.output('b64encoded_api_credentials found and used for authorization header instead of '
+                        'api_username and api_password', verbose_level=2)
+        else:  # if NOT specified, use USERNAME and PASSWORD
             hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
             basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
         self.output('Authorization header: {}'.format(basicauth), verbose_level=4)
@@ -231,7 +235,8 @@ class WorkSpaceOneImporter(Processor):
                                 'App [{}] version [{}] already present on server, and force_import==true, attempting to '
                                 'delete on server first.'.format(app_name, app_version))
                             try:
-                                r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id), headers=headers)
+                                r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                                                    headers=headers)
                             except:
                                 raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
                             if not r.status_code == 202 and not r.status_code == 204:
@@ -400,7 +405,6 @@ class WorkSpaceOneImporter(Processor):
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
-
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
 
@@ -456,7 +460,8 @@ class WorkSpaceOneImporter(Processor):
             else:
                 # when icon was specified for this installer version
                 icon_path = self.env["munki_repo_path"] + "/icons/" + pkg_info["icon_name"]
-                self.output("Icon file for this installer version was specified as [{}]".format(icon_path), verbose_level=1)
+                self.output("Icon file for this installer version was specified as [{}]".format(icon_path),
+                            verbose_level=1)
             # if we can't read or find any icon, proceed with upload regardless
             if not os.path.exists(icon_path):
                 self.output("Could not read icon file [{}] - skipping.".format(icon_path))
