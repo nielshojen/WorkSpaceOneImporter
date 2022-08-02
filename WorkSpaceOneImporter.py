@@ -163,17 +163,19 @@ class WorkSpaceOneImporter(Processor):
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
+            self.output('Ignoring standard placeholder value supplied for b64encoded_api_credentials, setting default '
+                        'value of None', verbose_level=2)
             BASICAUTH = None
 
         if not self.is_url(CONSOLEURL):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
-                        .format(CONSOLEURL), verbose_level=4)
+                        .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
         ## get import_new_only, defaults to True
         if self.env.get("import_new_only") is None:
             self.output('No value supplied for import_new_only, setting default value of'
-                        ': true', verbose_level=3)
+                        ': true', verbose_level=2)
             IMPORTNEWONLY = True
         else:
             if self.env.get("import_new_only").lower() == 'false':
