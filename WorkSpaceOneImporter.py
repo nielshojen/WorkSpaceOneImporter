@@ -49,17 +49,17 @@ class WorkSpaceOneImporter(Processor):
         "ws1_api_url": {
             "required": True,
             "description": "Base url of WorkSpace ONE UEM REST API server "
-                           "(eg. https://myorg.awmdm.com)"
+                           "(eg. https://myorg.awmdm.com)",
         },
         "ws1_console_url": {
             "required": False,
             "description": "Base url of WorkSpace ONE UEM Console server for easy result lookup "
-                           "(eg. https://admin-mobile.myorg.com)"
+                           "(eg. https://admin-mobile.myorg.com)",
         },
         "ws1_groupid": {
             "required": True,
             "description": "Group ID of WorkSpace ONE Organization Group "
-                           "where files should be uploaded."
+                           "where files should be uploaded.",
         },
         "api_token": {
             "required": True,
@@ -87,15 +87,15 @@ class WorkSpaceOneImporter(Processor):
         },
         "smart_group_name": {
             "required": False,
-            "description": "The name of the group that the app should be assigned to."
+            "description": "The name of the group that the app should be assigned to.",
         },
         "push_mode": {
             "required": False,
-            "description": "Tells WorkSpace ONE how to deploy the app, Auto or On-Demand."
+            "description": "Tells WorkSpace ONE how to deploy the app, Auto or On-Demand.",
         },
         "deployment_date": {
             "required": False,
-            "description": "This sets the date that the deployment of the app should begin."
+            "description": "This sets the date that the deployment of the app should begin.",
         }
     }
     output_variables = {
@@ -160,6 +160,10 @@ class WorkSpaceOneImporter(Processor):
         SMARTGROUP = self.env.get("smart_group_name")
         PUSHMODE = self.env.get("push_mode")
         BASICAUTH = self.env.get("b64encoded_api_credentials")
+
+        # if placeholder value is set, ignore and set to None
+        if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
+            BASICAUTH = None
 
         if not self.is_url(CONSOLEURL):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
