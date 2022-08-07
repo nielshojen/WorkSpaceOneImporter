@@ -36,11 +36,11 @@ __all__ = ["WorkSpaceOneImporter"]
 class WorkSpaceOneImporter(Processor):
     """Uploads apps from Munki repo to WorkSpace ONE"""
     input_variables = {
-        "munki_repo_path": {
-            "required": True,
-            "description": "Path to Munki repo.",
-        },
-        "import_new_only": {
+        #"ws1_munki_repo_path": {
+        #    "required": False,
+        #    "description": "Path to Munki repo, if not provided, defaults to environment setting from Munki",
+        #},
+        "ws1_import_new_only": {
             "required": False,
             "description":
                 "If \"false\", in case no version was imported into Munki in this session, find latest version in "
@@ -61,39 +61,39 @@ class WorkSpaceOneImporter(Processor):
             "description": "Group ID of WorkSpace ONE Organization Group "
                            "where files should be uploaded.",
         },
-        "api_token": {
+        "ws1_api_token": {
             "required": True,
             "description": "WorkSpace ONE REST API Token.",
         },
-        "api_username": {
+        "ws1_api_username": {
             "required": False,
             "description": "WorkSpace ONE REST API Username. Either api_username and api_password or "
                            "b64encoded_api_credentials are required",
         },
-        "api_password": {
+        "ws1_api_password": {
             "required": False,
             "description": "WorkSpace ONE REST API User Password. Either api_username and api_password or "
                            "b64encoded_api_credentials are required",
         },
-        "b64encoded_api_credentials": {
+        "ws1_b64encoded_api_credentials": {
             "required": False,
             "description": "\"Basic \" + Base64 encoded username:password. Either api_username and api_password or "
                            "b64encoded_api_credentials are required",
         },
-        "force_import": {
+        "ws1_force_import": {
             "required": False,
             "description":
                 "If \"true\", force import into WS1 if version already exists. Default:false",
         },
-        "smart_group_name": {
+        "ws1_smart_group_name": {
             "required": False,
             "description": "The name of the group that the app should be assigned to.",
         },
-        "push_mode": {
+        "ws1_push_mode": {
             "required": False,
             "description": "Tells WorkSpace ONE how to deploy the app, Auto or On-Demand.",
         },
-        "deployment_date": {
+        "ws1_deployment_date": {
             "required": False,
             "description": "This sets the date that the deployment of the app should begin.",
         }
@@ -154,12 +154,12 @@ class WorkSpaceOneImporter(Processor):
         BASEURL = self.env.get("ws1_api_url")
         CONSOLEURL = self.env.get("ws1_console_url")
         GROUPID = self.env.get("ws1_groupid")
-        APITOKEN = self.env.get("api_token")
-        USERNAME = self.env.get("api_username")
-        PASSWORD = self.env.get("api_password")
-        SMARTGROUP = self.env.get("smart_group_name")
-        PUSHMODE = self.env.get("push_mode")
-        BASICAUTH = self.env.get("b64encoded_api_credentials")
+        APITOKEN = self.env.get("ws1_api_token")
+        USERNAME = self.env.get("ws1_api_username")
+        PASSWORD = self.env.get("ws1_api_password")
+        SMARTGROUP = self.env.get("ws1_smart_group_name")
+        PUSHMODE = self.env.get("ws1_push_mode")
+        BASICAUTH = self.env.get("ws1_b64encoded_api_credentials")
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
@@ -172,13 +172,13 @@ class WorkSpaceOneImporter(Processor):
                         .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
-        ## get import_new_only, defaults to True
-        if self.env.get("import_new_only") is None:
-            self.output('No value supplied for import_new_only, setting default value of'
+        ## get ws1_import_new_only, defaults to True
+        if self.env.get("ws1_import_new_only") is None:
+            self.output('No value supplied for ws1_import_new_only, setting default value of'
                         ': true', verbose_level=2)
             IMPORTNEWONLY = True
         else:
-            if self.env.get("import_new_only").lower() == 'false':
+            if self.env.get("ws1_import_new_only").lower() == 'false':
                 IMPORTNEWONLY = False
             else:
                 IMPORTNEWONLY = True
@@ -444,7 +444,7 @@ class WorkSpaceOneImporter(Processor):
             # TODO: Find (latest) pkgs/pkginfos version and icon to upload to WS1 from Munki repo
             # Look for Munki code where it finds latest pkg, pkginfo, icon in the repo
             self.output("Nothing new imported into Munki, and processor can\'t find existing version(s) for "
-                        "import_new_only==False yet")
+                        "ws1_import_new_only==False yet")
             pass
         else:
             pi = self.env["pkginfo_repo_path"]
@@ -461,11 +461,13 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pi))
             if "icon_name" not in pkg_info:
                 # if key isn't present, look for common icon file with same 'first' name as installer item
-                icon_path = self.env["munki_repo_path"] + "/icons/" + self.env["NAME"] + ".png"
+                #icon_path = self.env["munki_repo_path"] + "/icons/" + self.env["NAME"] + ".png"
+                icon_path = self.env["MUNKI_REPO"] + "/icons/" + self.env["NAME"] + ".png"
                 self.output("Looking for icon file [{}]".format(icon_path), verbose_level=1)
             else:
                 # when icon was specified for this installer version
-                icon_path = self.env["munki_repo_path"] + "/icons/" + pkg_info["icon_name"]
+                #icon_path = self.env["munki_repo_path"] + "/icons/" + pkg_info["icon_name"]
+                icon_path = self.env["MUNKI_REPO"] + "/icons/" + pkg_info["icon_name"]
                 self.output("Icon file for this installer version was specified as [{}]".format(icon_path),
                             verbose_level=1)
             # if we can't read or find any icon, proceed with upload regardless
