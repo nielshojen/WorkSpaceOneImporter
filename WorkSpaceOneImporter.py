@@ -160,6 +160,10 @@ class WorkSpaceOneImporter(Processor):
         SMARTGROUP = self.env.get("ws1_smart_group_name")
         PUSHMODE = self.env.get("ws1_push_mode")
         BASICAUTH = self.env.get("ws1_b64encoded_api_credentials")
+        force_import = self.env.get("ws1_force_import")
+
+        if force_import is None:
+            force_import = "False"
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
@@ -233,7 +237,8 @@ class WorkSpaceOneImporter(Processor):
                         ws1_app_id = app["Id"]["Value"]
                         self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
-                        if not self.env.get("ws1_force_import").lower() == "true":
+                        # if not self.env.get("ws1_force_import").lower() == "true":
+                        if not force_import.lower() == "true":
                             raise ProcessorError('App [{}] version [{}] is already present on server, '
                                                  'and ws1_force_import is not set.'.format(app_name, app_version))
                         else:
