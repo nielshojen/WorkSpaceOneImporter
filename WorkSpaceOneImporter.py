@@ -233,7 +233,8 @@ class WorkSpaceOneImporter(Processor):
             if r.status_code == 200:
                 search_results = r.json()
                 for app in search_results["Application"]:
-                    if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
+                    #if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
+                    if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
                         ws1_app_id = app["Id"]["Value"]
                         self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
