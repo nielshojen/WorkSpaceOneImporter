@@ -69,7 +69,8 @@ The processor currently requires sensitive keys like password and API token to b
 
 It might be feasible for standalone use to create the ability to use the Keychain to improve security for standalone use.  I took a peek at - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)
 
-I'm told you can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script).
+### best with CI/CD
+You can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script). I'm in the process of setting this up and adapting from [the example provided by Gusto](https://engineering.gusto.com/running-autopkg-in-github-actions/). I intend to share the setup when I've got it stable enough for production.
 
 
 
