@@ -74,18 +74,25 @@ I'm told you can use a CI/CD tool like Github actions to wrap credentials secure
 
 
 ## Available Input Variables
-* [`munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/munki_repo_path)
-* [`import_new_only`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/import_new_only)
+
+### All start with "ws1_" now
+When working to setup CI/CD with this processor, it became clear consistent naming for input variables will make reading logs etc. much easier. Sorry if this breaks anybodies recipies, it should be easy to fix by adding the new prefix to the variables that don't have it yet.
+
 * [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
 * [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
-* [`api_token`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_token)
-* [`api_username`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_username)
-* [`api_password`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/api_password)
-* [`b64encoded_api_credentials`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/b64encoded_api_credentials)
-* [`force_import`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/force_import)
+* [`ws1_api_token`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_token)
+* [`ws1_api_username`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_username)
+* [`ws1_api_password`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_password)
+* [`ws1_b64encoded_api_credentials`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_b64encoded_api_credentials)
+* [`ws1_force_import`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_force_import)
+* [`ws1_import_new_only`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_import_new_only)
 * [`ws1_groupid`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_groupid)
-* [`smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/smart_group_name)
-* [`push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/push_mode)
+* [`ws1_smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_smart_group_name)
+* [`ws1_push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_push_mode)
+
+### Input variables being deprecated
+* [`ws1_munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_munki_repo_path)
+MUNKI_REPO setting from Autopkg can be used, no need for separate input variable.
 
 <br>
 You can list the custom processor info, including input variables from cli like so:
@@ -103,25 +110,25 @@ autopkg processor-info WorkSpaceOneImporter --recipe com.github.codeskipper.Work
 		<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
 		<key>Arguments</key>
 		<dict>
-			<key>munki_repo_path</key>
+			<key>ws1_munki_repo_path</key>
 			<string>MUNKI_REPO_PATH_HERE</string>
-			<key>api_token</key>
+			<key>ws1_api_token</key>
 			<string>API_TOKEN_HERE</string>
 			<key>ws1_api_url</key>
 			<string>WORKSPACEONE_API_URL_HERE</string>
 			<key>ws1_console_url</key>
 			<string>WORKSPACEONE_CONSOLE_URL_HERE</string>
-			<key>api_username</key>
+			<key>ws1_api_username</key>
 			<string>API_USERNAME_HERE</string>
-			<key>api_password</key>
+			<key>ws1_api_password</key>
 			<string>API_PASSWORD_HERE</string>
-			<key>b64encoded_api_credentials</key>
+			<key>ws1_b64encoded_api_credentials</key>
 		    <string>Basic QVBJX1VTRVJOQU1FX0hFUkU6QVBJX1BBU1NXT1JEX0hFUkU=</string>
 			<key>ws1_groupid</key>
 			<string>GROUP_ID_HERE</string>
-			<key>smart_group_name</key>
+			<key>ws1_smart_group_name</key>
 			<string>SMART_GROUP_NAME</string>
-			<key>push_mode</key>
+			<key>ws1_push_mode</key>
 			<string>PUSH_MODE, Auto or On-Demand</string>
 		</dict>
 	</dict>
@@ -144,13 +151,13 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 	<string>com.github.codeskipper.ws1.SuspiciousPackage</string>
 	<key>Input</key>
 	<dict>
-		<key>API_TOKEN</key>
+		<key>WS1_API_TOKEN</key>
 		<string>API_TOKEN_HERE</string>
-		<key>API_USERNAME</key>
+		<key>WS1_API_USERNAME</key>
 		<string>API_USERNAME_HERE</string>
-		<key>API_PASSWORD</key>
+		<key>WS1_API_PASSWORD</key>
 		<string>API_PASSWORD_HERE</string>
-		<key>MUNKI_REPO_PATH</key>
+		<key>WS1_MUNKI_REPO_PATH</key>
 		<string>MUNKI_REPO_PATH_HERE</string>
 		<key>WS1_API_URL</key>
 		<string>WORKSPACEONE_API_URL_HERE</string>
@@ -158,9 +165,9 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 		<string>WORKSPACEONE_CONSOLE_URL_HERE</string>
 		<key>WS1_GROUPID</key>
 		<string>GROUP_ID_HERE</string>
-		<key>SMART_GROUP_NAME</key>
-		<string>SMART_GROUP_NAME</string>
-		<key>PUSH_MODE</key>
+		<key>WS1_SMART_GROUP_NAME</key>
+		<string>SMART_GROUP_NAME_HERE</string>
+		<key>WS1_PUSH_MODE</key>
 		<string>PUSH_MODE</string>
 	</dict>
 	<key>ParentRecipe</key>
@@ -174,38 +181,44 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 			<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
 			<key>Arguments</key>
 			<dict>
-				<key>munki_repo_path</key>
-				<string>%MUNKI_REPO_PATH%</string>
-				<key>api_token</key>
-				<string>%API_TOKEN%</string>
-				<key>api_username</key>
-				<string>%API_USERNAME%</string>
-				<key>api_password</key>
-				<string>%API_PASSWORD%</string>
+				<key>ws1_munki_repo_path</key>
+				<string>%WS1_MUNKI_REPO_PATH%</string>
+				<key>ws1_api_token</key>
+				<string>%WS1_API_TOKEN%</string>
+				<key>ws1_api_username</key>
+				<string>%WS1_API_USERNAME%</string>
+				<key>ws1_api_password</key>
+				<string>%WS1_API_PASSWORD%</string>
 				<key>ws1_api_url</key>
 				<string>%WS1_API_URL%</string>
 				<key>ws1_groupid</key>
 				<string>%WS1_GROUPID%</string>
 				<key>ws1_console_url</key>
 				<string>%WS1_CONSOLE_URL%</string>
-				<key>smart_group_name</key>
-				<string>%SMART_GROUP_NAME%</string>
-				<key>push_mode</key>
-				<string>%PUSH_MODE%</string>
+				<key>ws1_smart_group_name</key>
+				<string>%WS1_SMART_GROUP_NAME%</string>
+				<key>ws1_push_mode</key>
+				<string>%WS1_PUSH_MODE%</string>
 			</dict>
 		</dict>
 	</array>
 </dict>
 </plist>
 ```
+
+### yaml format preferred
+More recipes for this processor are available in [my recipe repo](https://github.com/codeskipper/autopkg-recipes) and those are in yaml format as that is easier to use.
 ___
-<br/>Create a recipe override first:<br/>
+Create a recipe override first:
 ```autopkg make-override SuspiciousPackage.ws1.recipe```
 
-<br/>Edit it for settings to fit your environment<br/>
-```open -a bbedit SuspiciousPackage.ws1.recipe```
+Again yaml format is easier to deal with, especially if you leave only the input variables you need to override and strip away the rest.
+```autopkg make-override --format=yaml SuspiciousPackage.ws1.recipe.yaml```
 
-<br/>Test like this, and beware: verbose level 4 will show your password etc in plaintext on screen
+<br/>Edit it for settings to fit your environment<br/>
+```open -a bbedit SuspiciousPackage.ws1.recipe.yaml```
+
+<br/>Test like this, but be aware: verbose level > 2 will show your password etc. in plaintext on screen
 ````
 autopkg run -vvvv --key force_munkiimport=true --key force_import=false SuspiciousPackage.ws1.recipe
 ````

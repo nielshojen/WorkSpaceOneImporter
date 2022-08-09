@@ -233,22 +233,22 @@ class WorkSpaceOneImporter(Processor):
                         ws1_app_id = app["Id"]["Value"]
                         self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
-                        if not self.env.get("force_import").lower() == "true":
+                        if not self.env.get("ws1_force_import").lower() == "true":
                             raise ProcessorError('App [{}] version [{}] is already present on server, '
-                                                 'and force_import is not set.'.format(app_name, app_version))
+                                                 'and ws1_force_import is not set.'.format(app_name, app_version))
                         else:
                             self.output(
-                                'App [{}] version [{}] already present on server, and force_import==true, attempting to '
+                                'App [{}] version [{}] already present on server, and ws1_force_import==true, attempting to '
                                 'delete on server first.'.format(app_name, app_version))
                             try:
                                 r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
                                                     headers=headers)
                             except:
-                                raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
+                                raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
                             if not r.status_code == 202 and not r.status_code == 204:
                                 result = r.json()
                                 self.output('App delete result: {}'.format(result), verbose_level=3)
-                                raise ProcessorError('force_import - delete of pre-existing app failed, aborting.')
+                                raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
                             self.output('Pre-existing App [ID: {}] now successfully deleted'.format(ws1_app_id))
                             break
             elif r.status_code == 204:
