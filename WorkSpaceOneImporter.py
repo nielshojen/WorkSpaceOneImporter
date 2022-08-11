@@ -240,8 +240,11 @@ class WorkSpaceOneImporter(Processor):
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                         # if not self.env.get("ws1_force_import").lower() == "true":
                         if not force_import.lower() == "true":
-                            raise ProcessorError('App [{}] version [{}] is already present on server, '
-                                                 'and ws1_force_import is not set.'.format(app_name, app_version))
+                            #raise ProcessorError('App [{}] version [{}] is already present on server, '
+                            #                     'and ws1_force_import is not set.'.format(app_name, app_version))
+                            self.output('App [{}] version [{}] is already present on server, '
+                                        'and ws1_force_import is not set.'.format(app_name, app_version))
+                            return "Nothing new to upload - completed."
                         else:
                             self.output(
                                 'App [{}] version [{}] already present on server, and ws1_force_import==true, attempting to '
