@@ -63,22 +63,36 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_api_token": {
             "required": True,
-            "description": "WorkSpace ONE REST API Token.",
+            "description": "WorkSpace ONE REST API Token. Needed for Basic authentication.",
         },
         "ws1_api_username": {
             "required": False,
             "description": "WorkSpace ONE REST API Username. Either api_username and api_password or "
-                           "b64encoded_api_credentials are required",
+                            "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_api_password": {
             "required": False,
             "description": "WorkSpace ONE REST API User Password. Either api_username and api_password or "
-                           "b64encoded_api_credentials are required",
+                           "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_b64encoded_api_credentials": {
             "required": False,
             "description": "\"Basic \" + Base64 encoded username:password. Either api_username and api_password or "
-                           "b64encoded_api_credentials are required",
+                           "b64encoded_api_credentials are required for Basic authentication.",
+        },
+        "ws1_oauth_client_id": {
+            "required": False,
+            "description": "Client ID for Oauth authorization - a more secure and recommended replacement for Basic "
+                           "authentication.",
+        },
+        "ws1_oauth_client_secret": {
+            "required": False,
+            "description": "Client Secret for Oauth authorization - a more secure and recommended replacement for "
+                            "Basic authentication.",
+        },
+        "ws1_oauth_token_url": {
+            "required": False,
+            "description": "Access Token renewal service URL for Oauth 2.0 authorization.",
         },
         "ws1_force_import": {
             "required": False,
@@ -148,6 +162,28 @@ class WorkSpaceOneImporter(Processor):
         except ValueError:
             return False
 
+    def get_oauth_token(self, oauth_client_id, oauth_client_secret, oauth_token_url):
+        request_body = {"grant_type": "client_credentials",
+                        "client_id": oauth_client_id,
+                        "client_secret": oauth_client_secret
+                        }
+        try:
+            r = requests.post(oauth_token_url, data=request_body)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            raise ProcessorError(f'WorkSpaceOneImporter: Oauth token server response code: {err}')
+        except requests.exceptions.RequestException as e:
+            raise ProcessorError(f'WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}')
+        result = r.json()
+        return result['access_token']
+
+    def get_oauth_headers(self, oauth_client_id, oauth_client_secret, oauth_token_url):
+        oauth_token = self.get_oauth_token(oauth_client_id, oauth_client_secret, oauth_token_url)
+        headers = {"Authorization": f"Bearer {oauth_token}",
+                   "Accept": "application/json",
+                   "Content-Type": "application/json"}
+        return headers
+
     def ws1_import(self, pkg, pkg_path, pkg_info, pkg_info_path, icon, icon_path):
         self.output(
             "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])  ## Add name of app being imported
@@ -160,6 +196,9 @@ class WorkSpaceOneImporter(Processor):
         SMARTGROUP = self.env.get("ws1_smart_group_name")
         PUSHMODE = self.env.get("ws1_push_mode")
         BASICAUTH = self.env.get("ws1_b64encoded_api_credentials")
+        oauth_client_id = self.env.get("ws1_oauth_client_id")
+        oauth_client_secret = self.env.get("ws1_oauth_client_secret")
+        oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import")
 
         if force_import is None:
@@ -176,7 +215,7 @@ class WorkSpaceOneImporter(Processor):
                         .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
-        ## get ws1_import_new_only, defaults to True
+        # get ws1_import_new_only, defaults to True
         if self.env.get("ws1_import_new_only") is None:
             self.output('No value supplied for ws1_import_new_only, setting default value of'
                         ': true', verbose_level=2)
@@ -187,38 +226,42 @@ class WorkSpaceOneImporter(Processor):
             else:
                 IMPORTNEWONLY = True
 
-        ## Get some global variables for later use
+        # Get some global variables for later use
         app_version = self.env["munki_importer_summary_result"]["data"]["version"]
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
-        # create baseline headers
-        if BASICAUTH:  # if specified, take precedence over USERNAME and PASSWORD
-            basicauth = BASICAUTH
-            self.output('b64encoded_api_credentials found and used for authorization header instead of '
-                        'api_username and api_password', verbose_level=2)
-        else:  # if NOT specified, use USERNAME and PASSWORD
-            hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
-            basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
-        self.output('Authorization header: {}'.format(basicauth), verbose_level=4)
-        headers = {'aw-tenant-code': APITOKEN,
-                   'Accept': 'octet-stream',
-                   'Content-Type': 'application/json',
-                   'authorization': basicauth}
+        # take care of headers for authorization
+        if self.is_url(oauth_token_url) and oauth_client_id and oauth_client_secret:
+            self.output('Oauth client credentials were supplied, proceeding to use these.')
+            headers = self.get_oauth_headers(oauth_client_id, oauth_client_secret, oauth_token_url)
+        else:
+            # create baseline headers
+            if BASICAUTH:  # if specified, take precedence over USERNAME and PASSWORD
+                basicauth = BASICAUTH
+                self.output('b64encoded_api_credentials found and used for Basic authorization header instead of '
+                            'api_username and api_password', verbose_level=1)
+            else:  # if NOT specified, use USERNAME and PASSWORD
+                hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
+                basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
+            self.output('Authorization header: {}'.format(basicauth), verbose_level=3)
+            headers = {'aw-tenant-code': APITOKEN,
+                       'Accept': 'application/json',
+                       'Content-Type': 'application/json',
+                       'authorization': basicauth}
 
         # get OG ID from GROUPID
         try:
             r = requests.get(BASEURL + '/api/system/groups/search?name=' + GROUPID, headers=headers)
             result = r.json()
+            r.raise_for_status()
         except AttributeError:
             raise ProcessorError(
-                'WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational Group specified: %s' % GROUPID)
-        except:
-            raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
-
-        if not r.status_code == 200:
-            self.output('Organisation group ID Search result: {}'.format(result), verbose_level=3)
-            raise ProcessorError('WorkSpaceOneImporter: Something went wrong when making the OG ID API call.')
-
+                f'WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational Group specified: {GROUPID}')
+        except requests.exceptions.HTTPError as err:
+            raise ProcessorError(
+                f'WorkSpaceOneImporter: Server responded with error when making the OG ID API call: {err}')
+        except requests.exceptions.RequestException as e:
+            ProcessorError(f'WorkSpaceOneImporter: Error making the OG ID API call: {e}')
         if GROUPID in result['LocationGroups'][0]['GroupId']:
             ogid = result['LocationGroups'][0]['Id']['Value']
         self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
@@ -234,7 +277,8 @@ class WorkSpaceOneImporter(Processor):
                 search_results = r.json()
                 for app in search_results["Application"]:
                     #if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
-                    if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
+                    if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and \
+                            app['ApplicationName'] in app_name:
                         ws1_app_id = app["Id"]["Value"]
                         self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
@@ -318,10 +362,10 @@ class WorkSpaceOneImporter(Processor):
         else:
             icon_id = ''
 
-        ## We need to reset the headers back to JSON
-        headers = {'aw-tenant-code': APITOKEN,
-                   'authorization': basicauth,
-                   'Content-Type': 'application/json'}
+        # We need to reset the headers back to JSON
+        #headers = {'aw-tenant-code': APITOKEN,
+        #           'authorization': basicauth,
+        #           'Content-Type': 'application/json'}
 
         ## Create a dict with the app details to be passed to WS1
         ## to create the App object
