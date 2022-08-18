@@ -82,12 +82,12 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_oauth_client_id": {
             "required": False,
-            "description": "Client ID for Oauth authorization - a more secure and recommended replacement for Basic "
+            "description": "Client ID for Oauth 2.0 authorization - a more secure and recommended replacement for Basic "
                            "authentication.",
         },
         "ws1_oauth_client_secret": {
             "required": False,
-            "description": "Client Secret for Oauth authorization - a more secure and recommended replacement for "
+            "description": "Client Secret for Oauth 2.0 authorization - a more secure and recommended replacement for "
                             "Basic authentication.",
         },
         "ws1_oauth_token_url": {

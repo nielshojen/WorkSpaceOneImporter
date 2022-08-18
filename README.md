@@ -20,6 +20,7 @@ Done:
  * get force_import working
  * add code to find icon file to upload
  * merged PR#1 from @SoxIn4 - ability to supply base64 pre-encoded api username and password
+ * added support for Oauth
 
 ToDo:
  * cleanup code
@@ -67,7 +68,7 @@ com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter
 ## Sensitive input variables
 The processor currently requires sensitive keys like password and API token to be populated in your recipe (override) Input variables, or by command line keys.
 
-It might be feasible for standalone use to create the ability to use the Keychain to improve security for standalone use.  I took a peek at - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended)
+Instead of keeping secrets in plain text recipe override files, they can be added to a macOS keychain. I took a peek at - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended) and now have a working launcher script I'll share when I can  - it's currently in a private repo for GitHub CI as described below.
 
 ### best with CI/CD
 You can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script). I'm in the process of setting this up and adapting from [the example provided by Gusto](https://engineering.gusto.com/running-autopkg-in-github-actions/). I intend to share the setup when I've got it stable enough for production.
@@ -81,6 +82,9 @@ When working to setup CI/CD with this processor, it became clear consistent nami
 
 * [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
 * [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
+* [`ws1_oauth_client_id`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_oauth_client_id)
+* [`ws1_oauth_client_secret`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_oauth_client_secret)
+* [`ws1_oauth_token_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_oauth_token_url)
 * [`ws1_api_token`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_token)
 * [`ws1_api_username`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_username)
 * [`ws1_api_password`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_password)
@@ -95,7 +99,7 @@ When working to setup CI/CD with this processor, it became clear consistent nami
 * [`ws1_munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_munki_repo_path)
 MUNKI_REPO setting from Autopkg can be used, no need for separate input variable.
 
-<br>
+### List available input variables
 You can list the custom processor info, including input variables from cli like so:
 
 ````
