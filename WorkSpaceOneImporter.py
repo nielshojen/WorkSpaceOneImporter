@@ -62,7 +62,7 @@ class WorkSpaceOneImporter(Processor):
                            "where files should be uploaded.",
         },
         "ws1_api_token": {
-            "required": True,
+            "required": False,
             "description": "WorkSpace ONE REST API Token. Needed for Basic authentication.",
         },
         "ws1_api_username": {
