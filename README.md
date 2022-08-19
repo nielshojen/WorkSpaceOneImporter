@@ -68,7 +68,7 @@ com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter
 ## Sensitive input variables
 The processor currently requires sensitive keys like password and API token to be populated in your recipe (override) Input variables, or by command line keys.
 
-Instead of keeping secrets in plain text recipe override files, they can be added to a macOS keychain. I took a peek at - [something like this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended) and now have a working launcher script I'll share when I can  - it's currently in a private repo for GitHub CI as described below.
+Instead of keeping secrets in plain text recipe override files, they can be added to a macOS keychain. I took a peek at - [this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended) and now have a working launcher shell script for a Python wrapper, and I'll share when I can  - it's currently in a private repo for GitHub CI as described below.
 
 ### best with CI/CD
 You can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script). I'm in the process of setting this up and adapting from [the example provided by Gusto](https://engineering.gusto.com/running-autopkg-in-github-actions/). I intend to share the setup when I've got it stable enough for production.
@@ -78,7 +78,13 @@ You can use a CI/CD tool like Github actions to wrap credentials securely as sec
 ## Available Input Variables
 
 ### All start with "ws1_" now
-When working to setup CI/CD with this processor, it became clear consistent naming for input variables will make reading logs etc. much easier. Sorry if this breaks anybodies recipies, it should be easy to fix by adding the new prefix to the variables that don't have it yet.
+When working to set up GitHub CI with this processor, it became clear consistent naming for input variables will make reading logs etc. much easier. Sorry if this breaks anybodies recipes, it should be easy to fix by adding the new prefix to the variables that don't have it yet.
+
+### Choose your input vars
+You'll need to specify credentials for either Oauth or Basic authentication.
+<br><br>`ws1_force_import` and `ws1_import_new_only` are intended for troubleshooting (new) recipes.
+
+`ws1_console_url` is there as a convenience, so you can get a direct link to a newly imported package in the WS1 console.
 
 * [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
 * [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
