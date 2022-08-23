@@ -231,6 +231,10 @@ class WorkSpaceOneImporter(Processor):
         app_version = self.env["munki_importer_summary_result"]["data"]["version"]
         app_name = self.env["munki_importer_summary_result"]["data"]["name"]
 
+        # Init the MacSesh so we can use the trusted certs in macOS Keychains to verify SSL.
+        # Needed especially in networks with local proxy and custom certificates.
+        macsesh.inject_into_requests()
+
         # take care of headers for authorization
         if self.is_url(oauth_token_url) and oauth_client_id and oauth_client_secret:
             self.output('Oauth client credentials were supplied, proceeding to use these.')
@@ -252,7 +256,6 @@ class WorkSpaceOneImporter(Processor):
 
         # get OG ID from GROUPID
         try:
-            macsesh.inject_into_requests()
             r = requests.get(BASEURL + '/api/system/groups/search?name=' + GROUPID, headers=headers)
             result = r.json()
             r.raise_for_status()
