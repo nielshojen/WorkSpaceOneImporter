@@ -24,6 +24,7 @@ import os.path
 import plistlib
 import requests  # dependency
 import datetime
+import macsesh
 
 from autopkglib import Processor, ProcessorError, get_pref
 from requests_toolbelt import StreamingIterator  # dependency from requests
@@ -251,6 +252,7 @@ class WorkSpaceOneImporter(Processor):
 
         # get OG ID from GROUPID
         try:
+            macsesh.inject_into_requests()
             r = requests.get(BASEURL + '/api/system/groups/search?name=' + GROUPID, headers=headers)
             result = r.json()
             r.raise_for_status()
