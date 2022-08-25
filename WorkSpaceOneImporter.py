@@ -408,6 +408,8 @@ class WorkSpaceOneImporter(Processor):
         condensed_sg = SMARTGROUP.replace(" ", "%20")
         r = requests.get(BASEURL + "/api/mdm/smartgroups/search?name=%s" % condensed_sg, headers=headers)
         smart_group_results = r.json()
+        if not r.status_code == 200:
+            raise ProcessorError(f'WorkSpaceOneImporter: Unable to find SmartGroup ID for SmartGroup {SMARTGROUP}.')
         for sg in smart_group_results["SmartGroups"]:
             if SMARTGROUP in sg["Name"]:
                 sg_id = sg["SmartGroupID"]
