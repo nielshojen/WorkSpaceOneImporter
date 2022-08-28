@@ -253,22 +253,25 @@ class WorkSpaceOneImporter(Processor):
                        'Accept': 'application/json',
                        'Content-Type': 'application/json',
                        'authorization': basicauth}
+        headers_v2 = dict(headers)
+        headers_v2['Accept'] = headers['Accept'] + ';version=2'
+        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
 
         # get OG ID from GROUPID
         try:
-            r = requests.get(BASEURL + '/api/system/groups/search?groupid=' + GROUPID, headers=headers)
+            r = requests.get(BASEURL + '/api/system/groups/search?groupid=' + GROUPID, headers=headers_v2)
             result = r.json()
             r.raise_for_status()
         except AttributeError:
             raise ProcessorError(
-                f'WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational Group specified: {GROUPID}')
+                f'WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational GroupID specified: {GROUPID}')
         except requests.exceptions.HTTPError as err:
             raise ProcessorError(
                 f'WorkSpaceOneImporter: Server responded with error when making the OG ID API call: {err}')
         except requests.exceptions.RequestException as e:
             ProcessorError(f'WorkSpaceOneImporter: Error making the OG ID API call: {e}')
-        if GROUPID in result['LocationGroups'][0]['GroupId']:
-            ogid = result['LocationGroups'][0]['Id']['Value']
+        if GROUPID in result['OrganizationGroups'][0]['GroupId']:
+            ogid = result['OrganizationGroups'][0]['Id']
         self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
 
         ## Check if app version is already present on WS1 server
