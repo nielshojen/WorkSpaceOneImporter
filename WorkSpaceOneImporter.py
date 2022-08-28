@@ -322,7 +322,7 @@ class WorkSpaceOneImporter(Processor):
             # upload pkg, dmg, mpkg file (application/json)
             headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
-                      os.path.basename(pkg_path) + '&organizationgroup=' + \
+                      os.path.basename(pkg_path) + '&organizationGroupId=' + \
                       str(ogid)
             try:
                 res = self.streamFile(pkg_path, posturl, headers)
@@ -338,7 +338,7 @@ class WorkSpaceOneImporter(Processor):
             # upload pkginfo plist (application/json)
             headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
-                      os.path.basename(pkg_info_path) + '&organizationgroup=' + \
+                      os.path.basename(pkg_info_path) + '&organizationGroupId=' + \
                       str(ogid)
             try:
                 res = self.streamFile(pkg_info_path, posturl, headers)
@@ -354,7 +354,7 @@ class WorkSpaceOneImporter(Processor):
             # upload icon file (application/json)
             headers['Content-Type'] = 'application/json'
             posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
-                      os.path.basename(icon_path) + '&organizationgroup=' + \
+                      os.path.basename(icon_path) + '&organizationGroupId=' + \
                       str(ogid)
             try:
                 res = self.streamFile(icon_path, posturl, headers)
