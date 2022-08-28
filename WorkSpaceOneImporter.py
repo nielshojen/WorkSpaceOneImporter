@@ -483,7 +483,7 @@ class WorkSpaceOneImporter(Processor):
             cache_dir, "autopkg_results.plist")
         try:
             with open(current_run_results_plist, 'rb') as f:
-            run_results = plistlib.load(f)
+                run_results = plistlib.load(f)
         except IOError:
             run_results = []
 
