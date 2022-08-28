@@ -255,7 +255,7 @@ class WorkSpaceOneImporter(Processor):
                        'authorization': basicauth}
         headers_v2 = dict(headers)
         headers_v2['Accept'] = headers['Accept'] + ';version=2'
-        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
+        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
 
         # get OG ID from GROUPID
         try:
@@ -482,7 +482,7 @@ class WorkSpaceOneImporter(Processor):
         current_run_results_plist = os.path.join(
             cache_dir, "autopkg_results.plist")
         try:
-            run_results = plistlib.readPlist(current_run_results_plist)
+            run_results = plistlib.load(current_run_results_plist)
         except IOError:
             run_results = []
 
