@@ -37,10 +37,6 @@ __all__ = ["WorkSpaceOneImporter"]
 class WorkSpaceOneImporter(Processor):
     """Uploads apps from Munki repo to WorkSpace ONE"""
     input_variables = {
-        #"ws1_munki_repo_path": {
-        #    "required": False,
-        #    "description": "Path to Munki repo, if not provided, defaults to environment setting from Munki",
-        #},
         "ws1_import_new_only": {
             "required": False,
             "description":
@@ -69,7 +65,7 @@ class WorkSpaceOneImporter(Processor):
         "ws1_api_username": {
             "required": False,
             "description": "WorkSpace ONE REST API Username. Either api_username and api_password or "
-                            "b64encoded_api_credentials are required for Basic authentication.",
+                           "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_api_password": {
             "required": False,
@@ -89,7 +85,7 @@ class WorkSpaceOneImporter(Processor):
         "ws1_oauth_client_secret": {
             "required": False,
             "description": "Client Secret for Oauth 2.0 authorization - a more secure and recommended replacement for "
-                            "Basic authentication.",
+                           "Basic authentication.",
         },
         "ws1_oauth_token_url": {
             "required": False,
@@ -284,7 +280,6 @@ class WorkSpaceOneImporter(Processor):
             if r.status_code == 200:
                 search_results = r.json()
                 for app in search_results["Application"]:
-                    #if app["ActualFileVersion"] == str(app_version) and app['ApplicationName'] in app_name:
                     if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and \
                             app['ApplicationName'] in app_name:
                         ws1_app_id = app["Id"]["Value"]
@@ -292,15 +287,13 @@ class WorkSpaceOneImporter(Processor):
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                         # if not self.env.get("ws1_force_import").lower() == "true":
                         if not force_import.lower() == "true":
-                            #raise ProcessorError('App [{}] version [{}] is already present on server, '
-                            #                     'and ws1_force_import is not set.'.format(app_name, app_version))
                             self.output('App [{}] version [{}] is already present on server, '
                                         'and ws1_force_import is not set.'.format(app_name, app_version))
                             return "Nothing new to upload - completed."
                         else:
                             self.output(
-                                'App [{}] version [{}] already present on server, and ws1_force_import==true, attempting to '
-                                'delete on server first.'.format(app_name, app_version))
+                                'App [{}] version [{}] already present on server, and ws1_force_import==true, '
+                                'attempting to delete on server first.'.format(app_name, app_version))
                             try:
                                 r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
                                                     headers=headers)
@@ -309,6 +302,17 @@ class WorkSpaceOneImporter(Processor):
                             if not r.status_code == 202 and not r.status_code == 204:
                                 result = r.json()
                                 self.output('App delete result: {}'.format(result), verbose_level=3)
+                                raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
+                            try:
+                                r = requests.get('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                                                 headers=headers)
+                                if not r.status_code == 401:
+                                    result = r.json()
+                                    self.output('App not deleted yet, status: {} - retrying'.format(result['Status']),
+                                                verbose_level=2)
+                                    r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                                                        headers=headers)
+                            except:
                                 raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
                             self.output('Pre-existing App [ID: {}] now successfully deleted'.format(ws1_app_id))
                             break
@@ -370,11 +374,6 @@ class WorkSpaceOneImporter(Processor):
         else:
             icon_id = ''
 
-        # We need to reset the headers back to JSON
-        #headers = {'aw-tenant-code': APITOKEN,
-        #           'authorization': basicauth,
-        #           'Content-Type': 'application/json'}
-
         ## Create a dict with the app details to be passed to WS1
         ## to create the App object
         ## include applicationIconId only if we have one
@@ -411,7 +410,8 @@ class WorkSpaceOneImporter(Processor):
         condensed_sg = SMARTGROUP.replace(" ", "%20")
         r = requests.get(BASEURL + "/api/mdm/smartgroups/search?name=%s" % condensed_sg, headers=headers)
         if not r.status_code == 200:
-            raise ProcessorError(f'WorkSpaceOneImporter: No SmartGroup ID found for SmartGroup {SMARTGROUP} - bailing out.')
+            raise ProcessorError(
+                f'WorkSpaceOneImporter: No SmartGroup ID found for SmartGroup {SMARTGROUP} - bailing out.')
         smart_group_results = r.json()
         for sg in smart_group_results["SmartGroups"]:
             if SMARTGROUP in sg["Name"]:
@@ -525,12 +525,10 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pi))
             if "icon_name" not in pkg_info:
                 # if key isn't present, look for common icon file with same 'first' name as installer item
-                #icon_path = self.env["munki_repo_path"] + "/icons/" + self.env["NAME"] + ".png"
                 icon_path = self.env["MUNKI_REPO"] + "/icons/" + self.env["NAME"] + ".png"
                 self.output("Looking for icon file [{}]".format(icon_path), verbose_level=1)
             else:
                 # when icon was specified for this installer version
-                #icon_path = self.env["munki_repo_path"] + "/icons/" + pkg_info["icon_name"]
                 icon_path = self.env["MUNKI_REPO"] + "/icons/" + pkg_info["icon_name"]
                 self.output("Icon file for this installer version was specified as [{}]".format(icon_path),
                             verbose_level=1)
