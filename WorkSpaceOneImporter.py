@@ -22,8 +22,9 @@
 import base64
 import os.path
 import plistlib
+
 import requests  # dependency
-import datetime
+# import datetime
 import macsesh
 
 from autopkglib import Processor, ProcessorError, get_pref
@@ -106,7 +107,8 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_deployment_date": {
             "required": False,
-            "description": "This sets the date that the deployment of the app should begin.",
+            "description": "This sets the date that the deployment of the app should begin."
+                           "Not implemented yet.",
         }
     }
     output_variables = {
@@ -132,24 +134,24 @@ class WorkSpaceOneImporter(Processor):
         r = requests.post(url, data=streamer, headers=headers)
         return r.json()
 
-    def convertTime(self, deployment_time):
-        if int(deployment_time) <= 23:
-            if int(deployment_time) is 24:
-                self.output("deployment_time was set to 24, changing to 0")
-                deployment_time = 0
-            else:
-                raise ProcessorError("Please enter a valid 24-hour time (i.e. between 0-23)")
-
-        today = datetime.date.today()
-        timestamp = time.strftime('%H')
-        utc_datetime = datetime.datetime.utcnow()
-        utc_datetime_formatted = utc_datetime.strftime("%H")
-        time_difference = ((int(utc_datetime_formatted) - int(timestamp)) * 60 * 60)
-        # availability_time = datetime.timedelta(hours=int(time_difference))
-        if int(utc_datetime_formatted) < int(deployment_time):
-            sec_to_add = int(((int(deployment_time) - int(timestamp)) * 60 * 60) + int(time_difference))
-        elif int(utc_datetime_formatted) > int(deployment_time):
-            sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
+    # def convertTime(self, deployment_time):
+    #     if int(deployment_time) <= 23:
+    #         if int(deployment_time) is 24:
+    #             self.output("deployment_time was set to 24, changing to 0")
+    #             deployment_time = 0
+    #         else:
+    #             raise ProcessorError("Please enter a valid 24-hour time (i.e. between 0-23)")
+    #
+    #     today = datetime.date.today()
+    #     timestamp = time.strftime('%H')
+    #     utc_datetime = datetime.datetime.utcnow()
+    #     utc_datetime_formatted = utc_datetime.strftime("%H")
+    #     time_difference = ((int(utc_datetime_formatted) - int(timestamp)) * 60 * 60)
+    #     # availability_time = datetime.timedelta(hours=int(time_difference))
+    #     if int(utc_datetime_formatted) < int(deployment_time):
+    #         sec_to_add = int(((int(deployment_time) - int(timestamp)) * 60 * 60) + int(time_difference))
+    #     elif int(utc_datetime_formatted) > int(deployment_time):
+    #         sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
 
     # validate if a URL was supplied (in input variable) - thanks https://stackoverflow.com/a/52455972
     def is_url(self, url):
