@@ -26,6 +26,7 @@ import plistlib
 import requests  # dependency
 # import datetime
 import macsesh
+import re
 
 from autopkglib import Processor, ProcessorError, get_pref
 from autopkglib.munkirepolibs.AutoPkgLib import AutoPkgLib
@@ -528,12 +529,12 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError("Somehow no installer was imported by MunkiImporter, "
                                      "and neither was an existing installer found in the Munki repo")
             # find path to installer info plist file from the installer path
-            installer_item_location = pkg.lstrip(munki_repo)
-            installer_info_location = installer_item_location.lstrip('/pkgs/')
+            installer_item_location = pkg[len(munki_repo):]
+            installer_info_location = installer_item_location.[len('/pkgs/'):]
             installer_info_location = 'pkgsinfo/' + installer_info_location
-            installer_info_location = installer_info_location.rstrip(".dmg")
-            installer_info_location = installer_info_location.rstrip(".pkg")
-            installer_info_location += ".plist"
+            installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
+            installer_info_location = re.sub(r'.pkg$', '', installer_info_location)
+            installer_info_location += '.plist'
             pi = self.env["MUNKI_REPO"] + '/' + installer_info_location
             self.output(
                 f"matching installer already exists in munki repo at {installer_item_location}", verbose_level=2)
