@@ -528,7 +528,7 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError("Somehow no installer was imported by MunkiImporter, "
                                      "and neither was an existing installer found in the Munki repo")
             # find path to installer info plist file from the installer path
-            installer_item_location = pkg.lstrip(self.env["MUNKI_REPO"])
+            installer_item_location = pkg.lstrip(munki_repo)
             installer_info_location = installer_item_location.lstrip('/pkgs/')
             installer_info_location = 'pkgsinfo/' + installer_info_location
             installer_info_location = installer_info_location.rstrip(".dmg")
