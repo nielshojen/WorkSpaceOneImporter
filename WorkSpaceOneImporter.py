@@ -511,44 +511,60 @@ class WorkSpaceOneImporter(Processor):
             self.output("No updates so nothing to import to WorkSpaceOne")
             self.env["ws1_resultcode"] = 0
             self.env["ws1_stderr"] = ""
+            return
         elif not munkiimported_new and not IMPORTNEWONLY:
-            # TODO: Find (latest) pkgs/pkginfos version and icon to upload to WS1 from Munki repo
-            # Look for Munki code where it finds latest pkg, pkginfo, icon in the repo
+            # Find (latest) pkgs/pkginfos files to upload to WS1 from Munki repo
             self.output("Nothing new imported into Munki, will try to find latest existing version in Munki repo "
                         "because ws1_import_new_only==False ")
+            # Look for Munki code where it finds latest pkg, pkginfo, icon in the repo
             # pi,pkg = self.find_latest_munki_version(self.env('NAME'))
-            # pass
+
+            # use pkg_repo_path env var set by MunkiImporter to find an existing installer
             pkg = self.env["pkg_repo_path"]
-            self.output(f"matching installer already exists in munki repo at {pkg}", verbose_level=2)
+            if not pkg:
+                raise ProcessorError("Somehow no installer was imported by MunkiImporter, "
+                                     "and neither was an existing installer found in the Munki repo")
+
+            # find path to installer info plist file from the installer path
+            installer_item_location = pkg.lstrip(self.env["MUNKI_REPO"] + '/pkg/')
+            installer_info_location = installer_item_location.rstrip(".dmg")
+            installer_info_location = installer_info_location.rstrip(".pkg")
+            installer_info_location.append(".plist")
+            pi = self.env["MUNKI_REPO"].append("/pkgsinfo/", installer_info_location)
+            self.output(
+                f"matching installer already exists in munki repo at {installer_item_location}", verbose_level=2)
+            self.output(
+                f"matching installer info already exists in munki repo at {installer_info_location}", verbose_level=2)
         else:
+            # use paths from newly imported items set by MunkiImporter
             pi = self.env["pkginfo_repo_path"]
             pkg = self.env["pkg_repo_path"]
 
-            # Get icon file settings. Read pkginfo plist file to find if specific icon_path key is present, if so
-            # use that. If not, check for common icon file. Proceed to WS1 with what we have regardless.
-            try:
-                with open(pi, 'rb') as fp:
-                    pkg_info = plistlib.load(fp)
-            except IOError:
-                raise ProcessorError("Could not read pkg_info file [{}] to check icon_name ".format(pi))
-            except:
-                raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pi))
-            if "icon_name" not in pkg_info:
-                # if key isn't present, look for common icon file with same 'first' name as installer item
-                icon_path = self.env["MUNKI_REPO"] + "/icons/" + self.env["NAME"] + ".png"
-                self.output("Looking for icon file [{}]".format(icon_path), verbose_level=1)
-            else:
-                # when icon was specified for this installer version
-                icon_path = self.env["MUNKI_REPO"] + "/icons/" + pkg_info["icon_name"]
-                self.output("Icon file for this installer version was specified as [{}]".format(icon_path),
-                            verbose_level=1)
-            # if we can't read or find any icon, proceed with upload regardless
-            if not os.path.exists(icon_path):
-                self.output("Could not read icon file [{}] - skipping.".format(icon_path))
-                icon_path = None
-            elif icon_path is None:
-                self.output("Could not find any icon file - skipping.")
-            self.output(self.ws1_import('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
+        # Get icon file settings. Read pkgsinfo plist file to find if specific icon_path key is present, if so
+        # use that. If not, check for common icon file. Proceed to WS1 with what we have regardless.
+        try:
+            with open(pi, 'rb') as fp:
+                pkg_info = plistlib.load(fp)
+        except IOError:
+            raise ProcessorError("Could not read pkg_info file [{}] to check icon_name ".format(pi))
+        except:
+            raise ProcessorError("Failed to parse pkg_info file [{}] somehow.".format(pi))
+        if "icon_name" not in pkg_info:
+            # if key isn't present, look for common icon file with same 'first' name as installer item
+            icon_path = self.env["MUNKI_REPO"] + "/icons/" + self.env["NAME"] + ".png"
+            self.output("Looking for icon file [{}]".format(icon_path), verbose_level=1)
+        else:
+            # when icon was specified for this installer version
+            icon_path = self.env["MUNKI_REPO"] + "/icons/" + pkg_info["icon_name"]
+            self.output("Icon file for this installer version was specified as [{}]".format(icon_path),
+                        verbose_level=1)
+        # if we can't read or find any icon, proceed with upload regardless
+        if not os.path.exists(icon_path):
+            self.output("Could not read icon file [{}] - skipping.".format(icon_path))
+            icon_path = None
+        elif icon_path is None:
+            self.output("Could not find any icon file - skipping.")
+        self.output(self.ws1_import('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
 
 
 if __name__ == "__main__":
