@@ -513,10 +513,10 @@ class WorkSpaceOneImporter(Processor):
             self.env["ws1_stderr"] = ""
             return
         elif not munkiimported_new and not IMPORTNEWONLY:
-            # Find (latest) pkgs/pkginfos files to upload to WS1 from Munki repo
             self.output("Nothing new imported into Munki, will try to find latest existing version in Munki repo "
-                        "because ws1_import_new_only==False ")
-            # Look for Munki code where it finds latest pkg, pkginfo, icon in the repo
+                        "because ws1_import_new_only==False")
+
+            # Look for Munki code where it finds latest pkgs, pkgsinfo, icon in the repo
             # pi,pkg = self.find_latest_munki_version(self.env('NAME'))
 
             # use pkg_repo_path env var set by MunkiImporter to find an existing installer
@@ -524,13 +524,12 @@ class WorkSpaceOneImporter(Processor):
             if not pkg:
                 raise ProcessorError("Somehow no installer was imported by MunkiImporter, "
                                      "and neither was an existing installer found in the Munki repo")
-
             # find path to installer info plist file from the installer path
-            installer_item_location = pkg.lstrip(self.env["MUNKI_REPO"] + '/pkg/')
+            installer_item_location = pkg.lstrip(self.env["MUNKI_REPO"]+'/pkgs/')
             installer_info_location = installer_item_location.rstrip(".dmg")
             installer_info_location = installer_info_location.rstrip(".pkg")
-            installer_info_location.append(".plist")
-            pi = self.env["MUNKI_REPO"].append("/pkgsinfo/", installer_info_location)
+            installer_info_location += ".plist"
+            pi = self.env["MUNKI_REPO"] + "/pkgsinfo/" + installer_info_location
             self.output(
                 f"matching installer already exists in munki repo at {installer_item_location}", verbose_level=2)
             self.output(
