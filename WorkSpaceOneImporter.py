@@ -530,7 +530,7 @@ class WorkSpaceOneImporter(Processor):
                                      "and neither was an existing installer found in the Munki repo")
             # find path to installer info plist file from the installer path
             installer_item_location = pkg[len(munki_repo):]
-            installer_info_location = installer_item_location.[len('/pkgs/'):]
+            installer_info_location = installer_item_location[len('/pkgs/'):]
             installer_info_location = 'pkgsinfo/' + installer_info_location
             installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
             installer_info_location = re.sub(r'.pkg$', '', installer_info_location)
