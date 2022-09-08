@@ -28,6 +28,8 @@ import requests  # dependency
 import macsesh
 
 from autopkglib import Processor, ProcessorError, get_pref
+from autopkglib.munkirepolibs.AutoPkgLib import AutoPkgLib
+
 from requests_toolbelt import StreamingIterator  # dependency from requests
 
 from urllib.parse import urlparse
@@ -161,6 +163,11 @@ class WorkSpaceOneImporter(Processor):
         except ValueError:
             return False
 
+    # def _find_latest_munki_version(self, name):
+    #     """Looks through Munki all catalog to find the latest item matching Name. Returns a matching item if found."""
+    #     pkgdb = repo_library.make_catalog_db()
+    #     return pi, pkg
+
     def get_oauth_token(self, oauth_client_id, oauth_client_secret, oauth_token_url):
         request_body = {"grant_type": "client_credentials",
                         "client_id": oauth_client_id,
@@ -213,17 +220,6 @@ class WorkSpaceOneImporter(Processor):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
                         .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
-
-        # get ws1_import_new_only, defaults to True
-        if self.env.get("ws1_import_new_only") is None:
-            self.output('No value supplied for ws1_import_new_only, setting default value of'
-                        ': true', verbose_level=2)
-            IMPORTNEWONLY = True
-        else:
-            if self.env.get("ws1_import_new_only").lower() == 'false':
-                IMPORTNEWONLY = False
-            else:
-                IMPORTNEWONLY = True
 
         # Get some global variables for later use
         app_version = self.env["munki_importer_summary_result"]["data"]["version"]
@@ -491,7 +487,16 @@ class WorkSpaceOneImporter(Processor):
 
         munkiimported_new = False
 
-        IMPORTNEWONLY = True
+        # get ws1_import_new_only, defaults to True
+        if self.env.get("ws1_import_new_only") is None:
+            self.output('No value supplied for ws1_import_new_only, setting default value of'
+                        ': true', verbose_level=2)
+            IMPORTNEWONLY = True
+        else:
+            if self.env.get("ws1_import_new_only").lower() == 'false':
+                IMPORTNEWONLY = False
+            else:
+                IMPORTNEWONLY = True
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
@@ -509,9 +514,12 @@ class WorkSpaceOneImporter(Processor):
         elif not munkiimported_new and not IMPORTNEWONLY:
             # TODO: Find (latest) pkgs/pkginfos version and icon to upload to WS1 from Munki repo
             # Look for Munki code where it finds latest pkg, pkginfo, icon in the repo
-            self.output("Nothing new imported into Munki, and processor can\'t find existing version(s) for "
-                        "ws1_import_new_only==False yet")
-            pass
+            self.output("Nothing new imported into Munki, will try to find latest existing version in Munki repo "
+                        "because ws1_import_new_only==False ")
+            # pi,pkg = self.find_latest_munki_version(self.env('NAME'))
+            # pass
+            pkg = self.env["pkg_repo_path"]
+            self.output(f"matching installer already exists in munki repo at {pkg}", verbose_level=2)
         else:
             pi = self.env["pkginfo_repo_path"]
             pkg = self.env["pkg_repo_path"]
