@@ -521,6 +521,9 @@ class WorkSpaceOneImporter(Processor):
 
             # use pkg_repo_path env var set by MunkiImporter to find an existing installer
             pkg = self.env["pkg_repo_path"]
+            self.output(f"matching installer already exists at {pkg}", verbose_level=2)
+            munki_repo = self.env["MUNKI_REPO"]
+            self.output(f"MUNKI_REPO: {munki_repo}", verbose_level=2)
             if not pkg:
                 raise ProcessorError("Somehow no installer was imported by MunkiImporter, "
                                      "and neither was an existing installer found in the Munki repo")
