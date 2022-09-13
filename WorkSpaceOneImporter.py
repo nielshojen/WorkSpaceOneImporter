@@ -517,9 +517,8 @@ class WorkSpaceOneImporter(Processor):
             self.output("Nothing new imported into Munki repo, but ws1_import_new_only==False so will try to find "
                         "latest existing version in Munki repo.")
 
-            # Look for Munki code where it finds latest pkgs, pkgsinfo, icon in the repo
-            # pi,pkg = self.find_latest_munki_version(self.env('NAME'))
-
+            ci = self.env["pkg_path"]
+            self.output(f"comparing hash of cached installer [{ci}] to find pkginfo file")
             # use pkg_repo_path env var set by MunkiImporter to find an existing installer
             pkg = self.env["pkg_repo_path"]
             self.output(f"matching installer already exists at {pkg}", verbose_level=2)
@@ -528,13 +527,16 @@ class WorkSpaceOneImporter(Processor):
             if not pkg:
                 raise ProcessorError("Somehow no installer was imported by MunkiImporter, "
                                      "and neither was an existing installer found in the Munki repo")
+
             # find path to installer info plist file from the installer path
-            installer_item_location = pkg[len(munki_repo):]
-            installer_info_location = installer_item_location[len('/pkgs/'):]
+            installer_item_location = pkg[len(munki_repo)+1:]
+            #installer_item = os.path.basename(installer_item_location)
+            installer_item_location = os.path.dirname(installer_item_location)
+            installer_info_location = installer_item_location[len(' pkgs/'):]
             installer_info_location = 'pkgsinfo/' + installer_info_location
-            installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
-            installer_info_location = re.sub(r'.pkg$', '', installer_info_location)
-            installer_info_location += '.plist'
+            # installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
+            # installer_info_location = re.sub(r'.pkg$', '', installer_info_location)
+            # installer_info_location += '.plist'
             pi = self.env["MUNKI_REPO"] + '/' + installer_info_location
             self.output(
                 f"matching installer already exists in munki repo at {installer_item_location}", verbose_level=2)
