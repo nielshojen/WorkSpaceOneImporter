@@ -664,7 +664,7 @@ class WorkSpaceOneImporter(Processor):
             icon_path = None
         elif icon_path is None:
             self.output("Could not find any icon file - skipping.")
-        self.output(self.ws1_import('pkg', pkg, 'pkginfo', pi, 'icon', icon_path))
+        self.output(self.ws1_import(pkg, pi, icon_path))
 
 
 if __name__ == "__main__":
