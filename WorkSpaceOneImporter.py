@@ -604,6 +604,8 @@ class WorkSpaceOneImporter(Processor):
                 match = False
                 for (path, dummy_dirs, files) in os.walk(installer_info_dir):
                     for name in files:
+                        if name == ".DS_Store":
+                            continue
                         pi = os.path.join(path, name)
                         self.output(f"checking [{name}] to find matching installer_item_hash", verbose_level=2)
                         try:
