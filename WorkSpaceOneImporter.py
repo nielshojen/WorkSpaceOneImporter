@@ -592,7 +592,7 @@ class WorkSpaceOneImporter(Processor):
 
                 # look in same dir from pkgsinfo/ for matching pkginfo file
                 # installer_item = os.path.basename(installer_item_location)
-                installer_item_dir = os.path.dirname(installer_item_path)
+                installer_item_dir = os.path.dirname(pkg)
                 # installer_info_location = installer_item_location[len(' pkgs/'):]
                 # installer_info_location = 'pkgsinfo/' + installer_info_location
                 # installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
@@ -605,6 +605,7 @@ class WorkSpaceOneImporter(Processor):
                 for (path, dummy_dirs, files) in os.walk(installer_info_dir):
                     for name in files:
                         pi = os.path.join(path, name)
+                        self.output(f"checking [{name}] to find matching installer_item_hash", verbose_level=2)
                         try:
                             with open(pi, 'rb') as fp:
                                 pkg_info = plistlib.load(fp)
@@ -621,7 +622,7 @@ class WorkSpaceOneImporter(Processor):
                     self.output(
                         f"matching installer info already exists in munki repo at [{pi}]", verbose_level=2)
                 else:
-                    self.output(f"Failed to find matching pkginfo in [{installer_info_location}]", verbose_level=2)
+                    raise ProcessorError(f"Failed to find matching pkginfo in [{installer_info_dir}]")
             else:
                 #
                 raise ProcessorError(f"Failed to read installer [{pkg}]")
