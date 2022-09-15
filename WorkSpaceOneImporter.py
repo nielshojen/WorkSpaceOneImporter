@@ -231,7 +231,7 @@ class WorkSpaceOneImporter(Processor):
                    "Content-Type": "application/json"}
         return headers
 
-    def ws1_import(self, pkg, pkg_path, pkg_info, pkg_info_path, icon, icon_path):
+    def ws1_import(self, pkg_path, pkg_info_path, icon_path):
         self.output(
             "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])  ## Add name of app being imported
         BASEURL = self.env.get("ws1_api_url")
@@ -263,8 +263,22 @@ class WorkSpaceOneImporter(Processor):
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
         # Get some global variables for later use
-        app_version = self.env["munki_importer_summary_result"]["data"]["version"]
-        app_name = self.env["munki_importer_summary_result"]["data"]["name"]
+        #app_version = self.env["munki_importer_summary_result"]["data"]["version"]
+        #app_name = self.env["munki_importer_summary_result"]["data"]["name"]
+        # get app name and version from pkginfo, don't rely on munki_importer_summary_result being filled in current session
+        try:
+            with open(pkg_info_path , 'rb') as fp:
+                pkg_info = plistlib.load(fp)
+        except IOError:
+            raise ProcessorError(f"Could not read pkg_info file [{pkg_info_path}]")
+        except:
+            raise ProcessorError(f"Failed to parse pkg_info file [{pkg_info_path}] somehow.")
+        if "version" not in pkg_info:
+            raise ProcessorError(f"version not found in pkginfo [{pkg_info_path}]")
+        app_version = pkg_info["version"]
+        if "name" not in pkg_info:
+            raise ProcessorError(f"name not found in pkginfo [{pkg_info_path}]")
+        app_name = pkg_info["version"]
 
         # Init the MacSesh so we can use the trusted certs in macOS Keychains to verify SSL.
         # Needed especially in networks with local proxy and custom certificates.
@@ -513,6 +527,7 @@ class WorkSpaceOneImporter(Processor):
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
+
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
 
@@ -591,13 +606,7 @@ class WorkSpaceOneImporter(Processor):
                     raise PkgInfoGenerationError(err)
 
                 # look in same dir from pkgsinfo/ for matching pkginfo file
-                # installer_item = os.path.basename(installer_item_location)
                 installer_item_dir = os.path.dirname(pkg)
-                # installer_info_location = installer_item_location[len(' pkgs/'):]
-                # installer_info_location = 'pkgsinfo/' + installer_info_location
-                # installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
-                # installer_info_location = re.sub(r'.pkg$', '', installer_info_location)
-                # installer_info_location += '.plist'
                 installer_info_dir = re.sub(r'pkgs/', 'pkgsinfo/', installer_item_dir)
                 # walk the dir to check each pkginfo file for matching hash
                 self.output(f"scanning [{installer_info_dir}] to find matching pkginfo", verbose_level=2)
@@ -618,11 +627,9 @@ class WorkSpaceOneImporter(Processor):
                         if "installer_item_hash" in pkg_info and pkg_info["installer_item_hash"] == itemhash:
                             match = True
                             break
-
-                #pi = self.env["MUNKI_REPO"] + '/' + installer_info_location
                 if match:
                     self.output(
-                        f"matching installer info already exists in munki repo at [{pi}]", verbose_level=2)
+                        f"Found matching installer info file in munki repo [{pi}]", verbose_level=2)
                 else:
                     raise ProcessorError(f"Failed to find matching pkginfo in [{installer_info_dir}]")
             else:
