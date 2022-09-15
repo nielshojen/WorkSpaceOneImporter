@@ -22,6 +22,7 @@
 import base64
 import os.path
 import plistlib
+import hashlib
 
 import requests  # dependency
 # import datetime
@@ -36,6 +37,31 @@ from requests_toolbelt import StreamingIterator  # dependency from requests
 from urllib.parse import urlparse
 
 __all__ = ["WorkSpaceOneImporter"]
+
+
+def getsha256hash(filename):
+    """
+    Calculates the SHA-256 hash value of a file as a hex string. Nicked from Munki hash library munkihash.py
+
+    Args:
+        filename: The file name to calculate the hash value of.
+    Returns:
+        The hashvalue of the given file as hex string.
+    """
+    hasher = hashlib.sha256()
+    if not os.path.isfile(filename):
+        return 'NOT A FILE'
+    try:
+        fileref = open(filename, 'rb')
+        while True:
+            chunk = fileref.read(2 ** 16)
+            if not chunk:
+                break
+            hasher.update(chunk)
+        fileref.close()
+        return hasher.hexdigest()
+    except (OSError, IOError):
+        return 'HASH_ERROR'
 
 
 class WorkSpaceOneImporter(Processor):
@@ -131,6 +157,25 @@ class WorkSpaceOneImporter(Processor):
 
     description = __doc__
 
+    ### GIT FUNCTIONS
+    def git_run(self, repo, cmd):
+        """shell out a command to git in the Munki repo"""
+        cmd = ["git"] + cmd
+        self.output("Running " + " ".join(cmd), verbose_level=2)
+        try:
+            # result = subprocess.run(" ".join(cmd), shell=True, cwd=MUNKI_REPO, capture_output=hide_cmd_output)
+            result = subprocess.run(" ".join(cmd), shell=True, cwd=repo, capture_output=True)
+            self.output(result, verbose_level=2)
+        except subprocess.CalledProcessError as e:
+            print(e.stderr)
+            raise e
+
+    def git_lfs_pull(self, repo, filename):
+        """pull specific LFS filename from git origin"""
+        gitcmd = ["lfs", "pull", f"--include=\"{filename}\""]
+        self.git_run(repo, gitcmd)
+
+
     def streamFile(self, filepath, url, headers):
         """expects headers w/ token, auth, and content-type"""
         streamer = StreamingIterator(os.path.getsize(filepath), open(filepath, 'rb'))
@@ -163,11 +208,6 @@ class WorkSpaceOneImporter(Processor):
             return all([result.scheme, result.netloc])
         except ValueError:
             return False
-
-    # def _find_latest_munki_version(self, name):
-    #     """Looks through Munki all catalog to find the latest item matching Name. Returns a matching item if found."""
-    #     pkgdb = repo_library.make_catalog_db()
-    #     return pi, pkg
 
     def get_oauth_token(self, oauth_client_id, oauth_client_secret, oauth_token_url):
         request_body = {"grant_type": "client_credentials",
@@ -515,39 +555,82 @@ class WorkSpaceOneImporter(Processor):
             return
         elif not munkiimported_new and not IMPORTNEWONLY:
             self.output("Nothing new imported into Munki repo, but ws1_import_new_only==False so will try to find "
-                        "latest existing version in Munki repo.")
-
+                        "existing matching version in Munki repo.")
+            # get cached installer path that was set by MunkiImporter processor in previous recipe step because the one
+            # in the Munki repo might be a Git LFS shortcut
             ci = self.env["pkg_path"]
-            self.output(f"comparing hash of cached installer [{ci}] to find pkginfo file")
-            # use pkg_repo_path env var set by MunkiImporter to find an existing installer
+            self.output(f"comparing hash of cached installer [{ci}] to find pkginfo file", verbose_level=2)
+            # hash code copied from Munki's pkginfolib.py and functionn from hash lib munkihash.py
+            # get size of installer item
+            citemsize = 0
+            citemhash = "N/A"
+            if os.path.isfile(ci):
+                citemsize = int(os.path.getsize(ci))
+                try:
+                    citemhash = getsha256hash(ci)
+                except OSError as err:
+                    raise ProcessorError(err)
+
+            # use pkg_repo_path env var set by MunkiImporter to find an existing installer in repo
             pkg = self.env["pkg_repo_path"]
-            self.output(f"matching installer already exists at {pkg}", verbose_level=2)
+            self.output(f"matching installer already exists in repo [{pkg}]", verbose_level=2)
+
             munki_repo = self.env["MUNKI_REPO"]
             self.output(f"MUNKI_REPO: {munki_repo}", verbose_level=2)
-            if not pkg:
-                raise ProcessorError("Somehow no installer was imported by MunkiImporter, "
-                                     "and neither was an existing installer found in the Munki repo")
+            if os.path.isfile(pkg):
+                itemsize = int(os.path.getsize(pkg))
+                installer_item_path = pkg[len(munki_repo) + 1:]    # get path relative from repo
+                if not itemsize == citemsize:
+                    # item in repo must then be a Git LFS shortcut, pull the real file
+                    self.git_lfs_pull(munki_repo, installer_item_path)
+                try:
+                    itemhash = getsha256hash(pkg)
+                    if not itemhash == citemhash:
+                        raise ProcessorError("Installer item in Munki repo differs from cached installer, please check")
+                except OSError as err:
+                    raise PkgInfoGenerationError(err)
 
-            # find path to installer info plist file from the installer path
-            installer_item_location = pkg[len(munki_repo)+1:]
-            #installer_item = os.path.basename(installer_item_location)
-            installer_item_location = os.path.dirname(installer_item_location)
-            installer_info_location = installer_item_location[len(' pkgs/'):]
-            installer_info_location = 'pkgsinfo/' + installer_info_location
-            # installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
-            # installer_info_location = re.sub(r'.pkg$', '', installer_info_location)
-            # installer_info_location += '.plist'
-            pi = self.env["MUNKI_REPO"] + '/' + installer_info_location
-            self.output(
-                f"matching installer already exists in munki repo at {installer_item_location}", verbose_level=2)
-            self.output(
-                f"matching installer info already exists in munki repo at {installer_info_location}", verbose_level=2)
+                # look in same dir from pkgsinfo/ for matching pkginfo file
+                # installer_item = os.path.basename(installer_item_location)
+                installer_item_dir = os.path.dirname(installer_item_path)
+                # installer_info_location = installer_item_location[len(' pkgs/'):]
+                # installer_info_location = 'pkgsinfo/' + installer_info_location
+                # installer_info_location = re.sub(r'.dmg$', '', installer_info_location)
+                # installer_info_location = re.sub(r'.pkg$', '', installer_info_location)
+                # installer_info_location += '.plist'
+                installer_info_dir = re.sub(r'pkgs/', 'pkgsinfo/', installer_item_dir)
+                # walk the dir to check each pkginfo file for matching hash
+                self.output(f"scanning [{installer_info_dir}] to find matching pkginfo", verbose_level=2)
+                match = False
+                for (path, dummy_dirs, files) in os.walk(installer_info_dir):
+                    for name in files:
+                        pi = os.path.join(path, name)
+                        try:
+                            with open(pi, 'rb') as fp:
+                                pkg_info = plistlib.load(fp)
+                        except IOError:
+                            raise ProcessorError(f"Could not read pkg_info file [{pi}]")
+                        except:
+                            raise ProcessorError(f"Could not parse pkg_info file [{pi}]")
+                        if "installer_item_hash" in pkg_info and pkg_info["installer_item_hash"] == itemhash:
+                            match = True
+                            break
+
+                #pi = self.env["MUNKI_REPO"] + '/' + installer_info_location
+                if match:
+                    self.output(
+                        f"matching installer info already exists in munki repo at [{pi}]", verbose_level=2)
+                else:
+                    self.output(f"Failed to find matching pkginfo in [{installer_info_location}]", verbose_level=2)
+            else:
+                #
+                raise ProcessorError(f"Failed to read installer [{pkg}]")
         else:
-            # use paths from newly imported items set by MunkiImporter
+            # use paths for newly imported items set by MunkiImporter
             pi = self.env["pkginfo_repo_path"]
             pkg = self.env["pkg_repo_path"]
 
-        # Get icon file settings. Read pkgsinfo plist file to find if specific icon_path key is present, if so
+        # Get icon file settings. Read pkginfo plist file to find if specific icon_path key is present, if so
         # use that. If not, check for common icon file. Proceed to WS1 with what we have regardless.
         try:
             with open(pi, 'rb') as fp:
