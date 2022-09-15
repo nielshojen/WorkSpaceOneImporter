@@ -278,7 +278,7 @@ class WorkSpaceOneImporter(Processor):
         app_version = pkg_info["version"]
         if "name" not in pkg_info:
             raise ProcessorError(f"name not found in pkginfo [{pkg_info_path}]")
-        app_name = pkg_info["version"]
+        app_name = pkg_info["name"]
 
         # Init the MacSesh so we can use the trusted certs in macOS Keychains to verify SSL.
         # Needed especially in networks with local proxy and custom certificates.
