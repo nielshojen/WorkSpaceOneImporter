@@ -614,7 +614,7 @@ class WorkSpaceOneImporter(Processor):
 
                 # look in same dir from pkgsinfo/ for matching pkginfo file
                 installer_item_dir = os.path.dirname(pkg)
-                installer_info_dir = re.sub(r'pkgs/', 'pkgsinfo/', installer_item_dir)
+                installer_info_dir = re.sub(r'/pkgs', '/pkgsinfo', installer_item_dir)
                 # walk the dir to check each pkginfo file for matching hash
                 self.output(f"scanning [{installer_info_dir}] to find matching pkginfo", verbose_level=2)
                 match = False
