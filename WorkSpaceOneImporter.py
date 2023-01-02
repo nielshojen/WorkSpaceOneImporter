@@ -635,7 +635,8 @@ class WorkSpaceOneImporter(Processor):
                             raise ProcessorError(f"Could not parse pkg_info file [{pi}]")
                         if "installer_item_hash" in pkg_info and pkg_info["installer_item_hash"] == itemhash:
                             match = True
-                            self.output(f"installer_item_hash match found: [{pkg_info["installer_item_hash"]}]", verbose_level=2)
+                            iih = pkg_info["installer_item_hash"]
+                            self.output(f"installer_item_hash match found: [{iih}]", verbose_level=2)
                             break
                 if match:
                     self.output(
