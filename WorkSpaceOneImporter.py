@@ -23,9 +23,10 @@ import base64
 import os.path
 import plistlib
 import hashlib
+import subprocess
 
 import requests  # dependency
-# import datetime
+import json
 import macsesh
 import re
 
@@ -493,7 +494,7 @@ class WorkSpaceOneImporter(Processor):
         ## Make the API call to assign the App
         try:
             r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
-                              json=json.dump(app_assignment))
+                              json=json.dumps(app_assignment))
         except:
             raise ProcessorError('Something went wrong attempting to assign the app [%s] to the group [%s]' % (
                 self.env['NAME'], SMARTGROUP))
@@ -609,7 +610,7 @@ class WorkSpaceOneImporter(Processor):
                     if not itemhash == citemhash:
                         raise ProcessorError("Installer item in Munki repo differs from cached installer, please check")
                 except OSError as err:
-                    raise PkgInfoGenerationError(err)
+                    raise ProcessorError(err)
 
                 # look in same dir from pkgsinfo/ for matching pkginfo file
                 installer_item_dir = os.path.dirname(pkg)
