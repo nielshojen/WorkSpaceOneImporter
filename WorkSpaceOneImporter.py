@@ -636,7 +636,7 @@ class WorkSpaceOneImporter(Processor):
                         if "installer_item_hash" in pkg_info and pkg_info["installer_item_hash"] == itemhash:
                             found_match = True
                             iih = pkg_info["installer_item_hash"]
-                            self.output(f"installer_item_hash match found: [{iih}]", verbose_level=2)
+                            self.output(f"installer_item_hash match found: [{iih}]", verbose_level=4)
                             break
                     if found_match:
                         self.output(
