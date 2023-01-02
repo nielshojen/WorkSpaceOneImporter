@@ -638,10 +638,11 @@ class WorkSpaceOneImporter(Processor):
                             iih = pkg_info["installer_item_hash"]
                             self.output(f"installer_item_hash match found: [{iih}]", verbose_level=2)
                             break
-                if found_match:
-                    self.output(
-                        f"Found matching installer info file in munki repo [{pi}]", verbose_level=2)
-                else:
+                    if found_match:
+                        self.output(
+                            f"Found matching installer info file in munki repo [{pi}]", verbose_level=2)
+                        break
+                if not found_match:
                     raise ProcessorError(f"Failed to find matching pkginfo in [{installer_info_dir}]")
             else:
                 #
