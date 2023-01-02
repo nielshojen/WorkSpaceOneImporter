@@ -489,12 +489,13 @@ class WorkSpaceOneImporter(Processor):
                 "VisibleInAppCatalog": True  # TODO: maybe expose as input var
             }
         }
-        self.output("App assignments data to send: {}".format(app_assignment), verbose_level=4)
+        payload = json.dumps(app_assignment)
+        self.output("App assignments data to send: {}".format(app_assignment), verbose_level=2)
 
         ## Make the API call to assign the App
         try:
             r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
-                              json=json.dumps(app_assignment))
+                              data=payload)
         except:
             raise ProcessorError('Something went wrong attempting to assign the app [%s] to the group [%s]' % (
                 self.env['NAME'], SMARTGROUP))
@@ -582,7 +583,7 @@ class WorkSpaceOneImporter(Processor):
             # in the Munki repo might be a Git LFS shortcut
             ci = self.env["pkg_path"]
             self.output(f"comparing hash of cached installer [{ci}] to find pkginfo file", verbose_level=2)
-            # hash code copied from Munki's pkginfolib.py and functionn from hash lib munkihash.py
+            # hash code copied from Munki's pkginfolib.py and function from hash lib munkihash.py
             # get size of installer item
             citemsize = 0
             citemhash = "N/A"
@@ -616,7 +617,8 @@ class WorkSpaceOneImporter(Processor):
                 installer_item_dir = os.path.dirname(pkg)
                 installer_info_dir = re.sub(r'/pkgs', '/pkgsinfo', installer_item_dir)
                 # walk the dir to check each pkginfo file for matching hash
-                self.output(f"scanning [{installer_info_dir}] to find matching pkginfo", verbose_level=2)
+                self.output(f"scanning [{installer_info_dir}] to find matching pkginfo file with installer_item_hash "
+                            f"value: [{itemhash}]", verbose_level=2)
                 match = False
                 for (path, dummy_dirs, files) in os.walk(installer_info_dir):
                     for name in files:
