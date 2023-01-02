@@ -619,7 +619,7 @@ class WorkSpaceOneImporter(Processor):
                 # walk the dir to check each pkginfo file for matching hash
                 self.output(f"scanning [{installer_info_dir}] to find matching pkginfo file with installer_item_hash "
                             f"value: [{itemhash}]", verbose_level=2)
-                match = False
+                found_match = False
                 for (path, dummy_dirs, files) in os.walk(installer_info_dir):
                     for name in files:
                         if name == ".DS_Store":
@@ -634,11 +634,11 @@ class WorkSpaceOneImporter(Processor):
                         except:
                             raise ProcessorError(f"Could not parse pkg_info file [{pi}]")
                         if "installer_item_hash" in pkg_info and pkg_info["installer_item_hash"] == itemhash:
-                            match = True
+                            found_match = True
                             iih = pkg_info["installer_item_hash"]
                             self.output(f"installer_item_hash match found: [{iih}]", verbose_level=2)
                             break
-                if match:
+                if found_match:
                     self.output(
                         f"Found matching installer info file in munki repo [{pi}]", verbose_level=2)
                 else:
