@@ -247,10 +247,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_client_id = self.env.get("ws1_oauth_client_id")
         oauth_client_secret = self.env.get("ws1_oauth_client_secret")
         oauth_token_url = self.env.get("ws1_oauth_token_url")
-        force_import = self.env.get("ws1_force_import")
-
-        if force_import is None:
-            force_import = "False"
+        force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
@@ -527,15 +524,7 @@ class WorkSpaceOneImporter(Processor):
         munkiimported_new = False
 
         # get ws1_import_new_only, defaults to True
-        if self.env.get("ws1_import_new_only") is None:
-            self.output('No value supplied for ws1_import_new_only, setting default value of'
-                        ': true', verbose_level=2)
-            IMPORTNEWONLY = True
-        else:
-            if self.env.get("ws1_import_new_only").lower() == 'false':
-                IMPORTNEWONLY = False
-            else:
-                IMPORTNEWONLY = True
+        IMPORTNEWONLY = self.env.get("ws1_import_new_only", "True").lower() in ("true", "1", "t")
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
