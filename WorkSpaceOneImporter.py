@@ -508,31 +508,6 @@ class WorkSpaceOneImporter(Processor):
                 self.env['NAME'], SMARTGROUP))
         self.output('Successfully assigned the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
 
-        ## Workaround - make extra API call PUT in attempt to modify the App assignment details
-        # TODO: check if fix in POST block above, for body to upload as proper json dump,
-        #    as well as correction to variable type to Boolean, and also proper nesting of dictionary helps.
-        #
-        #  Meanwhile commented out workaround PUT block below.
-        #  troubleshoot API to work consistently, even extra PUT API call to change app Flexible app assignment
-        #  details from previous assignments doesn't work reliably for all the Flexible app assignment details like
-        #  RemoveOnUnEnroll, even if app was deleted first...
-        '''
-        try:
-            r = requests.put(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
-                             json=app_assignment)
-        except:
-            raise ProcessorError('Something went wrong attempting to modify app [%s] assignment to group [%s]' % (
-                self.env['NAME'], SMARTGROUP))
-        if not r.status_code == 204:
-            result = r.json()
-            self.output("App assignment mods failed, result errorCode: {} - {} ".format(result['errorCode'],
-                                                                                        result['message']),
-                        verbose_level=2)
-            raise ProcessorError('Unable to successfully modify the app [%s] assignment details for group [%s]' % (
-                self.env['NAME'], SMARTGROUP))
-        self.output('Successfully modified the app [%s] assignment to the group [%s]' % (self.env['NAME'], SMARTGROUP))
-        '''
-
         return "Application was successfully uploaded to WorkSpaceOne."
 
 
