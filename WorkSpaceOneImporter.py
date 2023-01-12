@@ -70,6 +70,7 @@ class WorkSpaceOneImporter(Processor):
     input_variables = {
         "ws1_import_new_only": {
             "required": False,
+            "default": True,
             "description":
                 "If \"false\", in case no version was imported into Munki in this session, find latest version in "
                 "munki_repo to import into WS1. Default: true",
@@ -124,6 +125,7 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_force_import": {
             "required": False,
+            "default": False,
             "description":
                 "If \"true\", force import into WS1 if version already exists. Default:false",
         },
