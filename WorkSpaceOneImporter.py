@@ -249,7 +249,8 @@ class WorkSpaceOneImporter(Processor):
         oauth_client_id = self.env.get("ws1_oauth_client_id")
         oauth_client_secret = self.env.get("ws1_oauth_client_secret")
         oauth_token_url = self.env.get("ws1_oauth_token_url")
-        force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
+        #force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
+        force_import = self.env.get("ws1_force_import")
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
@@ -339,13 +340,13 @@ class WorkSpaceOneImporter(Processor):
                         self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                         # if not self.env.get("ws1_force_import").lower() == "true":
-                        if not force_import.lower() == "true":
+                        if not force_import:
                             self.output('App [{}] version [{}] is already present on server, '
                                         'and ws1_force_import is not set.'.format(app_name, app_version))
                             return "Nothing new to upload - completed."
                         else:
                             self.output(
-                                'App [{}] version [{}] already present on server, and ws1_force_import==true, '
+                                'App [{}] version [{}] already present on server, and ws1_force_import==True, '
                                 'attempting to delete on server first.'.format(app_name, app_version))
                             try:
                                 r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
@@ -526,7 +527,7 @@ class WorkSpaceOneImporter(Processor):
         munkiimported_new = False
 
         # get ws1_import_new_only, defaults to True
-        IMPORTNEWONLY = self.env.get("ws1_import_new_only", "True").lower() in ("true", "1", "t")
+        #IMPORTNEWONLY = self.env.get("ws1_import_new_only", "True").lower() in ("true", "1", "t")
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
@@ -536,13 +537,13 @@ class WorkSpaceOneImporter(Processor):
         if pkginfo_path:
             munkiimported_new = True
 
-        if not munkiimported_new and IMPORTNEWONLY:
+        if not munkiimported_new and self.env.get("ws1_import_new_only"):
             self.output(run_results)
             self.output("No updates so nothing to import to WorkSpaceOne")
             self.env["ws1_resultcode"] = 0
             self.env["ws1_stderr"] = ""
             return
-        elif not munkiimported_new and not IMPORTNEWONLY:
+        elif not munkiimported_new and not self.env.get("ws1_import_new_only"):
             self.output("Nothing new imported into Munki repo, but ws1_import_new_only==False so will try to find "
                         "existing matching version in Munki repo.")
             # get cached installer path that was set by MunkiImporter processor in previous recipe step because the one
