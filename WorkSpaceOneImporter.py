@@ -68,13 +68,6 @@ def getsha256hash(filename):
 class WorkSpaceOneImporter(Processor):
     """Uploads apps from Munki repo to WorkSpace ONE"""
     input_variables = {
-        "ws1_import_new_only": {
-            "required": False,
-            "default": True,
-            "description":
-                "If \"false\", in case no version was imported into Munki in this session, find latest version in "
-                "munki_repo to import into WS1. Default: true",
-        },
         "ws1_api_url": {
             "required": True,
             "description": "Base url of WorkSpace ONE UEM REST API server "
@@ -129,18 +122,38 @@ class WorkSpaceOneImporter(Processor):
             "description":
                 "If \"true\", force import into WS1 if version already exists. Default:false",
         },
+        "ws1_import_new_only": {
+            "required": False,
+            "default": True,
+            "description":
+                "If \"false\", in case no version was imported into Munki in this session, find latest version in "
+                "munki_repo to import into WS1. Default: true, meaning only newly imported versions are imported to WS1.",
+        },
         "ws1_smart_group_name": {
             "required": False,
-            "description": "The name of the group that the app should be assigned to.",
+            "description": "The name of the first smart group the app should be assigned to, typically testers / "
+                           "early access.",
         },
         "ws1_push_mode": {
             "required": False,
-            "description": "Tells WorkSpace ONE how to deploy the app, Auto or On-Demand.",
+            "description": "how to deploy the app, Auto or On-Demand.",
         },
         "ws1_deployment_date": {
             "required": False,
-            "description": "This sets the date that the deployment of the app should begin."
-                           "Not implemented yet.",
+            "description": "Sets the date that the deployment of the app should begin. If not specified, current date "
+                           "is chosen. Not implemented yet.",
+        },
+        "ws1_smart_group2_names": {
+            "required": False,
+            "default": "",
+            "description": "The names of the secondary smart group(s) the app should be assigned to, typically for "
+                           "production. Separate multiple groups with a comma. Under development.",
+        },
+        "ws1_deployment2_delay": {
+            "required": False,
+            "default": "14",
+            "description": "Set the number of days to wait before deployment to the secondary smart group(s) should "
+                           "begin. Typically for production. Under development.",
         }
     }
     output_variables = {
@@ -177,7 +190,6 @@ class WorkSpaceOneImporter(Processor):
         """pull specific LFS filename from git origin"""
         gitcmd = ["lfs", "pull", f"--include=\"{filename}\""]
         self.git_run(repo, gitcmd)
-
 
     def streamFile(self, filepath, url, headers):
         """expects headers w/ token, auth, and content-type"""
@@ -234,6 +246,24 @@ class WorkSpaceOneImporter(Processor):
                    "Content-Type": "application/json"}
         return headers
 
+    def get_smartgroup_id(self, base_url, smartgroup, headers):
+        """Get Smart Group ID to assign the package to"""
+
+        # we need to replace any spaces with '%20' for the API call
+        condensed_sg = smartgroup.replace(" ", "%20")
+        r = requests.get(base_url + "/api/mdm/smartgroups/search?name=%s" % condensed_sg, headers=headers)
+        if not r.status_code == 200:
+            raise ProcessorError(
+                f'WorkSpaceOneImporter: No SmartGroup ID found for SmartGroup {smartgroup} - bailing out.')
+        try:
+            smart_group_results = r.json()
+            for sg in smart_group_results["SmartGroups"]:
+                if smartgroup in sg["Name"]:
+                    sg_id = sg["SmartGroupID"]
+                    self.output(f'Smart Group ID: {sg_id}')
+                    break
+        return sg_id
+
     def ws1_import(self, pkg_path, pkg_info_path, icon_path):
         self.output(
             "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])  ## Add name of app being imported
@@ -249,8 +279,10 @@ class WorkSpaceOneImporter(Processor):
         oauth_client_id = self.env.get("ws1_oauth_client_id")
         oauth_client_secret = self.env.get("ws1_oauth_client_secret")
         oauth_token_url = self.env.get("ws1_oauth_token_url")
-        #force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
+        # force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         force_import = self.env.get("ws1_force_import")
+        smart_group2_names = self.env.get("ws1_smart_group2_names").split(separator=',')
+        deployment2_delay = self.env.get("ws1_deployment2_delay")
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
@@ -264,11 +296,11 @@ class WorkSpaceOneImporter(Processor):
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
         # Get some global variables for later use
-        #app_version = self.env["munki_importer_summary_result"]["data"]["version"]
-        #app_name = self.env["munki_importer_summary_result"]["data"]["name"]
+        # app_version = self.env["munki_importer_summary_result"]["data"]["version"]
+        # app_name = self.env["munki_importer_summary_result"]["data"]["name"]
         # get app name and version from pkginfo, don't rely on munki_importer_summary_result being filled in current session
         try:
-            with open(pkg_info_path , 'rb') as fp:
+            with open(pkg_info_path, 'rb') as fp:
                 pkg_info = plistlib.load(fp)
         except IOError:
             raise ProcessorError(f"Could not read pkg_info file [{pkg_info_path}]")
@@ -449,7 +481,7 @@ class WorkSpaceOneImporter(Processor):
         if not r.status_code == 201:
             result = r.json()
             self.output('App create result: {}'.format(result), verbose_level=3)
-            raise ProcessorError('WorkSpaceOneImporter: Unable to successfully create the App Object.')
+            raise ProcessorError('WorkSpaceOneImporter: Unable to create the App Object.')
 
         ## Now get the new App ID from the server
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
@@ -459,18 +491,8 @@ class WorkSpaceOneImporter(Processor):
         app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, ws1_app_id)
         self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
 
-        ## Get the Smart Group ID to assign the package to
-        ## we need to replace any spaces with '%20' for the API call
-        condensed_sg = SMARTGROUP.replace(" ", "%20")
-        r = requests.get(BASEURL + "/api/mdm/smartgroups/search?name=%s" % condensed_sg, headers=headers)
-        if not r.status_code == 200:
-            raise ProcessorError(
-                f'WorkSpaceOneImporter: No SmartGroup ID found for SmartGroup {SMARTGROUP} - bailing out.')
-        smart_group_results = r.json()
-        for sg in smart_group_results["SmartGroups"]:
-            if SMARTGROUP in sg["Name"]:
-                sg_id = sg["SmartGroupID"]
-                self.output('Smart Group ID: %s' % sg_id)
+        # get WS1 Smart Group ID from its name
+        sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
 
         ## Create the app assignment details
         if PUSHMODE == 'Auto':
@@ -483,33 +505,42 @@ class WorkSpaceOneImporter(Processor):
             ],
             "DeploymentParameters": {
                 "PushMode": PUSHMODE,
+                "AssignmentId": 1,
                 "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,  # TODO: maybe expose as input var
                 "RemoveOnUnEnroll": False,  # TODO: maybe expose as input var
                 "AutoUpdateDevicesWithPreviousVersion": True,  # TODO: maybe expose as input var
                 "VisibleInAppCatalog": True  # TODO: maybe expose as input var
             }
         }
-        payload = json.dumps(app_assignment)
-        self.output("App assignments data to send: {}".format(app_assignment), verbose_level=2)
+        self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
-        ## Make the API call to assign the App
-        try:
-            r = requests.post(BASEURL + '/api/mam/apps/internal/%s/assignments' % ws1_app_id, headers=headers,
-                              data=payload)
-        except:
-            raise ProcessorError('Something went wrong attempting to assign the app [%s] to the group [%s]' % (
-                self.env['NAME'], SMARTGROUP))
-        if not r.status_code == 201:
-            result = r.json()
-            self.output("App assignments failed, result errorCode: {} - {} ".format(result['errorCode'],
-                                                                                    result['message']),
-                        verbose_level=2)
-            raise ProcessorError('Unable to successfully assign the app [%s] to the group [%s]' % (
-                self.env['NAME'], SMARTGROUP))
-        self.output('Successfully assigned the app [%s] to the group [%s]' % (self.env['NAME'], SMARTGROUP))
+        # get WS1 Smart Group ID from its name
+        # sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
+        self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=2)
+        self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=2)
+        self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}]", verbose_level=2)
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
+    def ws1_app_assign(self, base_url, smart_group, app_assignment, headers, ws1_app_id):
+        """ Call WS1 API to assign app to smart group(s) with the deployment settings """
+        try:
+            payload = json.dumps(app_assignment)
+            self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
+        except:
+            raise ProcessorError(f"failed to parse App assignment as json")
+
+        try:
+            # Make the WS1 API call to assign the App
+            r = requests.post(f"{base_url}/api/mam/apps/internal/{ws1_app_id}/assignments", headers=headers,
+                              data=payload)
+        except:
+            raise ProcessorError(f"Something went wrong attempting to assign the app [{self.env['NAME']}] to group [{smart_group}]")
+        if not r.status_code == 201:
+            result = r.json()
+            self.output(f"App assignments failed: {result['errorCode']} - {result['message']}", verbose_level=2)
+            raise ProcessorError(f"Unable to successfully assign the app [{self.env['NAME']}] to the group [{smart_group}]")
+        self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
@@ -527,7 +558,7 @@ class WorkSpaceOneImporter(Processor):
         munkiimported_new = False
 
         # get ws1_import_new_only, defaults to True
-        #IMPORTNEWONLY = self.env.get("ws1_import_new_only", "True").lower() in ("true", "1", "t")
+        # IMPORTNEWONLY = self.env.get("ws1_import_new_only", "True").lower() in ("true", "1", "t")
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
@@ -569,7 +600,7 @@ class WorkSpaceOneImporter(Processor):
             self.output(f"MUNKI_REPO: {munki_repo}", verbose_level=2)
             if os.path.isfile(pkg):
                 itemsize = int(os.path.getsize(pkg))
-                installer_item_path = pkg[len(munki_repo) + 1:]    # get path relative from repo
+                installer_item_path = pkg[len(munki_repo) + 1:]  # get path relative from repo
                 if not itemsize == citemsize:
                     # item in repo must then be a Git LFS shortcut, pull the real file
                     self.git_lfs_pull(munki_repo, installer_item_path)
