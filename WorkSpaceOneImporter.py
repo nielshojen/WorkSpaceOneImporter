@@ -151,7 +151,7 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_deployment2_delay": {
             "required": False,
-            "default": "14",
+            "default": 14,
             "description": "Set the number of days to wait before deployment to the secondary smart group(s) should "
                            "begin. Typically for production. Under development.",
         }
