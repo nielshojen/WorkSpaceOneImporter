@@ -262,6 +262,8 @@ class WorkSpaceOneImporter(Processor):
                     sg_id = sg["SmartGroupID"]
                     self.output(f'Smart Group ID: {sg_id}')
                     break
+        except:
+            raise ProcessorError(f"failed to parse results from Smart Group search API call")
         return sg_id
 
     def ws1_import(self, pkg_path, pkg_info_path, icon_path):
@@ -535,11 +537,13 @@ class WorkSpaceOneImporter(Processor):
             r = requests.post(f"{base_url}/api/mam/apps/internal/{ws1_app_id}/assignments", headers=headers,
                               data=payload)
         except:
-            raise ProcessorError(f"Something went wrong attempting to assign the app [{self.env['NAME']}] to group [{smart_group}]")
+            raise ProcessorError(
+                f"Something went wrong attempting to assign the app [{self.env['NAME']}] to group [{smart_group}]")
         if not r.status_code == 201:
             result = r.json()
             self.output(f"App assignments failed: {result['errorCode']} - {result['message']}", verbose_level=2)
-            raise ProcessorError(f"Unable to successfully assign the app [{self.env['NAME']}] to the group [{smart_group}]")
+            raise ProcessorError(
+                f"Unable to successfully assign the app [{self.env['NAME']}] to the group [{smart_group}]")
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
     def main(self):
