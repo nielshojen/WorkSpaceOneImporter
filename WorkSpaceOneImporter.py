@@ -118,13 +118,13 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_force_import": {
             "required": False,
-            "default": False,
+            "default": "False",
             "description":
                 "If \"true\", force import into WS1 if version already exists. Default:false",
         },
         "ws1_import_new_only": {
             "required": False,
-            "default": True,
+            "default": "True",
             "description":
                 "If \"false\", in case no version was imported into Munki in this session, find latest version in "
                 "munki_repo to import into WS1. Default: true, meaning only newly imported versions are imported to WS1.",
@@ -135,7 +135,7 @@ class WorkSpaceOneImporter(Processor):
                            "early access.",
         },
         "ws1_push_mode": {
-            "required": False,
+            "required": True,
             "description": "how to deploy the app, Auto or On-Demand.",
         },
         "ws1_deployment_date": {
@@ -147,13 +147,13 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "default": "",
             "description": "The names of the secondary smart group(s) the app should be assigned to, typically for "
-                           "production. Separate multiple groups with a comma. Under development.",
+                           "production. Specify the group names as an array of strings. Under development.",
         },
         "ws1_deployment2_delay": {
             "required": False,
-            "default": 14,
+            "default": "14",
             "description": "Set the number of days to wait before deployment to the secondary smart group(s) should "
-                           "begin. Typically for production. Under development.",
+                           "begin. MUST specify as string value. Typically for production. Under development.",
         }
     }
     output_variables = {
@@ -281,9 +281,8 @@ class WorkSpaceOneImporter(Processor):
         oauth_client_id = self.env.get("ws1_oauth_client_id")
         oauth_client_secret = self.env.get("ws1_oauth_client_secret")
         oauth_token_url = self.env.get("ws1_oauth_token_url")
-        # force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
-        force_import = self.env.get("ws1_force_import")
-        smart_group2_names = self.env.get("ws1_smart_group2_names").split(separator=',')
+        force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
+        # force_import = self.env.get("ws1_force_import")
         deployment2_delay = self.env.get("ws1_deployment2_delay")
 
         # if placeholder value is set, ignore and set to None
@@ -296,6 +295,11 @@ class WorkSpaceOneImporter(Processor):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
                         .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
+
+        # if recipe writer gave us a single string instead of a list of strings,
+        # convert it to a list of strings
+        if isinstance(self.env["ws1_smart_group2_names"], str):
+            self.env["ws1_smart_group2_names"] = [self.env["ws1_smart_group2_names"]]
 
         # Get some global variables for later use
         # app_version = self.env["munki_importer_summary_result"]["data"]["version"]
@@ -516,11 +520,20 @@ class WorkSpaceOneImporter(Processor):
         }
         self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
-        # get WS1 Smart Group ID from its name
-        # sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
-        self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=2)
-        self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=2)
-        self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}]", verbose_level=2)
+        smart_group2_names = self.env.get("ws1_smart_group2_names")
+        if smart_group2_names:
+            self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=2)
+            self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=2)
+            sg_ids = []
+            for sg in self.env["ws1_smart_group2_names"]:
+                # get WS1 Smart Group ID from its name
+                sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
+                sg_ids.append(f"{sg_id}")
+            app_assignment.update("SmartGroupIds", sg_ids)
+
+            self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}]", verbose_level=2)
+
+            self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
@@ -562,7 +575,7 @@ class WorkSpaceOneImporter(Processor):
         munkiimported_new = False
 
         # get ws1_import_new_only, defaults to True
-        # IMPORTNEWONLY = self.env.get("ws1_import_new_only", "True").lower() in ("true", "1", "t")
+        import_new_only = self.env.get("ws1_import_new_only", "True").lower() in ("true", "1", "t")
 
         try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
@@ -572,13 +585,13 @@ class WorkSpaceOneImporter(Processor):
         if pkginfo_path:
             munkiimported_new = True
 
-        if not munkiimported_new and self.env.get("ws1_import_new_only"):
+        if not munkiimported_new and import_new_only:
             self.output(run_results)
             self.output("No updates so nothing to import to WorkSpaceOne")
             self.env["ws1_resultcode"] = 0
             self.env["ws1_stderr"] = ""
             return
-        elif not munkiimported_new and not self.env.get("ws1_import_new_only"):
+        elif not munkiimported_new and not import_new_only:
             self.output("Nothing new imported into Munki repo, but ws1_import_new_only==False so will try to find "
                         "existing matching version in Munki repo.")
             # get cached installer path that was set by MunkiImporter processor in previous recipe step because the one
