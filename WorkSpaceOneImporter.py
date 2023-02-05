@@ -529,11 +529,13 @@ class WorkSpaceOneImporter(Processor):
                 # get WS1 Smart Group ID from its name
                 sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
                 sg_ids.append(f"{sg_id}")
-            app_assignment.update("SmartGroupIds", sg_ids)
+            app_assignment["SmartGroupIds"] = sg_ids
 
             self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}]", verbose_level=2)
 
-            self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
+            self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
+            raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
+            #self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
@@ -624,7 +626,14 @@ class WorkSpaceOneImporter(Processor):
                 try:
                     itemhash = getsha256hash(pkg)
                     if not itemhash == citemhash:
-                        raise ProcessorError("Installer item in Munki repo differs from cached installer, please check")
+                        # if your recipe has a DmgCreator step, a different checksum is expected, if DMG, check its checksums
+                        if os.path.splitext(pkg).lower[1][1:] == "dmg":
+                            result = subprocess.run( ["hdiutil", "verify", "-quiet", pkg], check=True )
+                            if not result.returncode:
+                                raise ProcessorError(f"Verify installer failed [{pkg}]")
+                        else:
+                            raise ProcessorError(
+                                    "Installer item in Munki repo differs from cached installer, please check.")
                 except OSError as err:
                     raise ProcessorError(err)
 
