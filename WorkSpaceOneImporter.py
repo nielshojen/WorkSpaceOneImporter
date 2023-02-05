@@ -197,25 +197,6 @@ class WorkSpaceOneImporter(Processor):
         r = requests.post(url, data=streamer, headers=headers)
         return r.json()
 
-    # def convertTime(self, deployment_time):
-    #     if int(deployment_time) <= 23:
-    #         if int(deployment_time) is 24:
-    #             self.output("deployment_time was set to 24, changing to 0")
-    #             deployment_time = 0
-    #         else:
-    #             raise ProcessorError("Please enter a valid 24-hour time (i.e. between 0-23)")
-    #
-    #     today = datetime.date.today()
-    #     timestamp = time.strftime('%H')
-    #     utc_datetime = datetime.datetime.utcnow()
-    #     utc_datetime_formatted = utc_datetime.strftime("%H")
-    #     time_difference = ((int(utc_datetime_formatted) - int(timestamp)) * 60 * 60)
-    #     # availability_time = datetime.timedelta(hours=int(time_difference))
-    #     if int(utc_datetime_formatted) < int(deployment_time):
-    #         sec_to_add = int(((int(deployment_time) - int(timestamp)) * 60 * 60) + int(time_difference))
-    #     elif int(utc_datetime_formatted) > int(deployment_time):
-    #         sec_to_add = int(((24 - int(timestamp) + int(deployment_time)) * 60 * 60) + int(time_difference))
-
     # validate if a URL was supplied (in input variable) - thanks https://stackoverflow.com/a/52455972
     def is_url(self, url):
         try:
@@ -532,6 +513,9 @@ class WorkSpaceOneImporter(Processor):
             app_assignment["SmartGroupIds"] = sg_ids
 
             self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}]", verbose_level=2)
+            today = datetime.date.today()
+            deploy_date = today + datetime.timedelta(days=deployment2_delay)
+            app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
 
             self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
             raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
