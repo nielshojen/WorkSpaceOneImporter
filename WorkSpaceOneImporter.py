@@ -621,13 +621,16 @@ class WorkSpaceOneImporter(Processor):
                 itemsize = int(os.path.getsize(pkg))
                 installer_item_path = pkg[len(munki_repo) + 1:]  # get path relative from repo
                 if not itemsize == citemsize:
-                    # item in repo must then be a Git LFS shortcut, pull the real file
+                    self.output("size of item in local munki repo differs from cached, might be a Git LFS shortcut, "
+                                "pulling remote", verbose_level=2)
                     self.git_lfs_pull(munki_repo, installer_item_path)
                 try:
                     itemhash = getsha256hash(pkg)
                     if not itemhash == citemhash:
-                        # if your recipe has a DmgCreator step, a different checksum is expected, if DMG, check its checksums
                         if os.path.splitext(pkg)[1][1:].lower() == "dmg":
+                            self.output(
+                                "Installer dmg item in Munki repo differs from cached installer, this is expected if "
+                                "your recipe has a DmgCreator step; checking dmg checksum.", verbose_level=2)
                             result = subprocess.run( ["hdiutil", "verify", "-quiet", pkg] )
                             if not result.returncode == 0:
                                 raise ProcessorError(f"Installer dmg verification failed for [{pkg}]")
