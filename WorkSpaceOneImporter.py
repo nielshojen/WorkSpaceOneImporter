@@ -628,9 +628,9 @@ class WorkSpaceOneImporter(Processor):
                     if not itemhash == citemhash:
                         # if your recipe has a DmgCreator step, a different checksum is expected, if DMG, check its checksums
                         if os.path.splitext(pkg)[1][1:].lower() == "dmg":
-                            result = subprocess.run( ["hdiutil", "verify", "-quiet", pkg], check=True )
-                            if not result.returncode:
-                                raise ProcessorError(f"Verify installer failed [{pkg}]")
+                            result = subprocess.run( ["hdiutil", "verify", "-quiet", pkg] )
+                            if not result.returncode == 0:
+                                raise ProcessorError(f"Installer dmg verification failed for [{pkg}]")
                         else:
                             raise ProcessorError(
                                     "Installer item in Munki repo differs from cached installer, please check.")
