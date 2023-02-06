@@ -265,7 +265,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         # force_import = self.env.get("ws1_force_import")
-        deployment2_delay = self.env.get("ws1_deployment2_delay")
+        deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
