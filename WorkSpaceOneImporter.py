@@ -148,7 +148,10 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "default": "",
             "description": "The names of the secondary smart group(s) the app should be assigned to, typically for "
-                           "production. Specify the group names as an array of strings. Under development.",
+                           "production. Recipe input var WS1_SMART_GROUP2_NAMES could not be passed as a processor "
+                           "argument because it can have variable length, and that makes variable substitution hard, "
+                           "so processor reads recipe input var instead. "
+                           "Specify the group names as an array of strings. Under development.",
         },
         "ws1_deployment2_delay": {
             "required": False,
@@ -278,10 +281,10 @@ class WorkSpaceOneImporter(Processor):
                         .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
-        # if recipe writer gave us a single string instead of a list of strings,
-        # convert it to a list of strings
-        if isinstance(self.env["ws1_smart_group2_names"], str):
-            self.env["ws1_smart_group2_names"] = [self.env["ws1_smart_group2_names"]]
+        # If recipe operator gave us a single string instead of a list of strings, convert it to a
+        # list of strings
+        if self.env["WS1_SMART_GROUP2_NAMES"] and isinstance(self.env["WS1_SMART_GROUP2_NAMES"], str):
+            self.env["WS1_SMART_GROUP2_NAMES"] = [self.env["WS1_SMART_GROUP2_NAMES"]]
 
         # Get some global variables for later use
         # app_version = self.env["munki_importer_summary_result"]["data"]["version"]
@@ -502,13 +505,13 @@ class WorkSpaceOneImporter(Processor):
         }
         self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
-        #smart_group2_names = self.env.get("ws1_smart_group2_names")
         smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
         if smart_group2_names:
-            self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=2)
-            self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=2)
+            self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=3)
+            self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=3)
+            app_assignment["AssignmentId"] = 2
             sg_ids = []
-            for sg in self.env["ws1_smart_group2_names"]:
+            for sg in smart_group2_names:
                 # get WS1 Smart Group ID from its name
                 sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
                 sg_ids.append(f"{sg_id}")
@@ -519,7 +522,7 @@ class WorkSpaceOneImporter(Processor):
             deploy_date = today + datetime.timedelta(days=deployment2_delay)
             app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
 
-            self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
+            #self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
             #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
             self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
 
