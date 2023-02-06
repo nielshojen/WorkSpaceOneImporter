@@ -24,6 +24,7 @@ import os.path
 import plistlib
 import hashlib
 import subprocess
+import datetime
 
 import requests  # dependency
 import json
@@ -512,7 +513,7 @@ class WorkSpaceOneImporter(Processor):
                 sg_ids.append(f"{sg_id}")
             app_assignment["SmartGroupIds"] = sg_ids
 
-            self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}]", verbose_level=2)
+            self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}] days", verbose_level=2)
             today = datetime.date.today()
             deploy_date = today + datetime.timedelta(days=deployment2_delay)
             app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
