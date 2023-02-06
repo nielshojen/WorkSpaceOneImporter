@@ -502,7 +502,8 @@ class WorkSpaceOneImporter(Processor):
         }
         self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
-        smart_group2_names = self.env.get("ws1_smart_group2_names")
+        #smart_group2_names = self.env.get("ws1_smart_group2_names")
+        smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
         if smart_group2_names:
             self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=2)
             self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=2)
@@ -519,8 +520,8 @@ class WorkSpaceOneImporter(Processor):
             app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
 
             self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
-            raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
-            #self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
+            #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
+            self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
