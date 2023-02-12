@@ -17,7 +17,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Autopkg processor to upload files from a Munki repo to VMWare Workspace ONE using REST API"""
+"""Autopkg processor to upload files from a Munki repo to VMWare Workspace ONE UEM using REST API"""
 
 import base64
 import os.path
@@ -158,6 +158,13 @@ class WorkSpaceOneImporter(Processor):
             "default": "14",
             "description": "Set the number of days to wait before deployment to the secondary smart group(s) should "
                            "begin. MUST specify as string value. Typically for production. Under development.",
+        },
+        "ws1_assignment-rules": {
+            "required": False,
+            "description": "Define recipe Input-variable \"ws1_assignments\". NOT as Processor input var as it is too "
+                "complex to be be substituted. Must override.\n"
+                "See https://as135.awmdm.com/API/help/#!/apis/10001?!%2FAppsV2%2FAppsV2_UpdateAssignmentRuleAsync\n"
+                "Under development.",
         }
     }
     output_variables = {
@@ -482,10 +489,13 @@ class WorkSpaceOneImporter(Processor):
         app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, ws1_app_id)
         self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
 
+        """
+        Create the app assignment details for API V1 assignments POST call
+        MAM (Mobile Application Management) REST API V1  - POST /apps/internal/{applicationId}/assignments
+        https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync
+        """
         # get WS1 Smart Group ID from its name
         sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
-
-        ## Create the app assignment details
         if PUSHMODE == 'Auto':
             setMacOsDesiredStateManagement = True
         else:
@@ -497,34 +507,57 @@ class WorkSpaceOneImporter(Processor):
             "DeploymentParameters": {
                 "PushMode": PUSHMODE,
                 "AssignmentId": 1,
-                "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,  # TODO: maybe expose as input var
-                "RemoveOnUnEnroll": False,  # TODO: maybe expose as input var
-                "AutoUpdateDevicesWithPreviousVersion": True,  # TODO: maybe expose as input var
-                "VisibleInAppCatalog": True  # TODO: maybe expose as input var
+                "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,
+                "RemoveOnUnEnroll": False,
+                "AutoUpdateDevicesWithPreviousVersion": True,
+                "VisibleInAppCatalog": True
             }
         }
         self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
-        smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
-        if smart_group2_names:
-            self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=3)
-            self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=3)
-            app_assignment["AssignmentId"] = 2
-            sg_ids = []
-            for sg in smart_group2_names:
-                # get WS1 Smart Group ID from its name
-                sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
-                sg_ids.append(f"{sg_id}")
-            app_assignment["SmartGroupIds"] = sg_ids
+        # smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
+        # if smart_group2_names:
+        #     self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=3)
+        #     self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=3)
+        #     app_assignment["AssignmentId"] = 2
+        #     sg_ids = []
+        #     for sg in smart_group2_names:
+        #         # get WS1 Smart Group ID from its name
+        #         sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
+        #         sg_ids.append(f"{sg_id}")
+        #     app_assignment["SmartGroupIds"] = sg_ids
+        #
+        #     self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}] days", verbose_level=2)
+        #     today = datetime.date.today()
+        #     deploy_date = today + datetime.timedelta(days=deployment2_delay)
+        #     app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
+        #
+        #     #self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
+        #     #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
+        #     self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
 
-            self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}] days", verbose_level=2)
-            today = datetime.date.today()
-            deploy_date = today + datetime.timedelta(days=deployment2_delay)
-            app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
+        """
+        Prepare the app assignment rules data for API V2 assignments PUT call
+        MAM (Mobile Application Management) REST API V2  - PUT /apps/{applicationUuid}/assignment-rules
+        https://as135.awmdm.com/API/help/#!/AppsV2/AppsV2_UpdateAssignmentRuleAsync
+        """
+        # call Get for internal app to get app UUID
+        r = requests.get(f"{BASEURL}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
+        result = r.json()
+        if not r.status_code == 200:
+            raise ProcessorError(
+                f"WorkSpaceOneImporter: Unable to get internal app details - message: {result['message']}.")
+        ws1_app_uuid = result["uuid"]
+        self.output(f"ws1_app_uuid: [{ws1_app_uuid}]", verbose_level=3)
 
-            #self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
-            #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
-            self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
+        # fetch the assignments Input from the recipe
+        app_assignments = self.env.get("ws1_assignments")
+        if app_assignments:
+            self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=3)
+            self.output(f"Assignment recipe input var is: [{app_assignments}]", verbose_level=3)
+
+            self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
+            raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
 
         return "Application was successfully uploaded to WorkSpaceOne."
 

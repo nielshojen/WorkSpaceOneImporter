@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Description</key>
+	<string>Test to troubleshoot passing a list of strings as an input var to a processor.</string>
+	<key>Identifier</key>
+	<string>com.github.codeskipper.pkg.PathDeleterTEST2</string>
+	<key>Input</key>
+	<dict>
+		<key>NAME</key>
+		<string>TEST PathDeleter vars</string>
+		<key>path_list</key>
+		<array>
+			<string>TESTFOLDER1</string>
+		</array>
+	</dict>
+	<key>Process</key>
+	<array>
+		<dict>
+			<key>Processor</key>
+			<string>PathDeleter</string>
+		</dict>
+	</array>
+</dict>
+</plist>
