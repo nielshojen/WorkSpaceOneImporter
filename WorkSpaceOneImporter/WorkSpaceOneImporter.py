@@ -490,25 +490,26 @@ class WorkSpaceOneImporter(Processor):
         https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync
         """
         # get WS1 Smart Group ID from its name
-        sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
-        if PUSHMODE == 'Auto':
-            setMacOsDesiredStateManagement = True
-        else:
-            setMacOsDesiredStateManagement = False
-        app_assignment = {
-            "SmartGroupIds": [
-                sg_id
-            ],
-            "DeploymentParameters": {
-                "PushMode": PUSHMODE,
-                "AssignmentId": 1,
-                "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,
-                "RemoveOnUnEnroll": False,
-                "AutoUpdateDevicesWithPreviousVersion": True,
-                "VisibleInAppCatalog": True
+        if not SMARTGROUP == 'none':
+                sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
+            if PUSHMODE == 'Auto':
+                setMacOsDesiredStateManagement = True
+            else:
+                setMacOsDesiredStateManagement = False
+            app_assignment = {
+                "SmartGroupIds": [
+                    sg_id
+                ],
+                "DeploymentParameters": {
+                    "PushMode": PUSHMODE,
+                    "AssignmentId": 1,
+                    "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,
+                    "RemoveOnUnEnroll": False,
+                    "AutoUpdateDevicesWithPreviousVersion": True,
+                    "VisibleInAppCatalog": True
+                }
             }
-        }
-        self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
+            self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
         # First attempt to assign secondary smart groups using APIv1 - abandoned in favour of APIv2
         # If recipe operator gave us a single string instead of a list of strings, convert it to a
