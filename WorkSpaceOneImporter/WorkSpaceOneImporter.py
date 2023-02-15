@@ -123,6 +123,12 @@ class WorkSpaceOneImporter(Processor):
             "description":
                 "If \"true\", force import into WS1 if version already exists. Default:false",
         },
+        "ws1_update_assignments": {
+            "required": False,
+            "default": "False",
+            "description":
+                "If \"true\", update assignments for existing app version in WS1. Default:false",
+        },
         "ws1_import_new_only": {
             "required": False,
             "default": "True",
@@ -260,7 +266,7 @@ class WorkSpaceOneImporter(Processor):
 
     def ws1_import(self, pkg_path, pkg_info_path, icon_path):
         self.output(
-            "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])  ## Add name of app being imported
+            "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])
         BASEURL = self.env.get("ws1_api_url")
         CONSOLEURL = self.env.get("ws1_console_url")
         GROUPID = self.env.get("ws1_groupid")
@@ -274,6 +280,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_client_secret = self.env.get("ws1_oauth_client_secret")
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
+        update_assignments = self.env.get("ws1_update_assignments").lower() in ('true', '1', 't')
         # force_import = self.env.get("ws1_force_import")
         # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
@@ -287,6 +294,9 @@ class WorkSpaceOneImporter(Processor):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
                         .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
+
+        # fetch the app assignments Input from the recipe
+        app_assignments = self.env.get("ws1_assignments")
 
         # Get some global variables for later use
         # app_version = self.env["munki_importer_summary_result"]["data"]["version"]
@@ -366,9 +376,16 @@ class WorkSpaceOneImporter(Processor):
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                         # if not self.env.get("ws1_force_import").lower() == "true":
                         if not force_import:
-                            self.output('App [{}] version [{}] is already present on server, '
+                            if update_assignments:
+                                if not SMARTGROUP == 'none':
+                                    app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP, headers)
+                                    self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
+                                if not app_assignments == 'none':
+                                    self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
+                                else:
+                                    self.output('App [{}] version [{}] is already present on server, '
                                         'and ws1_force_import is not set.'.format(app_name, app_version))
-                            return "Nothing new to upload - completed."
+                                    return "Nothing new to upload - completed."
                         else:
                             self.output(
                                 'App [{}] version [{}] already present on server, and ws1_force_import==True, '
@@ -491,24 +508,7 @@ class WorkSpaceOneImporter(Processor):
         """
         # get WS1 Smart Group ID from its name
         if not SMARTGROUP == 'none':
-            sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
-            if PUSHMODE == 'Auto':
-                setMacOsDesiredStateManagement = True
-            else:
-                setMacOsDesiredStateManagement = False
-            app_assignment = {
-                "SmartGroupIds": [
-                    sg_id
-                ],
-                "DeploymentParameters": {
-                    "PushMode": PUSHMODE,
-                    "AssignmentId": 1,
-                    "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,
-                    "RemoveOnUnEnroll": False,
-                    "AutoUpdateDevicesWithPreviousVersion": True,
-                    "VisibleInAppCatalog": True
-                }
-            }
+            app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP, headers)
             self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
         # First attempt to assign secondary smart groups using APIv1 - abandoned in favour of APIv2
@@ -537,6 +537,11 @@ class WorkSpaceOneImporter(Processor):
         #     #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
         #     self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
 
+        self.ws1_app_assignments(BASEURL, headers, ws1_app_id)
+
+        return "Application was successfully uploaded to WorkSpaceOne."
+
+    def ws1_app_assignments(self, BASEURL, app_assignments, headers, ws1_app_id):
         """
         Prepare the app assignment rules data for API V2 assignments PUT call
         MAM (Mobile Application Management) REST API V2  - PUT /apps/{applicationUuid}/assignment-rules
@@ -550,20 +555,39 @@ class WorkSpaceOneImporter(Processor):
                 f"WorkSpaceOneImporter: Unable to get internal app details - message: {result['message']}.")
         ws1_app_uuid = result["uuid"]
         self.output(f"ws1_app_uuid: [{ws1_app_uuid}]", verbose_level=3)
-
-        # fetch the assignments Input from the recipe
-        app_assignments = self.env.get("ws1_assignments")
         if not app_assignments == 'none':
-            self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=3)
-            self.output(f"Assignment recipe input var is: [{app_assignments}]", verbose_level=3)
+            self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
+            # self.output(f"Assignment recipe input var is: [{app_assignments}]", verbose_level=3)
 
             self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
             raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
 
-        return "Application was successfully uploaded to WorkSpaceOne."
+    def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
+        """ assemble app_assignment to pass in API V1 call """
+        sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
+        if PUSHMODE == 'Auto':
+            setMacOsDesiredStateManagement = True
+        else:
+            setMacOsDesiredStateManagement = False
+        app_assignment = {
+            "SmartGroupIds": [
+                sg_id
+            ],
+            "DeploymentParameters": {
+                "PushMode": PUSHMODE,
+                "AssignmentId": 1,
+                "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,
+                "RemoveOnUnEnroll": False,
+                "AutoUpdateDevicesWithPreviousVersion": True,
+                "VisibleInAppCatalog": True
+            }
+        }
+        return app_assignment
 
     def ws1_app_assign(self, base_url, smart_group, app_assignment, headers, ws1_app_id):
-        """ Call WS1 API to assign app to smart group(s) with the deployment settings """
+        """ Call WS1 API V1 assignments for to smart group(s) with the deployment settings
+        MAM (Mobile Application Management) REST API V1  - POST /apps/internal/{applicationId}/assignments
+        https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync """
         try:
             payload = json.dumps(app_assignment)
             self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
