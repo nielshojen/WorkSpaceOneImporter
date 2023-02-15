@@ -288,11 +288,6 @@ class WorkSpaceOneImporter(Processor):
                         .format(CONSOLEURL), verbose_level=2)
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
-        # If recipe operator gave us a single string instead of a list of strings, convert it to a
-        # list of strings
-        if self.env["WS1_SMART_GROUP2_NAMES"] and isinstance(self.env["WS1_SMART_GROUP2_NAMES"], str):
-            self.env["WS1_SMART_GROUP2_NAMES"] = [self.env["WS1_SMART_GROUP2_NAMES"]]
-
         # Get some global variables for later use
         # app_version = self.env["munki_importer_summary_result"]["data"]["version"]
         # app_name = self.env["munki_importer_summary_result"]["data"]["name"]
@@ -515,6 +510,11 @@ class WorkSpaceOneImporter(Processor):
         }
         self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
+        # First attempt to assign secondary smart groups using APIv1 - abandoned in favour of APIv2
+        # If recipe operator gave us a single string instead of a list of strings, convert it to a
+        # list of strings
+        # if self.env["WS1_SMART_GROUP2_NAMES"] and isinstance(self.env["WS1_SMART_GROUP2_NAMES"], str):
+        #    self.env["WS1_SMART_GROUP2_NAMES"] = [self.env["WS1_SMART_GROUP2_NAMES"]]
         # smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
         # if smart_group2_names:
         #     self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=3)
