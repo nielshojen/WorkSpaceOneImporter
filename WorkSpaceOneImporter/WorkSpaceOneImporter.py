@@ -139,26 +139,26 @@ class WorkSpaceOneImporter(Processor):
             "required": True,
             "description": "how to deploy the app, Auto or On-Demand.",
         },
-        "ws1_deployment_date": {
-            "required": False,
-            "description": "Sets the date that the deployment of the app should begin. If not specified, current date "
-                           "is chosen. Not implemented yet.",
-        },
-        "ws1_smart_group2_names": {
-            "required": False,
-            "default": "",
-            "description": "The names of the secondary smart group(s) the app should be assigned to, typically for "
-                           "production. Recipe input var WS1_SMART_GROUP2_NAMES could not be passed as a processor "
-                           "argument because it can have variable length, and that makes variable substitution hard, "
-                           "so processor reads recipe input var instead. "
-                           "Specify the group names as an array of strings. Under development.",
-        },
-        "ws1_deployment2_delay": {
-            "required": False,
-            "default": "14",
-            "description": "Set the number of days to wait before deployment to the secondary smart group(s) should "
-                           "begin. MUST specify as string value. Typically for production. Under development.",
-        },
+        # "ws1_deployment_date": {
+        #     "required": False,
+        #     "description": "Sets the date that the deployment of the app should begin. If not specified, current date "
+        #                    "is chosen. Not implemented yet.",
+        # },
+        # "ws1_smart_group2_names": {
+        #     "required": False,
+        #     "default": "",
+        #     "description": "The names of the secondary smart group(s) the app should be assigned to, typically for "
+        #                    "production. Recipe input var WS1_SMART_GROUP2_NAMES could not be passed as a processor "
+        #                    "argument because it can have variable length, and that makes variable substitution hard, "
+        #                    "so processor reads recipe input var instead. "
+        #                    "Specify the group names as an array of strings. Under development.",
+        # },
+        # "ws1_deployment2_delay": {
+        #     "required": False,
+        #     "default": "14",
+        #     "description": "Set the number of days to wait before deployment to the secondary smart group(s) should "
+        #                    "begin. MUST specify as string value. Typically for production. Under development.",
+        # },
         "ws1_assignment-rules": {
             "required": False,
             "description": "Define recipe Input-variable \"ws1_assignments\". NOT as Processor input var as it is too "
@@ -275,7 +275,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         # force_import = self.env.get("ws1_force_import")
-        deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
+        # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
