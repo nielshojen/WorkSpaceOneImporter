@@ -491,7 +491,7 @@ class WorkSpaceOneImporter(Processor):
         """
         # get WS1 Smart Group ID from its name
         if not SMARTGROUP == 'none':
-                sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
+            sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
             if PUSHMODE == 'Auto':
                 setMacOsDesiredStateManagement = True
             else:
@@ -553,7 +553,7 @@ class WorkSpaceOneImporter(Processor):
 
         # fetch the assignments Input from the recipe
         app_assignments = self.env.get("ws1_assignments")
-        if app_assignments:
+        if not app_assignments == 'none':
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=3)
             self.output(f"Assignment recipe input var is: [{app_assignments}]", verbose_level=3)
 
