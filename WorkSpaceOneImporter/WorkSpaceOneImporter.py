@@ -575,6 +575,7 @@ class WorkSpaceOneImporter(Processor):
                     app_assignment["distribution"]["smart_groups"].append({sg_uuid})
                 del app_assignment["distribution"]["smart_group_names"]
                 distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
+                self.output(f"distr_delay_days: {distr_delay_days}")
                 if not distr_delay_days == '0':
                     num_delay_days = int(distr_delay_days)
                     self.output(f"smart group deployment delay for assignment[{priority}] is: [{num_delay_days}] days", verbose_level=2)
@@ -582,8 +583,8 @@ class WorkSpaceOneImporter(Processor):
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
                     del app_assignment["distribution"]["distr_delay_days"]
+            self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
             try:
-                self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
                 payload = json.dumps(app_assignments)
                 self.output(f"App assignments data to send as json: {payload}", verbose_level=2)
             except:
