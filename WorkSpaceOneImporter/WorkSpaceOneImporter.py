@@ -281,6 +281,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         update_assignments = self.env.get("ws1_update_assignments").lower() in ('true', '1', 't')
+        self.output(f"update_assignments: {update_assignments}", verbose_level=2)
         # force_import = self.env.get("ws1_force_import")
         # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
