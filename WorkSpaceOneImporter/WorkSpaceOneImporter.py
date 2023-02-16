@@ -575,10 +575,10 @@ class WorkSpaceOneImporter(Processor):
                     app_assignment["distribution"]["smart_groups"].append({sg_uuid})
                 del app_assignment["distribution"]["smart_group_names"]
                 distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
-                self.output(f"distr_delay_days: {distr_delay_days}")
+                self.output(f"distr_delay_days: {distr_delay_days}", verbose_level=3)
                 if not distr_delay_days == '0':
                     num_delay_days = int(distr_delay_days)
-                    self.output(f"smart group deployment delay for assignment[{priority}] is: [{num_delay_days}] days", verbose_level=2)
+                    self.output(f"smart group deployment delay for assignment[{priority_index}] is: [{num_delay_days}] days", verbose_level=2)
                     today = datetime.date.today()
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
