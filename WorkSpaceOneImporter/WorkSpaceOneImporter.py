@@ -572,7 +572,7 @@ class WorkSpaceOneImporter(Processor):
                 app_assignment["distribution"]["smart_groups"] = []
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
                     sg_id, sg_uuid = self.get_smartgroup_id(BASEURL, smart_group_name, headers)
-                    app_assignment["distribution"]["smart_groups"].append({sg_uuid})
+                    app_assignment["distribution"]["smart_groups"].append(sg_uuid)
                 del app_assignment["distribution"]["smart_group_names"]
                 distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
                 self.output(f"distr_delay_days: {distr_delay_days}", verbose_level=3)
@@ -582,7 +582,7 @@ class WorkSpaceOneImporter(Processor):
                     today = datetime.date.today()
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
-                    del app_assignment["distribution"]["distr_delay_days"]
+                del app_assignment["distribution"]["distr_delay_days"]
             self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
             try:
                 payload = json.dumps(app_assignments)
@@ -631,12 +631,12 @@ class WorkSpaceOneImporter(Processor):
                               data=payload)
         except:
             raise ProcessorError(
-                f"Something went wrong attempting to assign the app [{self.env['NAME']}] to group [{smart_group}]")
+                f"Something went wrong assigning the app [{self.env['NAME']}] to group [{smart_group}]")
         if not r.status_code == 201:
             result = r.json()
             self.output(f"App assignments failed: {result['errorCode']} - {result['message']}", verbose_level=2)
             raise ProcessorError(
-                f"Unable to successfully assign the app [{self.env['NAME']}] to the group [{smart_group}]")
+                f"Unable to assign the app [{self.env['NAME']}] to the group [{smart_group}]")
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
     def main(self):
