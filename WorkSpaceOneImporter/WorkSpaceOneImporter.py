@@ -363,7 +363,6 @@ class WorkSpaceOneImporter(Processor):
         self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
 
         ## Check if app version is already present on WS1 server
-        # TODO: maybe make SmartGroup assignment conditional on results
         try:
             condensed_app_name = app_name.replace(" ", "%20")
             r = requests.get(
@@ -424,7 +423,7 @@ class WorkSpaceOneImporter(Processor):
                 self.output('App [{}] version [{}] is not yet present on server, will attempt upload'
                             .format(app_name, app_version))
         except:
-            raise ProcessorError('Something went wrong checking for pre-existing app version on server')
+            raise ProcessorError('Something went wrong handling pre-existing app version on server')
 
         ## proceed with upload
         if not pkg_path == None:
@@ -584,8 +583,9 @@ class WorkSpaceOneImporter(Processor):
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
                     del app_assignment["distribution"]["distr_delay_days"]
             try:
+                self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
                 payload = json.dumps(app_assignments)
-                self.output(f"App assignments data to send: {payload}", verbose_level=2)
+                self.output(f"App assignments data to send as json: {payload}", verbose_level=2)
             except:
                 raise ProcessorError("Failed parsing app assignments as json")
 
