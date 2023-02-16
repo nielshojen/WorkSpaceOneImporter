@@ -245,7 +245,7 @@ class WorkSpaceOneImporter(Processor):
         return headers
 
     def get_smartgroup_id(self, base_url, smartgroup, headers):
-        """Get Smart Group ID to assign the package to"""
+        """Get Smart Group ID and UUID to assign the package to"""
 
         # we need to replace any spaces with '%20' for the API call
         condensed_sg = smartgroup.replace(" ", "%20")
@@ -258,11 +258,12 @@ class WorkSpaceOneImporter(Processor):
             for sg in smart_group_results["SmartGroups"]:
                 if smartgroup in sg["Name"]:
                     sg_id = sg["SmartGroupID"]
+                    sg_uuid = sg["SmartGroupUuid"]
                     self.output(f'Smart Group ID: {sg_id}')
                     break
         except:
             raise ProcessorError(f"failed to parse results from Smart Group search API call")
-        return sg_id
+        return sg_id, sg_uuid
 
     def ws1_import(self, pkg_path, pkg_info_path, icon_path):
         self.output(
@@ -281,7 +282,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         update_assignments = self.env.get("ws1_update_assignments").lower() in ('true', '1', 't')
-        self.output(f"update_assignments: {update_assignments}", verbose_level=2)
+        #self.output(f"update_assignments: {update_assignments}", verbose_level=2)
         # force_import = self.env.get("ws1_force_import")
         # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
@@ -298,12 +299,11 @@ class WorkSpaceOneImporter(Processor):
 
         # fetch the app assignments Input from the recipe
         app_assignments = self.env.get("ws1_assignments")
-        self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=2)
+        # self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=2)
 
-        # Get some global variables for later use
-        # app_version = self.env["munki_importer_summary_result"]["data"]["version"]
-        # app_name = self.env["munki_importer_summary_result"]["data"]["name"]
-        # get app name and version from pkginfo, don't rely on munki_importer_summary_result being filled in current session
+        # Get some global variables for later use app_version = self.env["munki_importer_summary_result"]["data"][
+        # "version"] app_name = self.env["munki_importer_summary_result"]["data"]["name"] get app name and version
+        # from pkginfo, don't rely on munki_importer_summary_result being filled in current session
         try:
             with open(pkg_info_path, 'rb') as fp:
                 pkg_info = plistlib.load(fp)
@@ -549,7 +549,7 @@ class WorkSpaceOneImporter(Processor):
 
     def ws1_app_assignments(self, BASEURL, app_assignments, headers, ws1_app_id):
         """
-        Prepare the app assignment rules data for API V2 assignments PUT call
+        prep app assignment rules and make API V2 assignments PUT call
         MAM (Mobile Application Management) REST API V2  - PUT /apps/{applicationUuid}/assignment-rules
         https://as135.awmdm.com/API/help/#!/AppsV2/AppsV2_UpdateAssignmentRuleAsync
         """
@@ -563,14 +563,33 @@ class WorkSpaceOneImporter(Processor):
         self.output(f"ws1_app_uuid: [{ws1_app_uuid}]", verbose_level=3)
         if not app_assignments == 'none':
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
-            # self.output(f"Assignment recipe input var is: [{app_assignments}]", verbose_level=3)
+            self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
 
-            self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
+            priority_index = 0
+            for app_assignment in app_assignments:
+                app_assignment["priority"] = priority_index
+                priority_index += 1
+                app_assignment["distribution"]["smart_groups"] = []
+                for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
+                    sg_id, sg_uuid = self.get_smartgroup_id(BASEURL, smart_group_name, headers)
+                    app_assignment["distribution"]["smart_groups"].append({sg_uuid})
+                del app_assignment["distribution"]["smart_group_names"]
+                distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
+                if not distr_delay_days == '0':
+                    num_delay_days = int(distr_delay_days)
+                    self.output(f"smart group deployment delay for assignment[{priority}] is: [{num_delay_days}] days", verbose_level=2)
+                    today = datetime.date.today()
+                    deploy_date = today + datetime.timedelta(days=num_delay_days)
+                    app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
+                    del app_assignment["distribution"]["distr_delay_days"]
+            payload = json.dumps(app_assignments)
+            self.output(f"App assignments data to send: {payload}", verbose_level=2)
+
             raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
         """ assemble app_assignment to pass in API V1 call """
-        sg_id = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
+        sg_id, sg_uuid = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
         if PUSHMODE == 'Auto':
             setMacOsDesiredStateManagement = True
         else:
