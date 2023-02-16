@@ -548,14 +548,14 @@ class WorkSpaceOneImporter(Processor):
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
-    def ws1_app_assignments(self, BASEURL, app_assignments, headers, ws1_app_id):
+    def ws1_app_assignments(self, base_url, app_assignments, headers, ws1_app_id):
         """
         prep app assignment rules and make API V2 assignments PUT call
         MAM (Mobile Application Management) REST API V2  - PUT /apps/{applicationUuid}/assignment-rules
         https://as135.awmdm.com/API/help/#!/AppsV2/AppsV2_UpdateAssignmentRuleAsync
         """
         # call Get for internal app to get app UUID
-        r = requests.get(f"{BASEURL}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
+        r = requests.get(f"{base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
         result = r.json()
         if not r.status_code == 200:
             raise ProcessorError(
@@ -572,7 +572,7 @@ class WorkSpaceOneImporter(Processor):
                 priority_index += 1
                 app_assignment["distribution"]["smart_groups"] = []
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
-                    sg_id, sg_uuid = self.get_smartgroup_id(BASEURL, smart_group_name, headers)
+                    sg_id, sg_uuid = self.get_smartgroup_id(base_url, smart_group_name, headers)
                     app_assignment["distribution"]["smart_groups"].append(sg_uuid)
                 del app_assignment["distribution"]["smart_group_names"]
                 distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
@@ -596,22 +596,23 @@ class WorkSpaceOneImporter(Processor):
 
             headers_v2 = dict(headers)
             headers_v2['Accept'] = headers['Accept'] + ';version=2'
-            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
+            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
 
             try:
                 # Make the WS1 APIv2 call to assign the App
                 r = requests.put(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2,
-                                  data=payload)
+                                 data=payload)
             except:
                 raise ProcessorError(
                     f"Something went wrong setting assignment-rules for app [{self.env['NAME']}]")
             if not r.status_code == 202:
                 result = r.json()
-                self.output(f"Setting App assignment rules failed: {result['errorCode']} - {result['message']}", verbose_level=2)
+                self.output(f"Setting App assignment rules failed: {result['errorCode']} - {result['message']}",
+                            verbose_level=2)
                 raise ProcessorError(
                     f"Unable to set assignment rules for [{self.env['NAME']}]")
             self.output(f"Successfully set assignment rules for [{self.env['NAME']}]")
-            #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
+            # raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
         """ assemble app_assignment to pass in API V1 call """
