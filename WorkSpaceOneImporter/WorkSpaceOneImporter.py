@@ -258,8 +258,9 @@ class WorkSpaceOneImporter(Processor):
             for sg in smart_group_results["SmartGroups"]:
                 if smartgroup in sg["Name"]:
                     sg_id = sg["SmartGroupID"]
+                    self.output(f'Smart Group ID: {sg_id}', verbose_level=2)
                     sg_uuid = sg["SmartGroupUuid"]
-                    self.output(f'Smart Group ID: {sg_id}')
+                    self.output(f'Smart Group UUID: {sg_uuid}', verbose_level=2)
                     break
         except:
             raise ProcessorError(f"failed to parse results from Smart Group search API call")
@@ -567,7 +568,7 @@ class WorkSpaceOneImporter(Processor):
 
             priority_index = 0
             for app_assignment in app_assignments:
-                app_assignment["priority"] = priority_index
+                app_assignment["priority"] = str(priority_index)
                 priority_index += 1
                 app_assignment["distribution"]["smart_groups"] = []
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
@@ -582,8 +583,12 @@ class WorkSpaceOneImporter(Processor):
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
                     del app_assignment["distribution"]["distr_delay_days"]
-            payload = json.dumps(app_assignments)
-            self.output(f"App assignments data to send: {payload}", verbose_level=2)
+            try:
+                payload = json.dumps(app_assignments)
+                self.output(f"App assignments data to send: {payload}", verbose_level=2)
+            except:
+                raise ProcessorError("Failed parsing app assignments as json")
+
 
             raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
 
