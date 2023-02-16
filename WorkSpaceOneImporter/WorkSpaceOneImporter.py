@@ -297,6 +297,7 @@ class WorkSpaceOneImporter(Processor):
 
         # fetch the app assignments Input from the recipe
         app_assignments = self.env.get("ws1_assignments")
+        self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=2)
 
         # Get some global variables for later use
         # app_version = self.env["munki_importer_summary_result"]["data"]["version"]
@@ -378,14 +379,18 @@ class WorkSpaceOneImporter(Processor):
                         if not force_import:
                             if update_assignments:
                                 if not SMARTGROUP == 'none':
+                                    self.output("updating simple app assignment", verbose_level=2)
                                     app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP, headers)
                                     self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
                                 if not app_assignments == 'none':
+                                    self.output("updating advanced app assignment", verbose_level=2)
                                     self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
-                                else:
-                                    self.output('App [{}] version [{}] is already present on server, '
-                                        'and ws1_force_import is not set.'.format(app_name, app_version))
-                                    return "Nothing new to upload - completed."
+                                raise ProcessorError("update_assignments is True, but neither is a ws1_smart_group_name"
+                                                     " specified nor is ws1_app_assignments set")
+                            else:
+                                self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
+                                    "and ws1_force_import is not set.")
+                                return "Nothing new to upload - completed."
                         else:
                             self.output(
                                 'App [{}] version [{}] already present on server, and ws1_force_import==True, '
