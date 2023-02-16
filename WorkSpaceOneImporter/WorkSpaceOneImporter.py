@@ -168,9 +168,9 @@ class WorkSpaceOneImporter(Processor):
         "ws1_assignment-rules": {
             "required": False,
             "description": "Define recipe Input-variable \"ws1_assignments\". NOT as Processor input var as it is too "
-                "complex to be be substituted. Must override.\n"
-                "See https://as135.awmdm.com/API/help/#!/apis/10001?!%2FAppsV2%2FAppsV2_UpdateAssignmentRuleAsync\n"
-                "Under development.",
+                           "complex to be be substituted. Must override.\n"
+                           "See https://as135.awmdm.com/API/help/#!/apis/10001?!%2FAppsV2%2FAppsV2_UpdateAssignmentRuleAsync\n"
+                           "Under development.",
         }
     }
     output_variables = {
@@ -283,7 +283,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         update_assignments = self.env.get("ws1_update_assignments").lower() in ('true', '1', 't')
-        #self.output(f"update_assignments: {update_assignments}", verbose_level=2)
+        # self.output(f"update_assignments: {update_assignments}", verbose_level=2)
         # force_import = self.env.get("ws1_force_import")
         # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
@@ -381,7 +381,8 @@ class WorkSpaceOneImporter(Processor):
                             if update_assignments:
                                 if not SMARTGROUP == 'none':
                                     self.output("updating simple app assignment", verbose_level=2)
-                                    app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP, headers)
+                                    app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
+                                                                                  headers)
                                     self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
                                 if not app_assignments == 'none':
                                     self.output("updating advanced app assignment", verbose_level=2)
@@ -390,7 +391,7 @@ class WorkSpaceOneImporter(Processor):
                                                      " specified nor is ws1_app_assignments set")
                             else:
                                 self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
-                                    "and ws1_force_import is not set.")
+                                            "and ws1_force_import is not set.")
                                 return "Nothing new to upload - completed."
                         else:
                             self.output(
@@ -578,20 +579,39 @@ class WorkSpaceOneImporter(Processor):
                 self.output(f"distr_delay_days: {distr_delay_days}", verbose_level=3)
                 if not distr_delay_days == '0':
                     num_delay_days = int(distr_delay_days)
-                    self.output(f"smart group deployment delay for assignment[{priority_index}] is: [{num_delay_days}] days", verbose_level=2)
+                    self.output(
+                        f"smart group deployment delay for assignment[{priority_index}] is: [{num_delay_days}] days",
+                        verbose_level=2)
                     today = datetime.date.today()
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
                 del app_assignment["distribution"]["distr_delay_days"]
-            self.output(f"App assignments data to send: {app_assignments}", verbose_level=2)
+            self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
             try:
-                payload = json.dumps(app_assignments)
+                assignment_rules = {"assignments": app_assignments}
+                payload = json.dumps(assignment_rules)
                 self.output(f"App assignments data to send as json: {payload}", verbose_level=2)
             except:
                 raise ProcessorError("Failed parsing app assignments as json")
 
+            headers_v2 = dict(headers)
+            headers_v2['Accept'] = headers['Accept'] + ';version=2'
+            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
 
-            raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
+            try:
+                # Make the WS1 APIv2 call to assign the App
+                r = requests.put(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2,
+                                  data=payload)
+            except:
+                raise ProcessorError(
+                    f"Something went wrong setting assignment-rules for app [{self.env['NAME']}]")
+            if not r.status_code == 202:
+                result = r.json()
+                self.output(f"Setting App assignment rules failed: {result['errorCode']} - {result['message']}", verbose_level=2)
+                raise ProcessorError(
+                    f"Unable to set assignment rules for [{self.env['NAME']}]")
+            self.output(f"Successfully set assignment rules for [{self.env['NAME']}]")
+            #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
         """ assemble app_assignment to pass in API V1 call """
@@ -709,12 +729,12 @@ class WorkSpaceOneImporter(Processor):
                             self.output(
                                 "Installer dmg item in Munki repo differs from cached installer, this is expected if "
                                 "your recipe has a DmgCreator step; checking dmg checksum.", verbose_level=2)
-                            result = subprocess.run( ["hdiutil", "verify", "-quiet", pkg] )
+                            result = subprocess.run(["hdiutil", "verify", "-quiet", pkg])
                             if not result.returncode == 0:
                                 raise ProcessorError(f"Installer dmg verification failed for [{pkg}]")
                         else:
                             raise ProcessorError(
-                                    "Installer item in Munki repo differs from cached installer, please check.")
+                                "Installer item in Munki repo differs from cached installer, please check.")
                 except OSError as err:
                     raise ProcessorError(err)
 
