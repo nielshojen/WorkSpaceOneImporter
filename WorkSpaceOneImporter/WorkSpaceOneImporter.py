@@ -580,23 +580,29 @@ class WorkSpaceOneImporter(Processor):
                         f"App assignment[{priority_index}] Smart Group name: [{smart_group_name}]", verbose_level=2)
                     sg_id, sg_uuid = self.get_smartgroup_id(base_url, smart_group_name, headers)
                     app_assignment["distribution"]["smart_groups"].append(sg_uuid)
+                # smart_group_names is used as input, NOT in API call
                 del app_assignment["distribution"]["smart_group_names"]
                 distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
                 self.output(f"distr_delay_days: {distr_delay_days}", verbose_level=3)
                 if not distr_delay_days == '0':
+                    # calculate effective_date to use in API call
                     num_delay_days = int(distr_delay_days)
                     self.output(
                         f"smart group deployment delay for assignment[{priority_index}] is: [{num_delay_days}] days",
                         verbose_level=2)
                     today = datetime.date.today()
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
-                    d = datetime.datetime.now(timezone.utc).astimezone()  # get local time with timezone info
-                    utc_offset_secs = d.utcoffset() // timedelta(seconds=1)  # get UTC offset in secs
+                    #d = datetime.datetime.now(timezone.utc).astimezone()  # get local time with timezone info
+                    #utc_offset_secs = d.utcoffset() // timedelta(seconds=1)  # get UTC offset in secs
                     # utc_offset_mins = utc_offset_secs // 60
-                    utc_offset_hrs = utc_offset_secs // 3600
+                    #utc_offset_hrs = utc_offset_secs // 3600
+
+                    # convert date to datetime, and add 12 hours to deploy at noon in WS1 UEM console timezone
+                    deploy_datetime = datetime.datetime.combine(deploy_date, datetime.time(12))
                     # specify target date and time as noon in iso 8601 format with local timezone offset
-                    app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + \
-                                                                       f"T12:00:00.000{utc_offset_hrs:+}:00"
+                    # app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + f"T12:00:00.000{utc_offset_hrs:+}:00"
+                    app_assignment["distribution"]["effective_date"] = deploy_datetime.astimezone().isoformat()
+                # distr_delay_days is used as input, NOT in API call
                 del app_assignment["distribution"]["distr_delay_days"]
                 priority_index += 1
             self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
