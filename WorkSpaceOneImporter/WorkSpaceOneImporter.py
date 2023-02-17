@@ -547,7 +547,7 @@ class WorkSpaceOneImporter(Processor):
             self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
         """
 
-        self.ws1_app_assignments(BASEURL, headers, ws1_app_id)
+        self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
