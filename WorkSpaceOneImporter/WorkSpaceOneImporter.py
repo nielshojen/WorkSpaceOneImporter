@@ -168,8 +168,8 @@ class WorkSpaceOneImporter(Processor):
         # },
         "ws1_assignment-rules": {
             "required": False,
-            "description": "Define recipe Input-variable \"ws1_assignments\". NOT as Processor input var as it is too "
-                           "complex to be be substituted. Must override.\n"
+            "description": "Define recipe Input-variable \"ws1_app_assignments\". NOT as Processor input var as it is too "
+                           "complex to be be substituted. MUST override.\n"
                            "See https://as135.awmdm.com/API/help/#!/apis/10001?!%2FAppsV2%2FAppsV2_UpdateAssignmentRuleAsync\n"
                            "Under development.",
         }
@@ -300,7 +300,7 @@ class WorkSpaceOneImporter(Processor):
             CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
 
         # fetch the app assignments Input from the recipe
-        app_assignments = self.env.get("ws1_assignments")
+        app_assignments = self.env.get("ws1_app_assignments")
         # self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=2)
 
         # Get some global variables for later use app_version = self.env["munki_importer_summary_result"]["data"][

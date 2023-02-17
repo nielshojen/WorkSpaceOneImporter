@@ -24,7 +24,7 @@ Input:
   WS1_PUSH_MODE: PUSH_MODE_SETTING
 
   # WS1 - testing new AppsV2 assignments feature
-  ws1_assignments:
+  ws1_app_assignments:
       - distribution:
           name: ASSIGNMENT_NAME
           description: ASSIGNMENT_DESCRIPTION
