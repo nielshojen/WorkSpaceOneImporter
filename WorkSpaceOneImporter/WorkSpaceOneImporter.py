@@ -576,6 +576,7 @@ class WorkSpaceOneImporter(Processor):
                 app_assignment["priority"] = str(priority_index)
                 app_assignment["distribution"]["smart_groups"] = []
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
+                    self.output(f"App assignment[{priority_index}] Smart Group name: [{smart_group_name}]", verbose_level=2)
                     sg_id, sg_uuid = self.get_smartgroup_id(base_url, smart_group_name, headers)
                     app_assignment["distribution"]["smart_groups"].append(sg_uuid)
                 del app_assignment["distribution"]["smart_group_names"]
