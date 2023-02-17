@@ -598,11 +598,12 @@ class WorkSpaceOneImporter(Processor):
                     #utc_offset_hrs = utc_offset_secs // 3600
 
                     # convert date to datetime, and add 12 hours to deploy at noon in WS1 UEM console timezone
-                    deploy_datetime = datetime.datetime.combine(deploy_date, datetime.time(12))
+                    # deploy_datetime = datetime.datetime.combine(deploy_date, datetime.time(12))
                     # specify target date and time as noon in iso 8601 format with local timezone offset
                     # app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + f"T12:00:00.000{utc_offset_hrs:+}:00"
                     # app_assignment["distribution"]["effective_date"] = deploy_datetime.astimezone().isoformat()
-                    app_assignment["distribution"]["effective_date"] = deploy_datetime.isoformat()
+                    # app_assignment["distribution"]["effective_date"] = deploy_datetime.isoformat()
+                    app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
                 # distr_delay_days is used as input, NOT in API call
                 del app_assignment["distribution"]["distr_delay_days"]
                 priority_index += 1
