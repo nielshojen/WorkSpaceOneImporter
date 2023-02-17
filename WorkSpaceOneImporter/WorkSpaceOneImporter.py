@@ -25,6 +25,7 @@ import plistlib
 import hashlib
 import subprocess
 import datetime
+# from datetime import datetime, timedelta, timezone
 
 import requests  # dependency
 import json
@@ -570,13 +571,13 @@ class WorkSpaceOneImporter(Processor):
         if not app_assignments == 'none':
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
             self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
-
             priority_index = 0
             for app_assignment in app_assignments:
                 app_assignment["priority"] = str(priority_index)
                 app_assignment["distribution"]["smart_groups"] = []
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
-                    self.output(f"App assignment[{priority_index}] Smart Group name: [{smart_group_name}]", verbose_level=2)
+                    self.output(
+                        f"App assignment[{priority_index}] Smart Group name: [{smart_group_name}]", verbose_level=2)
                     sg_id, sg_uuid = self.get_smartgroup_id(base_url, smart_group_name, headers)
                     app_assignment["distribution"]["smart_groups"].append(sg_uuid)
                 del app_assignment["distribution"]["smart_group_names"]
@@ -589,7 +590,13 @@ class WorkSpaceOneImporter(Processor):
                         verbose_level=2)
                     today = datetime.date.today()
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
-                    app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
+                    d = datetime.datetime.now(timezone.utc).astimezone()  # get local time with timezone info
+                    utc_offset_secs = d.utcoffset() // timedelta(seconds=1)  # get UTC offset in secs
+                    # utc_offset_mins = utc_offset_secs // 60
+                    utc_offset_hrs = utc_offset_secs // 3600
+                    # specify target date and time as noon in iso 8601 format with local timezone offset
+                    app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + \
+                                                                       f"T12:00:00.000{utc_offset_hrs:+}:00"
                 del app_assignment["distribution"]["distr_delay_days"]
                 priority_index += 1
             self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
