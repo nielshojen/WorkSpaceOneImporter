@@ -389,8 +389,9 @@ class WorkSpaceOneImporter(Processor):
                             elif update_assignments:
                                 raise ProcessorError("update_assignments is True, but ws1_smart_group_name is not"
                                                      " specified and neither is ws1_app_assignments")
-                            self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
-                                        "and neither ws1_force_import nor ws1_update_assignments is set.")
+                            else:
+                                self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
+                                            "and neither ws1_force_import nor ws1_update_assignments is set.")
                             return "Nothing new to upload - completed."
                         else:
                             self.output(
