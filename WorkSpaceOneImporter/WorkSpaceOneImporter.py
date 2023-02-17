@@ -378,25 +378,24 @@ class WorkSpaceOneImporter(Processor):
                         self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                         # if not self.env.get("ws1_force_import").lower() == "true":
                         if not force_import:
-                            if update_assignments:
-                                if not SMARTGROUP == 'none':
-                                    self.output("updating simple app assignment", verbose_level=2)
-                                    app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
-                                                                                  headers)
-                                    self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
-                                if not app_assignments == 'none':
-                                    self.output("updating advanced app assignment", verbose_level=2)
-                                    self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
-                                raise ProcessorError("update_assignments is True, but neither is a ws1_smart_group_name"
-                                                     " specified nor is ws1_app_assignments set")
+                            if update_assignments and not SMARTGROUP == 'none':
+                                self.output("updating simple app assignment", verbose_level=2)
+                                app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
+                                                                              headers)
+                                self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
+                            elif update_assignments and not app_assignments == 'none':
+                                self.output("updating advanced app assignment", verbose_level=2)
+                                self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
                             else:
-                                self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
-                                            "and ws1_force_import is not set.")
-                                return "Nothing new to upload - completed."
+                                raise ProcessorError("update_assignments is True, but ws1_smart_group_name is not"
+                                                     " specified and neither is ws1_app_assignments")
+                            self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
+                                        "and neither ws1_force_import nor update_assignments is set.")
+                            return "Nothing new to upload - completed."
                         else:
                             self.output(
-                                'App [{}] version [{}] already present on server, and ws1_force_import==True, '
-                                'attempting to delete on server first.'.format(app_name, app_version))
+                                f"App [{app_name}] version [{app_version}] already present on server, and "
+                                f"ws1_force_import==True, attempting to delete on server first.")
                             try:
                                 r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
                                                     headers=headers)
@@ -569,7 +568,6 @@ class WorkSpaceOneImporter(Processor):
             priority_index = 0
             for app_assignment in app_assignments:
                 app_assignment["priority"] = str(priority_index)
-                priority_index += 1
                 app_assignment["distribution"]["smart_groups"] = []
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
                     sg_id, sg_uuid = self.get_smartgroup_id(base_url, smart_group_name, headers)
@@ -586,6 +584,7 @@ class WorkSpaceOneImporter(Processor):
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
                 del app_assignment["distribution"]["distr_delay_days"]
+                priority_index += 1
             self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
             try:
                 assignment_rules = {"assignments": app_assignments}
@@ -596,7 +595,7 @@ class WorkSpaceOneImporter(Processor):
 
             headers_v2 = dict(headers)
             headers_v2['Accept'] = headers['Accept'] + ';version=2'
-            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
+            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
 
             try:
                 # Make the WS1 APIv2 call to assign the App
@@ -612,7 +611,6 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError(
                     f"Unable to set assignment rules for [{self.env['NAME']}]")
             self.output(f"Successfully set assignment rules for [{self.env['NAME']}]")
-            # raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
         """ assemble app_assignment to pass in API V1 call """
