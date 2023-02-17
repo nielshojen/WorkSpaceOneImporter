@@ -592,17 +592,16 @@ class WorkSpaceOneImporter(Processor):
                         verbose_level=2)
                     today = datetime.date.today()
                     deploy_date = today + datetime.timedelta(days=num_delay_days)
-                    #d = datetime.datetime.now(timezone.utc).astimezone()  # get local time with timezone info
-                    #utc_offset_secs = d.utcoffset() // timedelta(seconds=1)  # get UTC offset in secs
-                    # utc_offset_mins = utc_offset_secs // 60
-                    #utc_offset_hrs = utc_offset_secs // 3600
+                    """
+                    Commented out the time setting part for troubleshooting as
+                      it isn't respected in UEM v.22.9.0.8 (2209) as of 2023-02-17
 
                     # convert date to datetime, and add 12 hours to deploy at noon in WS1 UEM console timezone
-                    # deploy_datetime = datetime.datetime.combine(deploy_date, datetime.time(12))
+                    deploy_datetime = datetime.datetime.combine(deploy_date, datetime.time(12))
                     # specify target date and time as noon in iso 8601 format with local timezone offset
-                    # app_assignment["distribution"]["effective_date"] = deploy_date.isoformat() + f"T12:00:00.000{utc_offset_hrs:+}:00"
-                    # app_assignment["distribution"]["effective_date"] = deploy_datetime.astimezone().isoformat()
-                    # app_assignment["distribution"]["effective_date"] = deploy_datetime.isoformat()
+                    app_assignment["distribution"]["effective_date"] = deploy_datetime.astimezone().isoformat()
+                    app_assignment["distribution"]["effective_date"] = deploy_datetime.isoformat()
+                    """
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
                 # distr_delay_days is used as input, NOT in API call
                 del app_assignment["distribution"]["distr_delay_days"]
