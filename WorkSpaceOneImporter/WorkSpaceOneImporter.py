@@ -383,11 +383,9 @@ class WorkSpaceOneImporter(Processor):
                                 app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
                                                                               headers)
                                 self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
-                                break
                             elif update_assignments and not app_assignments == 'none':
                                 self.output("updating advanced app assignment", verbose_level=2)
                                 self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
-                                break
                             elif update_assignments:
                                 raise ProcessorError("update_assignments is True, but ws1_smart_group_name is not"
                                                      " specified and neither is ws1_app_assignments")
