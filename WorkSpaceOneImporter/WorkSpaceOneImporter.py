@@ -383,14 +383,16 @@ class WorkSpaceOneImporter(Processor):
                                 app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
                                                                               headers)
                                 self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
+                                break
                             elif update_assignments and not app_assignments == 'none':
                                 self.output("updating advanced app assignment", verbose_level=2)
                                 self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
-                            else:
+                                break
+                            elif update_assignments:
                                 raise ProcessorError("update_assignments is True, but ws1_smart_group_name is not"
                                                      " specified and neither is ws1_app_assignments")
                             self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
-                                        "and neither ws1_force_import nor update_assignments is set.")
+                                        "and neither ws1_force_import nor ws1_update_assignments is set.")
                             return "Nothing new to upload - completed."
                         else:
                             self.output(
@@ -517,31 +519,34 @@ class WorkSpaceOneImporter(Processor):
             app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP, headers)
             self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
 
-        # First attempt to assign secondary smart groups using APIv1 - abandoned in favour of APIv2
-        # If recipe operator gave us a single string instead of a list of strings, convert it to a
-        # list of strings
-        # if self.env["WS1_SMART_GROUP2_NAMES"] and isinstance(self.env["WS1_SMART_GROUP2_NAMES"], str):
-        #    self.env["WS1_SMART_GROUP2_NAMES"] = [self.env["WS1_SMART_GROUP2_NAMES"]]
-        # smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
-        # if smart_group2_names:
-        #     self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=3)
-        #     self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=3)
-        #     app_assignment["AssignmentId"] = 2
-        #     sg_ids = []
-        #     for sg in smart_group2_names:
-        #         # get WS1 Smart Group ID from its name
-        #         sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
-        #         sg_ids.append(f"{sg_id}")
-        #     app_assignment["SmartGroupIds"] = sg_ids
-        #
-        #     self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}] days", verbose_level=2)
-        #     today = datetime.date.today()
-        #     deploy_date = today + datetime.timedelta(days=deployment2_delay)
-        #     app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
-        #
-        #     #self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
-        #     #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
-        #     self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
+        """
+        First attempt to assign secondary smart groups using APIv1 - abandoned in favour of APIv2
+        If recipe operator gave us a single string instead of a list of strings, convert it to a
+        list of strings
+
+        if self.env["WS1_SMART_GROUP2_NAMES"] and isinstance(self.env["WS1_SMART_GROUP2_NAMES"], str):
+           self.env["WS1_SMART_GROUP2_NAMES"] = [self.env["WS1_SMART_GROUP2_NAMES"]]
+        smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
+        if smart_group2_names:
+            self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=3)
+            self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=3)
+            app_assignment["AssignmentId"] = 2
+            sg_ids = []
+            for sg in smart_group2_names:
+                # get WS1 Smart Group ID from its name
+                sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
+                sg_ids.append(f"{sg_id}")
+            app_assignment["SmartGroupIds"] = sg_ids
+
+            self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}] days", verbose_level=2)
+            today = datetime.date.today()
+            deploy_date = today + datetime.timedelta(days=deployment2_delay)
+            app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
+
+            #self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
+            #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
+            self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
+        """
 
         self.ws1_app_assignments(BASEURL, headers, ws1_app_id)
 
@@ -560,6 +565,8 @@ class WorkSpaceOneImporter(Processor):
             raise ProcessorError(
                 f"WorkSpaceOneImporter: Unable to get internal app details - message: {result['message']}.")
         ws1_app_uuid = result["uuid"]
+        app_name = result["ApplicationName"]
+        app_version = result["ActualFileVersion"]
         self.output(f"ws1_app_uuid: [{ws1_app_uuid}]", verbose_level=3)
         if not app_assignments == 'none':
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
@@ -603,14 +610,14 @@ class WorkSpaceOneImporter(Processor):
                                  data=payload)
             except:
                 raise ProcessorError(
-                    f"Something went wrong setting assignment-rules for app [{self.env['NAME']}]")
+                    f"Something went wrong setting assignment-rules for app [{app_name}] version [{app_version}]")
             if not r.status_code == 202:
                 result = r.json()
                 self.output(f"Setting App assignment rules failed: {result['errorCode']} - {result['message']}",
                             verbose_level=2)
                 raise ProcessorError(
-                    f"Unable to set assignment rules for [{self.env['NAME']}]")
-            self.output(f"Successfully set assignment rules for [{self.env['NAME']}]")
+                    f"Unable to set assignment rules for [{app_name}] version [{app_version}]")
+            self.output(f"Successfully set assignment rules for [{app_name}] version [{app_version}]")
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
         """ assemble app_assignment to pass in API V1 call """
