@@ -7,7 +7,19 @@ ParentRecipe: com.github.jlehikoinen.munki.CompanyPortal
 MinimumVersion: '2.3'
 
 Input:
-  NAME: Company Portal
+  NAME: Microsoft Company Portal
+  DISPLAY_NAME: '%DISPLAY_NAME%'
+  pkginfo:
+    catalogs:
+    - testing
+    description: The Microsoft Company Portal provides access to corporate apps and resources
+      from almost any network. Your company must already subscribe to Microsoft Intune,
+      and your IT admin must set up your account before you can use this app.
+    display_name: '%DISPLAY_NAME%'
+    name: '%NAME%'
+    unattended_install: true
+    unattended_uninstall: true
+
 
   # WS1 specific input,  secrets
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
