@@ -31,7 +31,7 @@ Input:
             - SMART_GROUP_NAME1
             - SMART_GROUP_NAME2
           app_delivery_method: AUTO_OR_ON_DEMAND
-          distr_delay_days: DISTR_DELAY_DAYS
+          distr_delay_days: DISTRIBUTION_DELAY_DAYS
           display_in_app_catalog: true
           is_default_assignment: false
           keep_app_updated_automatically: true
