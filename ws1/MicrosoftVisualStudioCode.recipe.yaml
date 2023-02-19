@@ -2,21 +2,21 @@ Comment: |
   recipe with ws1_assignments for AppsV2 API style assignment-rules
   See https://as135.awmdm.com/API/help/#!/apis/10001?!%2FAppsV2%2FAppsV2_UpdateAssignmentRuleAsync
 Description: Creates a munki package for Microsoft Company Portal, and imports it into WorkSpace ONE.
-Identifier: com.github.codeskipper.ws1.CompanyPortal
-ParentRecipe: com.github.jlehikoinen.munki.CompanyPortal
+Identifier: com.github.codeskipper.ws1.MicrosoftVisualStudioCode
+ParentRecipe: com.github.killahquam.munki.visualstudiocode
 MinimumVersion: '2.3'
 
 Input:
-  NAME: Microsoft Company Portal
+  NAME: Microsoft Visual Studio Code
   DISPLAY_NAME: '%NAME%'
+  MUNKI_REPO_SUBDIR: apps/Microsoft
   pkginfo:
     catalogs:
     - testing
-    category: Security
+    category: Development
     developer: Microsoft
-    description: The Microsoft Company Portal and SSO Extension provide access to corporate apps and resources
-      from almost any network. Your company must already subscribe to Microsoft Intune,
-      and your IT admin must set up your account before you can use these features.
+    description: |
+      Code combines the streamlined UI of a modern editor with rich code assistance and navigation, and an integrated debugging experience – without the need for a full IDE.
     display_name: '%DISPLAY_NAME%'
     name: '%NAME%'
     unattended_install: true
