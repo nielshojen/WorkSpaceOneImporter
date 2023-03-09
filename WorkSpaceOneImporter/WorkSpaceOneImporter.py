@@ -610,11 +610,11 @@ class WorkSpaceOneImporter(Processor):
                 return
             for index, assignment in enumerate(result["assignments"]):
                 self.output(f"Existing assignment #[{index}] is [{assignment}]", verbose_level=2)
-                if assignment["description"]:
-                    if "#AUTOPKG_DONE" in assignment["description"]:
+                if assignment["distribution"]["description"]:
+                    if "#AUTOPKG_DONE" in assignment["distribution"]["description"]:
                         self.output(f"Assignment Rules are already marked as complete.", verbose_level=1)
                         return
-                    if "#AUTOPKG" not in assignment["description"]:
+                    if "#AUTOPKG" not in assignment["distribution"]["description"]:
                         self.output(f"Assignment Rule description is NOT tagged as made by Autopkg - skipping.",
                                     verbose_level=1)
                         return
