@@ -680,9 +680,9 @@ class WorkSpaceOneImporter(Processor):
                     # add a tag to the assignment description to signify it is handled by Autopkg
                     app_assignment["distribution"]["description"] += " #AUTOPKG"
             if skip_remaining_assignments:
-                del app_assignments[priority_index + 1:]
+                del app_assignments[priority_index:]
                 self.output(
-                    f"Skipping remaining assignments from index [{priority_index + 1}] as they are designated for a  "
+                    f"Skipping remaining assignments from index [{priority_index}] as they are designated for a  "
                     f"future date.", verbose_level=1)
             self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
             try:
