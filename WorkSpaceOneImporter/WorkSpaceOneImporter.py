@@ -608,7 +608,8 @@ class WorkSpaceOneImporter(Processor):
                 self.output(f"No existing Assignment Rules found, operator must have removed those "
                             "- skipping.", verbose_level=1)
                 return
-            for assignment in result["assignments"]:
+            for index, assignment in result["assignments"]:
+                self.output(f"Existing assignment #[{index}] is [{assignment}]", verbose_level=2)
                 if assignment["description"]:
                     if "#AUTOPKG_DONE" in assignment["description"]:
                         self.output(f"Assignment Rules are already marked as complete.", verbose_level=1)
