@@ -550,8 +550,8 @@ class WorkSpaceOneImporter(Processor):
             app_assignment["SmartGroupIds"] = sg_ids
 
             self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}] days", verbose_level=2)
-            today = datetime.date.today()
-            deploy_date = today + datetime.timedelta(days=deployment2_delay)
+            today = date.today()
+            deploy_date = today + timedelta(days=deployment2_delay)
             app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
 
             #self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
@@ -651,7 +651,7 @@ class WorkSpaceOneImporter(Processor):
                     self.output(
                         f"smart group deployment delay for assignment[{priority_index}] is: [{num_delay_days}] days",
                         verbose_level=2)
-                    deploy_date = ws1_app_ass_day0 + datetime.timedelta(days=num_delay_days)
+                    deploy_date = ws1_app_ass_day0 + timedelta(days=num_delay_days)
                     self.output(
                         f"That makes the deploy date for assignment[{priority_index}]: [{deploy_date.isoformat()}].",
                         verbose_level=2)
