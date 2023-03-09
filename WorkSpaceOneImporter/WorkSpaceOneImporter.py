@@ -623,16 +623,17 @@ class WorkSpaceOneImporter(Processor):
                                 "- skipping.", verbose_level=1)
                     return
 
-            if result["assignments"][0]["effective_date"]:
-                ws1_app_ass_day0 = datetime.fromisoformat(result["assignments"][0]["effective_date"])
+            # if there's an existing assignment rule, use its effective_date as base deployment date, else
+            # use today's date
+            if result["assignments"][0]["distribution"]["effective_date"]:
+                ws1_app_ass_day0 = datetime.fromisoformat(result["assignments"][0]["distribution"]["effective_date"])
             else:
                 ws1_app_ass_day0 = datetime.today()
 
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
             self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
-            priority_index = 0
             skip_remaining_assignments = False
-            for app_assignment in app_assignments:
+            for priority_index, app_assignment in enumerate(app_assignments):
                 app_assignment["priority"] = str(priority_index)
                 app_assignment["distribution"]["smart_groups"] = []
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
@@ -670,7 +671,12 @@ class WorkSpaceOneImporter(Processor):
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
                 # distr_delay_days is used as input, NOT in API call
                 del app_assignment["distribution"]["distr_delay_days"]
-                priority_index += 1
+
+                # If we made it to the last assignment...
+                if priority_index == (len(app_assignments) - 1):
+                    app_assignment["distribution"]["description"] += " #AUTOPKG_DONE"
+                else:
+                    app_assignment["distribution"]["description"] += " #AUTOPKG"
             if skip_remaining_assignments:
                 del app_assignments[priority_index + 1:]
                 self.output(
