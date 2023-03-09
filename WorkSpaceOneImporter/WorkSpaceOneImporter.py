@@ -379,63 +379,63 @@ class WorkSpaceOneImporter(Processor):
             r = requests.get(
                 BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
                 headers=headers)
-            if r.status_code == 200:
-                search_results = r.json()
-                for app in search_results["Application"]:
-                    if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and \
-                            app['ApplicationName'] in app_name:
-                        ws1_app_id = app["Id"]["Value"]
-                        self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
-                        self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
-                        # if not self.env.get("ws1_force_import").lower() == "true":
-                        if not force_import:
-                            if update_assignments and not SMARTGROUP == 'none':
-                                self.output("updating simple app assignment", verbose_level=2)
-                                app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
-                                                                              headers)
-                                self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
-                            elif update_assignments and not app_assignments == 'none':
-                                self.output("updating advanced app assignment", verbose_level=2)
-                                self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
-                            elif update_assignments:
-                                raise ProcessorError("update_assignments is True, but ws1_smart_group_name is not"
-                                                     " specified and neither is ws1_app_assignments")
-                            else:
-                                self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
-                                            "and neither ws1_force_import nor ws1_update_assignments is set.")
-                            return "Nothing new to upload - completed."
-                        else:
-                            self.output(
-                                f"App [{app_name}] version [{app_version}] already present on server, and "
-                                f"ws1_force_import==True, attempting to delete on server first.")
-                            try:
-                                r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
-                                                    headers=headers)
-                            except:
-                                raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
-                            if not r.status_code == 202 and not r.status_code == 204:
-                                result = r.json()
-                                self.output('App delete result: {}'.format(result), verbose_level=3)
-                                raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
-                            try:
-                                r = requests.get('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
-                                                 headers=headers)
-                                if not r.status_code == 401:
-                                    result = r.json()
-                                    self.output('App not deleted yet, status: {} - retrying'.format(result['Status']),
-                                                verbose_level=2)
-                                    r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
-                                                        headers=headers)
-                            except:
-                                raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
-                            self.output('Pre-existing App [ID: {}] now successfully deleted'.format(ws1_app_id))
-                            break
-            elif r.status_code == 204:
-                # app not found on WS1 server, so we're fine to proceed with upload
-                self.output('App [{}] version [{}] is not yet present on server, will attempt upload'
-                            .format(app_name, app_version))
         except:
             raise ProcessorError('Something went wrong handling pre-existing app version on server')
+        if r.status_code == 200:
+            search_results = r.json()
+            for app in search_results["Application"]:
+                if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and \
+                        app['ApplicationName'] in app_name:
+                    ws1_app_id = app["Id"]["Value"]
+                    self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
+                    self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
+                    # if not self.env.get("ws1_force_import").lower() == "true":
+                    if not force_import:
+                        if update_assignments and not SMARTGROUP == 'none':
+                            self.output("updating simple app assignment", verbose_level=2)
+                            app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
+                                                                          headers)
+                            self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
+                        elif update_assignments and not app_assignments == 'none':
+                            self.output("updating advanced app assignment", verbose_level=2)
+                            self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
+                        elif update_assignments:
+                            raise ProcessorError("update_assignments is True, but ws1_smart_group_name is not"
+                                                 " specified and neither is ws1_app_assignments")
+                        else:
+                            self.output(f"App [{app_name}] version [{app_version}] is already present on server, "
+                                        "and neither ws1_force_import nor ws1_update_assignments is set.")
+                        return "Nothing new to upload - completed."
+                    else:
+                        self.output(
+                            f"App [{app_name}] version [{app_version}] already present on server, and "
+                            f"ws1_force_import==True, attempting to delete on server first.")
+                        try:
+                            r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                                                headers=headers)
+                        except:
+                            raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
+                        if not r.status_code == 202 and not r.status_code == 204:
+                            result = r.json()
+                            self.output('App delete result: {}'.format(result), verbose_level=3)
+                            raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
+                        try:
+                            r = requests.get('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                                             headers=headers)
+                            if not r.status_code == 401:
+                                result = r.json()
+                                self.output('App not deleted yet, status: {} - retrying'.format(result['Status']),
+                                            verbose_level=2)
+                                r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                                                    headers=headers)
+                        except:
+                            raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
+                        self.output('Pre-existing App [ID: {}] now successfully deleted'.format(ws1_app_id))
+                        break
+        elif r.status_code == 204:
+            # app not found on WS1 server, so we're fine to proceed with upload
+            self.output('App [{}] version [{}] is not yet present on server, will attempt upload'
+                        .format(app_name, app_version))
 
         ## proceed with upload
         if not pkg_path == None:
@@ -584,12 +584,12 @@ class WorkSpaceOneImporter(Processor):
         ws1_app_uuid = result["uuid"]
         app_name = result["ApplicationName"]
         app_version = result["ActualFileVersion"]
-        self.output(f"ws1_app_uuid: [{ws1_app_uuid}]", verbose_level=3)
+        self.output(f"ws1_app_uuid: [{ws1_app_uuid}]", verbose_level=2)
         if not app_assignments == 'none':
             # prepare API V2 headers
             headers_v2 = dict(headers)
             headers_v2['Accept'] = headers['Accept'] + ';version=2'
-            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
+            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
 
             # get any existing assignment rules and see if they need updating
             r = requests.get(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
@@ -652,7 +652,6 @@ class WorkSpaceOneImporter(Processor):
                     # Assignments must be deployed after their designated date, otherwise they would 'hide' previous versions
                     if deploy_date > datetime.today():
                         skip_remaining_assignments = True
-
                         break
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
                 # distr_delay_days is used as input, NOT in API call
