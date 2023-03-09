@@ -24,7 +24,7 @@ import os.path
 import plistlib
 import hashlib
 import subprocess
-import datetime
+from datetime import datetime
 # from datetime import datetime, timedelta, timezone
 
 import requests  # dependency
@@ -168,9 +168,10 @@ class WorkSpaceOneImporter(Processor):
         # },
         "ws1_assignment-rules": {
             "required": False,
-            "description": "Define recipe Input-variable \"ws1_app_assignments\". NOT as Processor input var as it is too "
-                           "complex to be be substituted. MUST override.\n"
-                           "See https://as135.awmdm.com/API/help/#!/apis/10001?!%2FAppsV2%2FAppsV2_UpdateAssignmentRuleAsync\n"
+            "description": "Define recipe Input-variable \"ws1_app_assignments\" instead of this documentation "
+                           "placeholder. NOT as Processor input var as it is "
+                           "too complex to be be substituted. MUST override.\n"
+                           "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n"
                            "Under development.",
         }
     }
@@ -187,6 +188,12 @@ class WorkSpaceOneImporter(Processor):
         "ws1_stderr": {
             "description": "Error output (if any) from the WorkSpace ONE Import.",
         },
+        "ws1_app_id": {
+            "description": "Application ID of the app version in WS1 UEM",
+        },
+        "ws1_imported_new": {
+            "description": "boolean string indicating whether a new app version was imported in this session to WS1 UEM",
+        }
     }
 
     description = __doc__
@@ -288,6 +295,9 @@ class WorkSpaceOneImporter(Processor):
         # force_import = self.env.get("ws1_force_import")
         # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
+        # init result
+        self.env["ws1_imported_new"] = "False"
+
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
             self.output('Ignoring standard placeholder value supplied for b64encoded_api_credentials, setting default '
@@ -301,7 +311,7 @@ class WorkSpaceOneImporter(Processor):
 
         # fetch the app assignments Input from the recipe
         app_assignments = self.env.get("ws1_app_assignments")
-        # self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=2)
+        self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=3)
 
         # Get some global variables for later use app_version = self.env["munki_importer_summary_result"]["data"][
         # "version"] app_name = self.env["munki_importer_summary_result"]["data"]["name"] get app name and version
@@ -508,6 +518,7 @@ class WorkSpaceOneImporter(Processor):
         self.output("App create ApplicationId: {}".format(ws1_app_id), verbose_level=3)
         app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, ws1_app_id)
         self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
+        self.env["ws1_imported_new"] = "True"
 
         """
         Create the app assignment details for API V1 assignments POST call
@@ -557,6 +568,12 @@ class WorkSpaceOneImporter(Processor):
         prep app assignment rules and make API V2 assignments PUT call
         MAM (Mobile Application Management) REST API V2  - PUT /apps/{applicationUuid}/assignment-rules
         https://as135.awmdm.com/API/help/#!/AppsV2/AppsV2_UpdateAssignmentRuleAsync
+
+        NB - an App Assignment Rule with an effective_date in the future causes previous versions of the app to NOT be
+        deployed to newly enrolled devices, and NOT be offered in the Hub and user portal. Neither will the app version
+        with effective_date in the future be deployed or be offered in the Hub or user portal before effective_date.
+        For that reason, we need to postpone setting such assignment rules until effective_date, and skip those set
+        for a future date until next run.
         """
         # call Get for internal app to get app UUID
         r = requests.get(f"{base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
@@ -569,9 +586,38 @@ class WorkSpaceOneImporter(Processor):
         app_version = result["ActualFileVersion"]
         self.output(f"ws1_app_uuid: [{ws1_app_uuid}]", verbose_level=3)
         if not app_assignments == 'none':
+            # prepare API V2 headers
+            headers_v2 = dict(headers)
+            headers_v2['Accept'] = headers['Accept'] + ';version=2'
+            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
+
+            # get any existing assignment rules and see if they need updating
+            r = requests.get(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
+            result = r.json()
+            if not r.status_code == 200:
+                raise ProcessorError(
+                    f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 - message: {result['message']}.")
+            if not result["assignments"] and self.env.get("ws1_imported_new") == "False":
+                self.output(f"No existing Assignment Rules found, operator must have removed those - skipping.", verbose_level=1)
+                return
+            for assignment in result["assignments"]:
+                if "#AUTOPKG_DONE" in assignment["description"]:
+                    self.output(f"Assignment Rules are already marked as complete.", verbose_level=1)
+                    return
+                if "#AUTOPKG" not in assignment["description"]:
+                    self.output(f"Assignment Rules are NOT tagged as made by Autopkg - skipping.", verbose_level=1)
+                    return
+
+            if result["assignments"][0]["effective_date"]:
+                ws1_app_ass_day0 = datetime.fromisoformat(result["assignments"][0]["effective_date"])
+            else:
+                ws1_app_ass_day0 = datetime.today()
+
+
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
             self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
             priority_index = 0
+            skip_remaining_assignments = False
             for app_assignment in app_assignments:
                 app_assignment["priority"] = str(priority_index)
                 app_assignment["distribution"]["smart_groups"] = []
@@ -590,22 +636,33 @@ class WorkSpaceOneImporter(Processor):
                     self.output(
                         f"smart group deployment delay for assignment[{priority_index}] is: [{num_delay_days}] days",
                         verbose_level=2)
-                    today = datetime.date.today()
-                    deploy_date = today + datetime.timedelta(days=num_delay_days)
+                    deploy_date = ws1_app_ass_day0 + datetime.timedelta(days=num_delay_days)
+                    self.output(
+                        f"That makes the deploy date for assignment[{priority_index}]: [{deploy_date.isoformat()}].",
+                        verbose_level=2)
                     """
-                    Commented out the time setting part for troubleshooting as
-                      it isn't respected in UEM v.22.9.0.8 (2209) as of 2023-02-17
-
+                    Commented out the time setting part as it isn't respected in UEM v.22.9.0.8 (2209) as of 2023-02-17
                     # convert date to datetime, and add 12 hours to deploy at noon in WS1 UEM console timezone
                     deploy_datetime = datetime.datetime.combine(deploy_date, datetime.time(12))
                     # specify target date and time as noon in iso 8601 format with local timezone offset
                     app_assignment["distribution"]["effective_date"] = deploy_datetime.astimezone().isoformat()
                     app_assignment["distribution"]["effective_date"] = deploy_datetime.isoformat()
                     """
+
+                    # Assignments must be deployed after their designated date, otherwise they would 'hide' previous versions
+                    if deploy_date > datetime.today():
+                        skip_remaining_assignments = True
+
+                        break
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
                 # distr_delay_days is used as input, NOT in API call
                 del app_assignment["distribution"]["distr_delay_days"]
                 priority_index += 1
+            if skip_remaining_assignments:
+                del app_assignments[priority_index + 1:]
+                self.output(
+                    f"Skipping remaining assignments from index [{priority_index + 1}] as they are designated for a  "
+                    f"future date.", verbose_level=1)
             self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
             try:
                 assignment_rules = {"assignments": app_assignments}
@@ -613,10 +670,6 @@ class WorkSpaceOneImporter(Processor):
                 self.output(f"App assignments data to send as json: {payload}", verbose_level=2)
             except:
                 raise ProcessorError("Failed parsing app assignments as json")
-
-            headers_v2 = dict(headers)
-            headers_v2['Accept'] = headers['Accept'] + ';version=2'
-            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
 
             try:
                 # Make the WS1 APIv2 call to assign the App
