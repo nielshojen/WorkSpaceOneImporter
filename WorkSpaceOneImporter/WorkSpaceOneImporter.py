@@ -24,7 +24,7 @@ import os.path
 import plistlib
 import hashlib
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 # from datetime import datetime, timedelta, timezone
 
 import requests  # dependency
@@ -674,8 +674,10 @@ class WorkSpaceOneImporter(Processor):
 
                 # If we made it to the last assignment...
                 if priority_index == (len(app_assignments) - 1):
+                    # add a tag to the assignment description to signify Autopkg processing is complete
                     app_assignment["distribution"]["description"] += " #AUTOPKG_DONE"
                 else:
+                    # add a tag to the assignment description to signify it is handled by Autopkg
                     app_assignment["distribution"]["description"] += " #AUTOPKG"
             if skip_remaining_assignments:
                 del app_assignments[priority_index + 1:]
