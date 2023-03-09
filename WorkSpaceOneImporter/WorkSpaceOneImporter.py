@@ -576,8 +576,11 @@ class WorkSpaceOneImporter(Processor):
         for a future date until next run.
         """
         # call Get for internal app to get app UUID
-        r = requests.get(f"{base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
-        result = r.json()
+        try:
+            r = requests.get(f"{base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
+            result = r.json()
+        except:
+            raise ProcessorError("API call to get internal app details failed")
         if not r.status_code == 200:
             raise ProcessorError(
                 f"WorkSpaceOneImporter: Unable to get internal app details - message: {result['message']}.")
@@ -592,27 +595,37 @@ class WorkSpaceOneImporter(Processor):
             self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
 
             # get any existing assignment rules and see if they need updating
-            r = requests.get(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
-            result = r.json()
+            try:
+                r = requests.get(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
+                result = r.json()
+            except:
+                raise ProcessorError("API call to get existing app assignment rules failed")
             if not r.status_code == 200:
                 raise ProcessorError(
-                    f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 - message: {result['message']}.")
+                    f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 "
+                    f"- message: {result['message']}.")
             if not result["assignments"] and self.env.get("ws1_imported_new") == "False":
-                self.output(f"No existing Assignment Rules found, operator must have removed those - skipping.", verbose_level=1)
+                self.output(f"No existing Assignment Rules found, operator must have removed those "
+                            "- skipping.", verbose_level=1)
                 return
             for assignment in result["assignments"]:
-                if "#AUTOPKG_DONE" in assignment["description"]:
-                    self.output(f"Assignment Rules are already marked as complete.", verbose_level=1)
-                    return
-                if "#AUTOPKG" not in assignment["description"]:
-                    self.output(f"Assignment Rules are NOT tagged as made by Autopkg - skipping.", verbose_level=1)
+                if assignment["description"]:
+                    if "#AUTOPKG_DONE" in assignment["description"]:
+                        self.output(f"Assignment Rules are already marked as complete.", verbose_level=1)
+                        return
+                    if "#AUTOPKG" not in assignment["description"]:
+                        self.output(f"Assignment Rule description is NOT tagged as made by Autopkg - skipping.",
+                                    verbose_level=1)
+                        return
+                else:
+                    self.output(f"Assignment Rule description not present, so NOT tagged as made by Autopkg "
+                                "- skipping.", verbose_level=1)
                     return
 
             if result["assignments"][0]["effective_date"]:
                 ws1_app_ass_day0 = datetime.fromisoformat(result["assignments"][0]["effective_date"])
             else:
                 ws1_app_ass_day0 = datetime.today()
-
 
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
             self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
