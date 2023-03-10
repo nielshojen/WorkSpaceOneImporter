@@ -670,8 +670,9 @@ class WorkSpaceOneImporter(Processor):
                     app_assignment["distribution"]["effective_date"] = deploy_datetime.isoformat()
                     """
 
-                    # Assignments must be deployed after their designated date, otherwise they would 'hide' previous versions
-                    if deploy_date > datetime.today():
+                    # Assignments must be deployed after their designated date, otherwise they would 'hide' previous
+                    # versions
+                    if deploy_date > datetime.today().date():
                         skip_remaining_assignments = True
                         break
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
