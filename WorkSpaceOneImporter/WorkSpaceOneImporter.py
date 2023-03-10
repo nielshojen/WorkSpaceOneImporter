@@ -26,6 +26,7 @@ import hashlib
 import subprocess
 from datetime import datetime, timedelta
 # from datetime import datetime, timedelta, timezone
+import dateutil.parser
 
 import requests  # dependency
 import json
@@ -626,9 +627,15 @@ class WorkSpaceOneImporter(Processor):
             # if there's an existing assignment rule, use its effective_date as base deployment date, else
             # use today's date
             if result["assignments"][0]["distribution"]["effective_date"]:
-                ws1_app_ass_day0 = datetime.fromisoformat(result["assignments"][0]["distribution"]["effective_date"])
+                # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
+                # time may have a float as seconds or an int
+                # no timezone is returned in UEM v.22.12 but suspect that might change
+                # datetime.fromisoformat() can't handle the above in current Python v3.10
+                # alternative would be to install python-dateutil but that would introduce a new dependency
+                edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
+                ws1_app_ass_day0 = datetime.fromisoformat(edate).date()
             else:
-                ws1_app_ass_day0 = datetime.today()
+                ws1_app_ass_day0 = datetime.today().date()
 
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
             self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
