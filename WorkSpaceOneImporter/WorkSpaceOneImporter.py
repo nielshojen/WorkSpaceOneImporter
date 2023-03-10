@@ -26,7 +26,6 @@ import hashlib
 import subprocess
 from datetime import datetime, timedelta
 # from datetime import datetime, timedelta, timezone
-import dateutil.parser
 
 import requests  # dependency
 import json
