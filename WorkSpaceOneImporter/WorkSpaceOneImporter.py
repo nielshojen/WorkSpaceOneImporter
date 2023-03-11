@@ -608,32 +608,33 @@ class WorkSpaceOneImporter(Processor):
                 self.output(f"No existing Assignment Rules found, operator must have removed those "
                             "- skipping.", verbose_level=1)
                 return
-            for index, assignment in enumerate(result["assignments"]):
-                self.output(f"Existing assignment #[{index}] is [{assignment}]", verbose_level=2)
-                if assignment["distribution"]["description"]:
-                    if "#AUTOPKG_DONE" in assignment["distribution"]["description"]:
-                        self.output(f"Assignment Rules are already marked as complete.", verbose_level=1)
+            elif result["assignments"]:
+                for index, assignment in enumerate(result["assignments"]):
+                    self.output(f"Existing assignment #[{index}] is [{assignment}]", verbose_level=2)
+                    if assignment["distribution"]["description"]:
+                        if "#AUTOPKG_DONE" in assignment["distribution"]["description"]:
+                            self.output(f"Assignment Rules are already marked as complete.", verbose_level=1)
+                            return
+                        if "#AUTOPKG" not in assignment["distribution"]["description"]:
+                            self.output(f"Assignment Rule description is NOT tagged as made by Autopkg - skipping.",
+                                        verbose_level=1)
+                            return
+                    else:
+                        self.output(f"Assignment Rule description not present, so NOT tagged as made by Autopkg "
+                                    "- skipping.", verbose_level=1)
                         return
-                    if "#AUTOPKG" not in assignment["distribution"]["description"]:
-                        self.output(f"Assignment Rule description is NOT tagged as made by Autopkg - skipping.",
-                                    verbose_level=1)
-                        return
-                else:
-                    self.output(f"Assignment Rule description not present, so NOT tagged as made by Autopkg "
-                                "- skipping.", verbose_level=1)
-                    return
 
-            # if there's an existing assignment rule, use its effective_date as base deployment date, else
-            # use today's date
-            if result["assignments"][0]["distribution"]["effective_date"]:
-                # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
-                # time may have a float as seconds or an int
-                # no timezone is returned in UEM v.22.12 but suspect that might change
-                # datetime.fromisoformat() can't handle the above in current Python v3.10
-                # alternative would be to install python-dateutil but that would introduce a new dependency
-                edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
-                self.output(f"Deployment date found in existing assignment #0: {[edate]} ", verbose_level=2)
-                ws1_app_ass_day0 = datetime.fromisoformat(edate).date()
+                # if there's an existing assignment rule, use its effective_date as base deployment date, else
+                # use today's date
+                if result["assignments"][0]["distribution"]["effective_date"]:
+                    # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
+                    # time may have a float as seconds or an int
+                    # no timezone is returned in UEM v.22.12 but suspect that might change
+                    # datetime.fromisoformat() can't handle the above in current Python v3.10
+                    # alternative would be to install python-dateutil but that would introduce a new dependency
+                    edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
+                    self.output(f"Deployment date found in existing assignment #0: {[edate]} ", verbose_level=2)
+                    ws1_app_ass_day0 = datetime.fromisoformat(edate).date()
             else:
                 ws1_app_ass_day0 = datetime.today().date()
 
