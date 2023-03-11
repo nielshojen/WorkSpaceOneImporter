@@ -573,7 +573,7 @@ class WorkSpaceOneImporter(Processor):
         deployed to newly enrolled devices, and NOT be offered in the Hub and user portal. Neither will the app version
         with effective_date in the future be deployed or be offered in the Hub or user portal before effective_date.
         For that reason, we need to postpone setting such assignment rules until effective_date, and skip those set
-        for a future date until next run.
+        for a future date until next autopkg session.
         """
         # call Get for internal app to get app UUID
         try:
@@ -691,28 +691,34 @@ class WorkSpaceOneImporter(Processor):
                 self.output(
                     f"Skipping remaining assignments from index [{priority_index}] as they are designated for a  "
                     f"future date.", verbose_level=1)
-            self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
-            try:
-                assignment_rules = {"assignments": app_assignments}
-                payload = json.dumps(assignment_rules)
-                self.output(f"App assignments data to send as json: {payload}", verbose_level=2)
-            except:
-                raise ProcessorError("Failed parsing app assignments as json")
 
-            try:
-                # Make the WS1 APIv2 call to assign the App
-                r = requests.put(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2,
-                                 data=payload)
-            except:
-                raise ProcessorError(
-                    f"Something went wrong setting assignment-rules for app [{app_name}] version [{app_version}]")
-            if not r.status_code == 202:
-                result = r.json()
-                self.output(f"Setting App assignment rules failed: {result['errorCode']} - {result['message']}",
-                            verbose_level=2)
-                raise ProcessorError(
-                    f"Unable to set assignment rules for [{app_name}] version [{app_version}]")
-            self.output(f"Successfully set assignment rules for [{app_name}] version [{app_version}]")
+            # if the same number of assignments exist already, bail out
+            if len(app_assignments) <= len(result["assignments"]):
+                self.output("No new assignments to make at this time.", verbose_level=1)
+                return
+            else:
+                self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
+                try:
+                    assignment_rules = {"assignments": app_assignments}
+                    payload = json.dumps(assignment_rules)
+                    self.output(f"App assignments data to send as json: {payload}", verbose_level=2)
+                except:
+                    raise ProcessorError("Failed parsing app assignments as json")
+
+                try:
+                    # Make the WS1 APIv2 call to assign the App
+                    r = requests.put(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2,
+                                     data=payload)
+                except:
+                    raise ProcessorError(
+                        f"Something went wrong setting assignment-rules for app [{app_name}] version [{app_version}]")
+                if not r.status_code == 202:
+                    result = r.json()
+                    self.output(f"Setting App assignment rules failed: {result['errorCode']} - {result['message']}",
+                                verbose_level=2)
+                    raise ProcessorError(
+                        f"Unable to set assignment rules for [{app_name}] version [{app_version}]")
+                self.output(f"Successfully set assignment rules for [{app_name}] version [{app_version}]")
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
         """ assemble app_assignment to pass in API V1 call """
