@@ -632,6 +632,7 @@ class WorkSpaceOneImporter(Processor):
                 # datetime.fromisoformat() can't handle the above in current Python v3.10
                 # alternative would be to install python-dateutil but that would introduce a new dependency
                 edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
+                self.output(f"Deployment date found in existing assignment #0: {[edate]} ", verbose_level=2)
                 ws1_app_ass_day0 = datetime.fromisoformat(edate).date()
             else:
                 ws1_app_ass_day0 = datetime.today().date()
@@ -651,7 +652,9 @@ class WorkSpaceOneImporter(Processor):
                 del app_assignment["distribution"]["smart_group_names"]
                 distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
                 self.output(f"distr_delay_days: {distr_delay_days}", verbose_level=3)
-                if not distr_delay_days == '0':
+                if distr_delay_days == '0':
+                    app_assignment["distribution"]["effective_date"] = ws1_app_ass_day0.isoformat()
+                else:
                     # calculate effective_date to use in API call
                     num_delay_days = int(distr_delay_days)
                     self.output(
