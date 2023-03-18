@@ -764,7 +764,7 @@ class WorkSpaceOneImporter(Processor):
                         f"Unable to set assignment rules for [{app_name}] version [{app_version}]")
 
                 self.output(f"Successfully set assignment rules for [{app_name}] version [{app_version}]")
-                new_assignment_rules = []
+                new_assignment_rules = ""
                 for rule in report_assignment_rules:
                     new_assignment_rules += f"[{rule['priority']}: {rule['name']}] "
                 self.env["ws1_app_assignments_changed"] = True
