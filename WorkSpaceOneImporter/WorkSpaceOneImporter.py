@@ -192,10 +192,15 @@ class WorkSpaceOneImporter(Processor):
             "description": "Application ID of the app version in WS1 UEM",
         },
         "ws1_imported_new": {
+            "description": "True if a new app version was imported in this session to WS1 UEM",
+        },
+        "ws1_app_assignments_changed": {
             "description": "boolean string indicating whether a new app version was imported in this session to WS1 UEM",
-        }
+        },
+        "ws1_importer_summary_result": {
+            "description": "Description of interesting results."
+        },
     }
-
     description = __doc__
 
     ### GIT FUNCTIONS
@@ -387,6 +392,7 @@ class WorkSpaceOneImporter(Processor):
                 if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and \
                         app['ApplicationName'] in app_name:
                     ws1_app_id = app["Id"]["Value"]
+                    self.env["ws1_app_id"] = ws1_app_id
                     self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
                     self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                     # if not self.env.get("ws1_force_import").lower() == "true":
@@ -396,6 +402,19 @@ class WorkSpaceOneImporter(Processor):
                             app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
                                                                           headers)
                             self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
+                            self.env["ws1_importer_summary_result"] = {
+                                "summary_text": "The following new app assignment was made in WS1:",
+                                "report_fields": [
+                                    "name",
+                                    "version",
+                                    "assignment_group"
+                                ],
+                                "data": {
+                                    "name": self.env["NAME"],
+                                    "version": app_version,
+                                    "assignment_group": SMARTGROUP,
+                                },
+                            }
                         elif update_assignments and not app_assignments == 'none':
                             self.output("updating advanced app assignment", verbose_level=2)
                             self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
@@ -516,9 +535,23 @@ class WorkSpaceOneImporter(Processor):
         self.output("App create response headers: {}".format(r.headers), verbose_level=4)
         ws1_app_id = r.headers["Location"].rsplit('/', 1)[-1]
         self.output("App create ApplicationId: {}".format(ws1_app_id), verbose_level=3)
+        self.env["ws1_app_id"] = ws1_app_id
+        self.env["ws1_imported_new"] = True
         app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, ws1_app_id)
         self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
-        self.env["ws1_imported_new"] = "True"
+        self.env["ws1_importer_summary_result"] = {
+            "summary_text": "The following new app was imported in WS1:",
+            "report_fields": [
+                "name",
+                "version",
+                "console location"
+            ],
+            "data": {
+                "name": app_name,
+                "version": app_version,
+                "console_location": app_ws1console_loc,
+            },
+        }
 
         """
         Create the app assignment details for API V1 assignments POST call
@@ -638,12 +671,16 @@ class WorkSpaceOneImporter(Processor):
             else:
                 ws1_app_ass_day0 = datetime.today().date()
 
+            # process assignment rules from recipe input
             self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
             self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
             skip_remaining_assignments = False
+            report_assignment_rules = []
             for priority_index, app_assignment in enumerate(app_assignments):
                 app_assignment["priority"] = str(priority_index)
                 app_assignment["distribution"]["smart_groups"] = []
+                report_assignment_rules.append({"priority": str(priority_index),
+                                                "name": app_assignment["distribution"]["name"]})
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
                     self.output(
                         f"App assignment[{priority_index}] Smart Group name: [{smart_group_name}]", verbose_level=2)
@@ -696,6 +733,9 @@ class WorkSpaceOneImporter(Processor):
                     f"Skipping remaining assignments from index [{priority_index}] as they are designated for a  "
                     f"future date.", verbose_level=1)
 
+            # remove existing assignments from report_assignment_rules
+            report_assignment_rules = report_assignment_rules[len(result["assignments"]):]
+
             # if the same number of assignments exist already, bail out
             if len(app_assignments) <= len(result["assignments"]):
                 self.output("No new assignments to make at this time.", verbose_level=1)
@@ -722,7 +762,35 @@ class WorkSpaceOneImporter(Processor):
                                 verbose_level=2)
                     raise ProcessorError(
                         f"Unable to set assignment rules for [{app_name}] version [{app_version}]")
+
                 self.output(f"Successfully set assignment rules for [{app_name}] version [{app_version}]")
+                new_assignment_rules = []
+                for rule in report_assignment_rules:
+                    new_assignment_rules += f"[{rule['priority']}: {rule['name']}] "
+                self.env["ws1_app_assignments_changed"] = True
+                app_ws1console_loc = f"{self.env.get('ws1_console_url')}"\
+                                     f"/AirWatch/#/AirWatch/Apps/Details/Internal/{ws1_app_id}/Assignment"
+                if not self.env["ws1_imported_new"]:
+                    self.env["ws1_importer_summary_result"] = {
+                        "summary_text": "The following new app assignment rules are applied in WS1:",
+                        "report_fields": [
+                            "name",
+                            "version",
+                            "new_assignment_rules",
+                            "console_location"
+                        ],
+                        "data": {
+                            "name": self.env["NAME"],
+                            "version": app_version,
+                            "new_assignment_rules": new_assignment_rules,
+                            "console_location": app_ws1console_loc
+                        },
+                    }
+                else:
+                    ws1_importer_summary_result = self.env.get("ws1_importer_summary_result")
+                    ws1_importer_summary_result["report_fields"].append("new_assignment_rules")
+                    ws1_importer_summary_result["data"].append({"new_assignment_rules": new_assignment_rules})
+                    self.env["ws1_importer_summary_result"] = ws1_importer_summary_result
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
         """ assemble app_assignment to pass in API V1 call """
@@ -768,10 +836,17 @@ class WorkSpaceOneImporter(Processor):
             self.output(f"App assignments failed: {result['errorCode']} - {result['message']}", verbose_level=2)
             raise ProcessorError(
                 f"Unable to assign the app [{self.env['NAME']}] to the group [{smart_group}]")
+        self.env["ws1_app_assignments_changed"] = True
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
+
+        # clear any pre-existing summary result
+        if "ws1_importer_summary_result" in self.env:
+            del self.env["ws1_importer_summary_result"]
+        del self.env["ws1_imported_new"]
+        del self.env["ws1_app_assignments_changed"]
 
         cache_dir = get_pref("CACHE_DIR") or os.path.expanduser(
             "~/Library/AutoPkg/Cache")
