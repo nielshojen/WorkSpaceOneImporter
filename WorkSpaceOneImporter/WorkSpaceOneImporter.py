@@ -195,7 +195,7 @@ class WorkSpaceOneImporter(Processor):
             "description": "True if a new app version was imported in this session to WS1 UEM",
         },
         "ws1_app_assignments_changed": {
-            "description": "boolean string indicating whether a new app version was imported in this session to WS1 UEM",
+            "description": "True if a new app version was imported in this session to WS1 UEM",
         },
         "ws1_importer_summary_result": {
             "description": "Description of interesting results."
@@ -301,7 +301,7 @@ class WorkSpaceOneImporter(Processor):
         # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
 
         # init result
-        self.env["ws1_imported_new"] = "False"
+        self.env["ws1_imported_new"] = False
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
@@ -637,7 +637,7 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError(
                     f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 "
                     f"- message: {result['message']}.")
-            if not result["assignments"] and self.env.get("ws1_imported_new") == "False":
+            if not result["assignments"] and not self.env.get("ws1_imported_new"):
                 self.output(f"No existing Assignment Rules found, operator must have removed those "
                             "- skipping.", verbose_level=1)
                 return
@@ -845,8 +845,8 @@ class WorkSpaceOneImporter(Processor):
         # clear any pre-existing summary result
         if "ws1_importer_summary_result" in self.env:
             del self.env["ws1_importer_summary_result"]
-        del self.env["ws1_imported_new"]
-        del self.env["ws1_app_assignments_changed"]
+        self.env["ws1_imported_new"] = False
+        self.env["ws1_app_assignments_changed"] = False
 
         cache_dir = get_pref("CACHE_DIR") or os.path.expanduser(
             "~/Library/AutoPkg/Cache")
