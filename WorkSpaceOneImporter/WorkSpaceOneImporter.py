@@ -729,6 +729,7 @@ class WorkSpaceOneImporter(Processor):
                     app_assignment["distribution"]["description"] += " #AUTOPKG"
             if skip_remaining_assignments:
                 del app_assignments[priority_index:]
+                del report_assignment_rules[priority_index:]
                 self.output(
                     f"Skipping remaining assignments from index [{priority_index}] as they are designated for a  "
                     f"future date.", verbose_level=1)
