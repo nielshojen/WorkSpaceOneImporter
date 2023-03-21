@@ -794,7 +794,10 @@ class WorkSpaceOneImporter(Processor):
                         verbose_level=3)
                     self.output(f"ws1_importer_summary_result['report_fields']: {ws1_importer_summary_result['report_fields']}", verbose_level=3)
                     ws1_importer_summary_result["report_fields"].append("new_assignment_rules")
-                    ws1_importer_summary_result["data"].append({"new_assignment_rules": new_assignment_rules})
+                    self.output(
+                        f"type(ws1_importer_summary_result['data']): {type(ws1_importer_summary_result['data'])}",
+                        verbose_level=3)
+                    ws1_importer_summary_result["data"]["new_assignment_rules"] = new_assignment_rules
                     self.env["ws1_importer_summary_result"] = ws1_importer_summary_result
 
     def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
