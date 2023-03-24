@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Description</key>
+	<string>Creates a munki package for Suspicious Package, imports it into WorkSpace ONE.</string>
+	<key>Identifier</key>
+	<string>com.github.codeskipper.ws1-plist.SuspiciousPackage</string>
+	<key>Input</key>
+	<dict>
+		<key>WS1_API_TOKEN</key>
+		<string>API_TOKEN_HERE</string>
+		<key>WS1_API_USERNAME</key>
+		<string>API_USERNAME_HERE</string>
+		<key>WS1_API_PASSWORD</key>
+		<string>API_PASSWORD_HERE</string>
+		<key>WS1_MUNKI_REPO_PATH</key>
+		<string>MUNKI_REPO_PATH_HERE</string>
+		<key>WS1_API_URL</key>
+		<string>WORKSPACEONE_API_URL_HERE</string>
+		<key>WS1_CONSOLE_URL</key>
+		<string>WORKSPACEONE_CONSOLE_URL_HERE</string>
+		<key>WS1_GROUPID</key>
+		<string>GROUP_ID_HERE</string>
+		<key>WS1_SMART_GROUP_NAME</key>
+		<string>SMART_GROUP_NAME</string>
+		<key>WS1_PUSH_MODE</key>
+		<string>PUSH_MODE</string>
+	</dict>
+	<key>ParentRecipe</key>
+	<string>com.github.codeskipper.munki.SuspiciousPackage</string>
+	<key>MinimumVersion</key>
+	<string>0.4.0</string>
+	<key>Process</key>
+	<array>
+		<dict>
+			<key>Processor</key>
+			<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
+			<key>Arguments</key>
+			<dict>
+				<key>ws1_munki_repo_path</key>
+				<string>%WS1_MUNKI_REPO_PATH%</string>
+				<key>ws1_api_token</key>
+				<string>%WS1_API_TOKEN%</string>
+				<key>ws1_api_username</key>
+				<string>%WS1_API_USERNAME%</string>
+				<key>ws1_api_password</key>
+				<string>%WS1_API_PASSWORD%</string>
+				<key>ws1_api_url</key>
+				<string>%WS1_API_URL%</string>
+				<key>ws1_groupid</key>
+				<string>%WS1_GROUPID%</string>
+				<key>ws1_console_url</key>
+				<string>%WS1_CONSOLE_URL%</string>
+				<key>ws1_smart_group_name</key>
+				<string>%WS1_SMART_GROUP_NAME%</string>
+				<key>ws1_push_mode</key>
+				<string>%WS1_PUSH_MODE%</string>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>
