@@ -1,30 +1,39 @@
-Comment: Copied pkginfo section from Munki parent recipe to add to Description
-Description: Downloads and Creates a munki package for NodeJS-LTS, imports it into WorkSpace ONE UEM, and makes assignment rules.
-Identifier: com.github.codeskipper.ws1.NodeJS-LTS
-ParentRecipe: com.github.dataJAR-recipes.munki.nodejslts
+Comment: Copied pkginfo section from Munki parent recipe, and added preinstall_script
+Description: Creates a munki package for GPG Suite, imports it into WorkSpace ONE UEM, and makes assignment rules.
+Identifier: com.github.codeskipper.ws1.GPGSuite
+ParentRecipe: com.github.gerardkok.munki.GPGSuite
 MinimumVersion: '2.3'
 
 Input:
-  NAME: 'Node JS LTS'
-  MUNKI_REPO_SUBDIR: ''
-  MUNKI_CATEGORY: 'Development'
+  NAME: 'GPG Suite'
+  MUNKI_REPO_SUBDIR: 'apps/%NAME%'
+  MUNKI_CATEGORY: 'Utilities'
   pkginfo:
-    notes: LTS version
     catalogs:
     - testing
     description: |
-      Node.js® is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications.
+      Everything you need to get started with secure communication and encrypting files
+      in one simple package.
 
-      https://nodejs.org
-    developer: Node.js Foundation
+      https://gpgtools.org
+    developer: GPGTools GmbH
     display_name: '%NAME%'
     name: '%NAME%'
     category: '%MUNKI_CATEGORY%'
     unattended_install: true
     unattended_uninstall: true
     blocking_applications:
-    - node
-    - npm
+    - Mail
+    - Postbox
+    - gpg
+    - GPG
+    preinstall_script: |
+      #!/bin/sh
+      # get Console user - Thanks to Graham Pugh - copied from erase-install.sh
+      current_user=$(/usr/sbin/scutil <<< "show State:/Users/ConsoleUser" |
+        /usr/bin/awk -F': ' '/[[:space:]]+Name[[:space:]]:/ { if ( $2 != "loginwindow" ) { print $2 }}')
+      sudo -u "$current_user" defaults write org.gpgtools.gpgmail.upgrader DontAskAgain -bool true
+      exit 0
 
   # WS1 specific input,  secrets
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE

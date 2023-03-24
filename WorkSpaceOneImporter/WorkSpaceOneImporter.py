@@ -789,14 +789,7 @@ class WorkSpaceOneImporter(Processor):
                     }
                 else:
                     ws1_importer_summary_result = self.env.get("ws1_importer_summary_result")
-                    self.output(
-                        f"type(ws1_importer_summary_result['report_fields']): {type(ws1_importer_summary_result['report_fields'])}",
-                        verbose_level=3)
-                    self.output(f"ws1_importer_summary_result['report_fields']: {ws1_importer_summary_result['report_fields']}", verbose_level=3)
                     ws1_importer_summary_result["report_fields"].append("new_assignment_rules")
-                    self.output(
-                        f"type(ws1_importer_summary_result['data']): {type(ws1_importer_summary_result['data'])}",
-                        verbose_level=3)
                     ws1_importer_summary_result["data"]["new_assignment_rules"] = new_assignment_rules
                     self.env["ws1_importer_summary_result"] = ws1_importer_summary_result
 
