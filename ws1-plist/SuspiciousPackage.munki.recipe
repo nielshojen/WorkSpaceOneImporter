@@ -21,7 +21,9 @@
 				<key>category</key>
 				<string>Utilities</string>
 				<key>description</key>
-				<string>With Suspicious Package, you can open a macOS Installer package and see what's inside, without installing it first. \nhttps://www.mothersruin.com</string>
+				<string>With Suspicious Package, you can open a macOS Installer package and see what's inside, without installing it first.
+
+https://www.mothersruin.com</string>
 				<key>developer</key>
 				<string>Mothers Ruin Software</string>
 				<key>display_name</key>
