@@ -672,12 +672,18 @@ class WorkSpaceOneImporter(Processor):
                 ws1_app_ass_day0 = datetime.today().date()
 
             # process assignment rules from recipe input
-            self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=2)
+            self.output(f"Assignments recipe input var is of type: [{type(app_assignments)}]", verbose_level=3)
             self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
             skip_remaining_assignments = False
             report_assignment_rules = []
             for priority_index, app_assignment in enumerate(app_assignments):
-                app_assignment["priority"] = str(priority_index)
+                app_assignment["priority"] = str(priority_index)  # rules must be passed in order of ascending priority
+                if app_assignment["distribution"]["keep_app_updated_automatically"]:
+                    # need to pass auto_update_devices_with_previous_versions as well in order to have apps update
+                    # automatically
+                    app_assignment["distribution"].append({["auto_update_devices_with_previous_versions"]: True})
+                else:
+                    app_assignment["distribution"].append({["auto_update_devices_with_previous_versions"]: False})
                 app_assignment["distribution"]["smart_groups"] = []
                 report_assignment_rules.append({"priority": str(priority_index),
                                                 "name": app_assignment["distribution"]["name"]})
@@ -769,7 +775,7 @@ class WorkSpaceOneImporter(Processor):
                 for rule in report_assignment_rules:
                     new_assignment_rules += f"[{rule['priority']}: {rule['name']}] "
                 self.env["ws1_app_assignments_changed"] = True
-                app_ws1console_loc = f"{self.env.get('ws1_console_url')}"\
+                app_ws1console_loc = f"{self.env.get('ws1_console_url')}" \
                                      f"/AirWatch/#/AirWatch/Apps/Details/Internal/{ws1_app_id}/Assignment"
                 if not self.env["ws1_imported_new"]:
                     self.env["ws1_importer_summary_result"] = {
