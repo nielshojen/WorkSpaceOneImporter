@@ -679,11 +679,10 @@ class WorkSpaceOneImporter(Processor):
             for priority_index, app_assignment in enumerate(app_assignments):
                 app_assignment["priority"] = str(priority_index)  # rules must be passed in order of ascending priority
                 if app_assignment["distribution"]["keep_app_updated_automatically"]:
-                    # need to pass auto_update_devices_with_previous_versions as well in order to have apps update
-                    # automatically
-                    app_assignment["distribution"].append({["auto_update_devices_with_previous_versions"]: True})
+                    # need to pass auto_update_devices_with_previous_versions as well to have apps update automatically
+                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = True
                 else:
-                    app_assignment["distribution"].append({["auto_update_devices_with_previous_versions"]: False})
+                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = False
                 app_assignment["distribution"]["smart_groups"] = []
                 report_assignment_rules.append({"priority": str(priority_index),
                                                 "name": app_assignment["distribution"]["name"]})
