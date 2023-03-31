@@ -678,11 +678,6 @@ class WorkSpaceOneImporter(Processor):
             report_assignment_rules = []
             for priority_index, app_assignment in enumerate(app_assignments):
                 app_assignment["priority"] = str(priority_index)  # rules must be passed in order of ascending priority
-                if app_assignment["distribution"]["keep_app_updated_automatically"]:
-                    # need to pass auto_update_devices_with_previous_versions as well to have apps update automatically
-                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = True
-                else:
-                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = False
                 app_assignment["distribution"]["smart_groups"] = []
                 report_assignment_rules.append({"priority": str(priority_index),
                                                 "name": app_assignment["distribution"]["name"]})
@@ -724,6 +719,12 @@ class WorkSpaceOneImporter(Processor):
                     app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
                 # distr_delay_days is used as input, NOT in API call
                 del app_assignment["distribution"]["distr_delay_days"]
+
+                if app_assignment["distribution"]["keep_app_updated_automatically"]:
+                    # need to pass auto_update_devices_with_previous_versions as well to have apps update automatically
+                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = True
+                else:
+                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = False
 
                 # If we made it to the last assignment...
                 if priority_index == (len(app_assignments) - 1):
