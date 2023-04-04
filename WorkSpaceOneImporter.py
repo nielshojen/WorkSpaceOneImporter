@@ -249,8 +249,8 @@ class WorkSpaceOneImporter(Processor):
         oauth_client_id = self.env.get("ws1_oauth_client_id")
         oauth_client_secret = self.env.get("ws1_oauth_client_secret")
         oauth_token_url = self.env.get("ws1_oauth_token_url")
-        #force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
-        force_import = self.env.get("ws1_force_import")
+        force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
+        #force_import = self.env.get("ws1_force_import")
 
         # if placeholder value is set, ignore and set to None
         if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
