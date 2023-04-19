@@ -9,7 +9,7 @@ ParentRecipe: io.github.hjuutilainen.munki.WorkspaceONEIntelligentHub
 MinimumVersion: '2.3'
 
 Input:
-  NAME: VMware Workspace ONE Intelligent Hub
+  NAME: VMWare Workspace ONE Intelligent Hub
 
   # WS1 specific input,  secrets
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
