@@ -86,6 +86,8 @@ You'll need to specify credentials for either Oauth or Basic authentication.
 
 `ws1_console_url` is there as a convenience, so you can get a direct link to a newly imported package in the WS1 console.
 
+`ws1_smart_group_name` and `ws1_push_mode` let you make simple App Assignments to Assignment Groups, while `ws1_app_assignments` gives you complete control over the App Assignment settings, but needs more settings in the recipe override.
+
 * [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
 * [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
 * [`ws1_oauth_client_id`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_oauth_client_id)
@@ -100,6 +102,7 @@ You'll need to specify credentials for either Oauth or Basic authentication.
 * [`ws1_groupid`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_groupid)
 * [`ws1_smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_smart_group_name)
 * [`ws1_push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_push_mode)
+* [`ws1_app_assignments`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments)
 
 ### Input variables being deprecated
 * [`ws1_munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_munki_repo_path)
