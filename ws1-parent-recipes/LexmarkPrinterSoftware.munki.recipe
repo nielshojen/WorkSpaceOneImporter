@@ -9,7 +9,7 @@
 	<key>Input</key>
 	<dict>
 		<key>NAME</key>
-		<string>LexmarkPrinterSoftwareUC1</string>
+		<string>LexmarkUniversalPrinterSoftwareColor</string>
 		<key>MUNKI_REPO_SUBDIR</key>
 		<string>Lexmark</string>
 		<key>MUNKI_CATEGORY</key>
