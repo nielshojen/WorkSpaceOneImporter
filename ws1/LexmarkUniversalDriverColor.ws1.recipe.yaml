@@ -1,11 +1,11 @@
 Comment:
-Description: Creates a munki package for Lexmark Universal Printer Software - Color, and imports it into WorkSpace ONE.
-Identifier: com.github.codeskipper.ws1.LexmarkPrinterSoftware
-ParentRecipe: com.github.codeskipper.munki.LexmarkPrinterSoftware
+Description: Creates a munki package for Lexmark Universal Printer Driver - Color, and imports it into WorkSpace ONE.
+Identifier: com.github.codeskipper.ws1.LexmarkUniversalDriverColor
+ParentRecipe: com.github.codeskipper.munki.LexmarkUniversalDriverColor
 MinimumVersion: '2.3'
 
 Input:
-  NAME: Lexmark Universal Printer Software - Color
+  NAME: Lexmark Universal Printer Driver - Color
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
   WS1_OAUTH_CLIENT_SECRET: OAUTH2_CLIENT_CLIENT_SECRET_HERE
   WS1_OAUTH_TOKEN_URL: OAUTH2_ACCESS_TOKEN_SERVER_URL_HERE

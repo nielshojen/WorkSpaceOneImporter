@@ -5,11 +5,11 @@
 	<key>Description</key>
 	<string>Downloads the latest Lexmark Universal Print Driver - Color version.</string>
 	<key>Identifier</key>
-	<string>com.github.codeskipper.download.LexmarkPrinterSoftware</string>
+	<string>com.github.codeskipper.download.LexmarkUniversalDriverColor</string>
 	<key>Input</key>
 	<dict>
 		<key>NAME</key>
-		<string>LexmarkUniversalPrinterSoftwareColor</string>
+		<string>LexmarkUniversalDriverColor</string>
 	</dict>
 	<key>MinimumVersion</key>
 	<string>0.3.1</string>

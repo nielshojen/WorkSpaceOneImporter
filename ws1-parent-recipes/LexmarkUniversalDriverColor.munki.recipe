@@ -5,11 +5,11 @@
 	<key>Description</key>
 	<string>Downloads the latest Lexmark Universal Print Driver - Color version and imports into Munki.</string>
 	<key>Identifier</key>
-	<string>com.github.codeskipper.munki.LexmarkPrinterSoftware</string>
+	<string>com.github.codeskipper.munki.LexmarkUniversalDriverColor</string>
 	<key>Input</key>
 	<dict>
 		<key>NAME</key>
-		<string>LexmarkUniversalPrinterSoftwareColor</string>
+		<string>LexmarkUniversalDriverColor</string>
 		<key>MUNKI_REPO_SUBDIR</key>
 		<string>Lexmark</string>
 		<key>MUNKI_CATEGORY</key>
@@ -23,11 +23,11 @@
 			<key>category</key>
 			<string>%MUNKI_CATEGORY%</string>
 			<key>description</key>
-			<string>The Lexmark Universal Print Driver provide users and administrators with a standardized, one-driver solution for their printing needs. Instead of installing and managing individual drivers for each printer model, administrators can install the Lexmark Universal Print Driver for use with a variety of both mono and color laser printers and multi-function devices.</string>
+			<string>The Lexmark Universal Print Driver provide users and administrators with a standardized, one-driver solution for their printing needs. Instead of installing and managing individual drivers for each printer model, administrators can install the Lexmark Universal Print Driver for use with a variety of both mono and color laser printers and multi-function devices. This is the color driver.</string>
 			<key>developer</key>
 			<string>Lexmark International, Inc.</string>
 			<key>display_name</key>
-			<string>Lexmark Universal Printer Software - Color</string>
+			<string>Lexmark Universal Printer Driver - Color</string>
 			<key>name</key>
 			<string>%NAME%</string>
 			<key>unattended_install</key>
