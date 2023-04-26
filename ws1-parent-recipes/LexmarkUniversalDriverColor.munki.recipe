@@ -39,7 +39,7 @@
 	<key>MinimumVersion</key>
 	<string>0.2.0</string>
 	<key>ParentRecipe</key>
-	<string>com.github.codeskipper.download.LexmarkPrinterSoftware</string>
+	<string>com.github.codeskipper.download.LexmarkUniversalDriverColor</string>
 	<key>Process</key>
     <array>
 		<dict>
