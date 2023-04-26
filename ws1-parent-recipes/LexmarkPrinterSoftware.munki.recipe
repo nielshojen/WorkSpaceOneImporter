@@ -41,6 +41,7 @@
 	<key>ParentRecipe</key>
 	<string>com.github.codeskipper.download.LexmarkPrinterSoftware</string>
 	<key>Process</key>
+    <array>
 		<dict>
 			<key>Processor</key>
 			<string>MunkiImporter</string>
