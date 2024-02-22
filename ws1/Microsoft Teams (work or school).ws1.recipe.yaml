@@ -1,4 +1,5 @@
-Comment:
+Comment: |
+    needed to change the NAME to skip the parenthesis in (work or school) to avoid upload error to WS1 UEM
 Description: Creates a munki package for Microsoft Teams (work or school), and imports it into WorkSpace ONE UEM.
 Identifier: com.github.codeskipper.ws1.Microsoft Teams work or school
 ParentRecipe: com.github.dataJAR-recipes.munki.Microsoft Teams work or school
