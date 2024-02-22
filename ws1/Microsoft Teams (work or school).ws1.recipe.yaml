@@ -22,6 +22,8 @@ Input:
       Your modern workplace at home, in the office, and on the go.
     display_name: '%DISPLAY_NAME%'
     name: '%NAME%'
+    notes: |
+        needed to change the NAME to skip the parenthesis in (work or school) to avoid upload error to WS1 UEM
     unattended_install: true
     unattended_uninstall: true
 
