@@ -5,10 +5,24 @@ ParentRecipe: com.github.dataJAR-recipes.munki.Microsoft Teams work or school
 MinimumVersion: '2.3'
 
 Input:
-  NAME: Microsoft Teams (work or school)
+  NAME: Microsoft Teams - work or school
   DISPLAY_NAME: Microsoft Teams (work or school)
   MUNKI_REPO_SUBDIR: apps/Microsoft
   MUNKI_CATEGORY: Productivity
+
+  pkginfo:
+    catalogs:
+    - testing
+    category: Productivity
+    developer: Microsoft
+    description: |
+      Get more done with Microsoft Teams (work or school).
+
+      Your modern workplace at home, in the office, and on the go.
+    display_name: '%DISPLAY_NAME%'
+    name: '%NAME%'
+    unattended_install: true
+    unattended_uninstall: true
 
   # WS1 specific input,  secrets
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
