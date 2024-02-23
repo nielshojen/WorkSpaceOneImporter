@@ -70,7 +70,8 @@ com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter
 ## Sensitive input variables
 The processor currently requires sensitive keys like password and API token to be populated in your recipe (override) Input variables, or by command line keys.
 
-Instead of keeping secrets in plain text recipe override files, they can be added to a macOS keychain. I took a peek at - [this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended) and now have a working launcher shell script for a Python wrapper, and I'll share when I can  - it's currently in a private repo for GitHub CI as described below.
+Instead of keeping secrets in plain text recipe override files, they can be added to a macOS keychain. I took a peek at - [this](https://stackoverflow.com/questions/57838889/manage-keychain-to-codesign-macos-ios-app-with-xcodebuild-unattended) and now have a working launcher shell script for a Python wrapper, and I'll share when I can  - it's currently in a private repo for GitHub CI as described below. This is useful for testing, in production I use a CI/CD pipeline on a self-hosted GitHub runner.
+
 
 ### best with CI/CD
 You can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script). I'm in the process of setting this up and adapting from [the example provided by Gusto](https://engineering.gusto.com/running-autopkg-in-github-actions/). I intend to share the setup when I've got it stable enough for production.
