@@ -3,7 +3,7 @@ WorkSpaceOneImporter is an AutoPkg Processor that can automatically import packa
 Being adapted from [jprichards/AirWatchImporter](https://github.com/jprichards/AirWatchImporter).
 
 ## WORKING
-Project is now working. You can reach me as @mart in MacAdmins Slack. Issues and PRs welcome in GitHub.
+Project is working stable in production. You can reach me as @mart in MacAdmins Slack. Issues and PRs welcome in GitHub.
 
 Done:
  * testing API calls involved for WS1 using Postman -> success
@@ -154,7 +154,7 @@ autopkg processor-info WorkSpaceOneImporter --recipe com.github.codeskipper.Work
 ## Example AutoPkg Recipe
 
 Example recipe below for Suspicious Package.ws1.recipe  is from:
-https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/SuspiciousPackage.ws1.recipe
+https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/SuspiciousPackage.ws1-plist.recipe
 
 ```
 <?xml version="1.0" encoding="UTF-8"?>
@@ -223,9 +223,9 @@ https://github.com/codeskipper/autopkg-recipes/blob/main/Suspicious%20Package/Su
 ```
 
 ### yaml format preferred
-More recipes for this processor are available in [my recipe repo](https://github.com/codeskipper/autopkg-recipes) and those are in yaml format as that is easier to use.
+More recipes for this processor are available in [my recipe repo](ws1) and those are in yaml format as that is easier to use.
 ___
-Create a recipe override first:
+Create a recipe override first (if you prefer plist format):
 ```autopkg make-override SuspiciousPackage.ws1.recipe```
 
 Again yaml format is easier to deal with, especially if you leave only the input variables you need to override and strip away the rest.
