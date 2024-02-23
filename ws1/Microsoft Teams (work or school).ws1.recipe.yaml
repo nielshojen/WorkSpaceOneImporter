@@ -18,7 +18,6 @@ Input:
     developer: Microsoft
     description: |
       Get more done with Microsoft Teams (work or school).
-
       Your modern workplace at home, in the office, and on the go.
     display_name: '%DISPLAY_NAME%'
     name: '%NAME%'
