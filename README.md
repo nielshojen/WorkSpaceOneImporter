@@ -21,13 +21,15 @@ Done:
  * add code to find icon file to upload
  * merged PR#1 from @SoxIn4 - ability to supply base64 pre-encoded api username and password
  * added support for Oauth
+ * added support to specify advanced app assignment (API v.2) settings and update on schedule
+ * added production ready example recipes (moved from my autopkg-recipe repo)
 
 ToDo:
- * cleanup code
- * maybe expose more app assignment settings details as input vars
- * maybe add ability to use keychain
+ * cleanup code, confirm to Autopkg standards
+ * maybe move to Autopkg repo recipe subfolder
+ * document usage in wiki
+ * maybe establish separate demo repo
  * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
- * maybe add ability and input setting whether to upload all versions of a software title
 
 
 ## Dependencies
