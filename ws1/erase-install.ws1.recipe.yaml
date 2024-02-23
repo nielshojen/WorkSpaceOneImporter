@@ -19,7 +19,7 @@ Input:
   WS1_SMART_GROUP_NAME: SMART_GROUP_NAME_HERE
   WS1_PUSH_MODE: PUSH_MODE_SETTING
 
-  # WS1 - testing new AppsV2 assignments feature
+  # WS1 - use new AppsV2 assignments feature
   ws1_app_assignments:
       - distribution:
           name: ASSIGNMENT_NAME
@@ -29,13 +29,13 @@ Input:
             - SMART_GROUP_NAME2
           app_delivery_method: AUTO_OR_ON_DEMAND
           distr_delay_days: DISTRIBUTION_DELAY_DAYS
-          display_in_app_catalog: true
+          display_in_app_catalog: false
           is_default_assignment: false
           keep_app_updated_automatically: true
         restriction:
             remove_on_unenroll: false
             managed_access: false
-            desired_state_management: false
+            desired_state_management: true
             prevent_removal: false
 
 Process:
