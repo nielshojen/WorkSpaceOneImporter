@@ -80,9 +80,9 @@ Input:
         ' > $gPrefs
 
             echo $?
-	        # Kill the Preference caching daemon to prevent it from overwriting any changes
-	        killall cfprefsd
-	        echo $?
+            # Kill the Preference caching daemon to prevent it from overwriting any changes
+            killall cfprefsd
+            echo $?
         fi
         # Check exit code.
         exit $?
