@@ -30,7 +30,7 @@ Input:
         portal hostname in the recipe override
     unattended_install: true
     unattended_uninstall: true
-    preinstall: |
+    preinstall_script: |
         #!/bin/bash
         ## Description: Checks for global preferences file and populates
         ## it with the default portal if needed.
@@ -86,7 +86,8 @@ Input:
         fi
         # Check exit code.
         exit $?
-    uninstall: |
+    uninstall_method: uninstall_script
+    uninstall_script: |
         #!/bin/zsh
 
         ## call uninstall script inside installed app bundle
