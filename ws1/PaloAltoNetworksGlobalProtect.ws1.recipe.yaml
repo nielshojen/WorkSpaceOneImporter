@@ -1,0 +1,127 @@
+Comment: |
+    Intended to process the software package from YOUR company firewall - you need to specify the portal hostname in
+    the recipe override
+Description: Creates a Munki package for Palo Alto Networks GlobalProtect, and imports it into WorkSpace ONE UEM.
+Identifier: com.github.codeskipper.PaloAltoNetworksGlobalProtect.ws1.recipe.yaml
+ParentRecipe: com.github.ygini.munki.GlobalProtect
+MinimumVersion: '2.3'
+
+Input:
+  NAME: Palo Alto Networks GlobalProtect
+  DISPLAY_NAME: Palo Alto Networks GlobalProtect
+  MUNKI_REPO_SUBDIR: apps/Palo Alto Networks
+  MUNKI_CATEGORY: IT
+  HOSTNAME: YOUR_PALO_ALTO_PORTAL_ADDRESS
+  PLATFORM: mac
+
+  pkginfo:
+    catalogs:
+    - testing
+    category: IT
+    developer: Microsoft
+    description: |
+      GlobalProtect delivers the protection of next-generation security platform to the mobile workforce in order to
+        stop targeted cyberattacks, evasive application traffic, phishing, malicious websites, command-and-control
+        traffic, and known and unknown threats.
+    display_name: '%DISPLAY_NAME%'
+    name: '%NAME%'
+    notes: |
+        2024-03-05 Intended to process the software package from YOUR company firewall - you need to specify your
+        portal hostname in the recipe override
+    unattended_install: true
+    unattended_uninstall: true
+    preinstall: |
+        #!/bin/bash
+        ## Description: Checks for global preferences file and populates
+        ## it with the default portal if needed.
+        ## Body ###########################################################
+        ## Declare Variables ##############################################
+
+        # Get current Console user
+        active_user=$( stat -f "%Su" /dev/console )
+
+        # Global Prefs File
+        gPrefs=/Library/Preferences/com.paloaltonetworks.GlobalProtect.settings.plist
+
+        ## Logic ##########################################################
+
+        # Check to see if the global preference file already exists...
+        if [[ -e $gPrefs ]]; then
+            echo "Default global portal already exists. Skipping."
+        else
+            echo "Setting default global portal to: your-portal.your-domain.your-tld"
+            # If it does not already exist, create it and populate the default portal using the echo command
+            echo '<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>Palo Alto Networks</key>
+            <dict>
+                <key>GlobalProtect</key>
+                <dict>
+                    <key>PanSetup</key>
+                    <dict>
+                        <key>Portal</key>
+                        <string>your-portal.your-domain.your-tld</string>
+                        <key>Prelogon</key>
+                        <string>0</string>
+                    </dict>
+                    <key>Settings</key>
+                    <dict>
+                        <key>connect-method</key>
+                        <string>on-demand</string>
+                        <key>default-browser</key>
+                        <string>yes</string>
+                    </dict>
+                </dict>
+            </dict>
+        </dict>
+        </plist>
+        ' > $gPrefs
+
+            echo $?
+	        # Kill the Preference caching daemon to prevent it from overwriting any changes
+	        killall cfprefsd
+	        echo $?
+        fi
+        # Check exit code.
+        exit $?
+    uninstall: |
+        #!/bin/zsh
+
+        ## call uninstall script inside installed app bundle
+        /Applications/GlobalProtect.app/Contents/Resources/uninstall_gp.sh
+        exit $?
+
+
+  # WS1 specific input,  secrets
+  WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
+  WS1_OAUTH_CLIENT_SECRET: OAUTH2_CLIENT_CLIENT_SECRET_HERE
+  WS1_OAUTH_TOKEN_URL: OAUTH2_ACCESS_TOKEN_SERVER_URL_HERE
+  WS1_API_USERNAME: API_USERNAME_HERE
+  WS1_API_PASSWORD: API_PASSWORD_HERE
+  WS1_API_TOKEN: API_TOKEN_HERE
+  WS1_B64ENCODED_API_CREDENTIALS: B64ENCODED_API_CREDENTIALS_HERE
+  WS1_API_URL: WORKSPACEONE_API_URL_HERE
+  WS1_CONSOLE_URL: WORKSPACEONE_CONSOLE_URL_HERE
+  WS1_GROUPID: GROUP_ID_HERE
+  WS1_SMART_GROUP_NAME: SMART_GROUP_NAME_HERE
+  WS1_PUSH_MODE: PUSH_MODE_SETTING
+
+Process:
+- Processor: com.github.codeskipper.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
+  Arguments:
+    ws1_oauth_client_id: '%WS1_OAUTH_CLIENT_ID%'
+    ws1_oauth_client_secret: '%WS1_OAUTH_CLIENT_SECRET%'
+    ws1_oauth_token_url: '%WS1_OAUTH_TOKEN_URL%'
+    ws1_api_token: '%WS1_API_TOKEN%'
+    ws1_api_username: '%WS1_API_USERNAME%'
+    ws1_api_password: '%WS1_API_PASSWORD%'
+    ws1_b64encoded_api_credentials: '%WS1_B64ENCODED_API_CREDENTIALS%'
+    ws1_api_url: '%WS1_API_URL%'
+    ws1_console_url: '%WS1_CONSOLE_URL%'
+    ws1_groupid: '%WS1_GROUPID%'
+    ws1_smart_group_name: '%WS1_SMART_GROUP_NAME%'
+    ws1_push_mode: '%WS1_PUSH_MODE%'
+
+
