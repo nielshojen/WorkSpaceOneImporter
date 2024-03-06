@@ -18,7 +18,7 @@ Input:
     catalogs:
     - testing
     category: IT
-    developer: Microsoft
+    developer: Palo Alto Networks
     description: |
       GlobalProtect delivers the protection of next-generation security platform to the mobile workforce in order to
         stop targeted cyberattacks, evasive application traffic, phishing, malicious websites, command-and-control
