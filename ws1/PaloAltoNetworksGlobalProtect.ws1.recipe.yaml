@@ -19,10 +19,9 @@ Input:
     - testing
     category: IT
     developer: Palo Alto Networks
-    description: |
-      GlobalProtect delivers the protection of next-generation security platform to the mobile workforce in order to
-        stop targeted cyberattacks, evasive application traffic, phishing, malicious websites, command-and-control
-        traffic, and known and unknown threats.
+    description: GlobalProtect delivers the protection of next-generation security platform to the mobile workforce in
+      order to stop targeted cyberattacks, evasive application traffic, phishing, malicious websites,
+        command-and-control traffic, and known and unknown threats.
     display_name: '%DISPLAY_NAME%'
     name: '%NAME%'
     notes: |
@@ -30,6 +29,8 @@ Input:
         portal hostname in the recipe override
     unattended_install: true
     unattended_uninstall: true
+    blocking_applications:
+    - GlobalProtect
     preinstall_script: |
         #!/bin/bash
         ## Description: Checks for global preferences file and populates
