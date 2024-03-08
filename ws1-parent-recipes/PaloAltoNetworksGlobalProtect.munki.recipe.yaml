@@ -1,0 +1,58 @@
+Description: Imports GlobalProtect into munki.
+Identifier: com.github.codeskipper.munki.PaloAltoNetworksGlobalProtect
+ParentRecipe: com.github.peshay.download.GlobalProtect
+MinimumVersion: 0.6.1
+
+Input:
+  NAME: GlobalProtect
+  PLATFORM: mac
+  HOSTNAME: vpn.example.com
+  DOWNLOAD_URL: https://%HOSTNAME%/global-protect/getmsi.esp?platform=%PLATFORM%
+  pkginfo:
+    catalogs:
+    - testing
+    description: GlobalProtect delivers the protection of next-generation security platform to the mobile workforce in order to stop targeted cyberattacks, evasive application traffic, phishing, malicious websites, command-and-control traffic, and known and unknown threats.
+    developer: PaloAlto
+    display_name: '%NAME%'
+    name: '%NAME%'
+    unattended_install: true
+
+Process:
+- Processor: FlatPkgUnpacker
+  Arguments:
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%'
+    flat_pkg_path: '%pathname%'
+
+- Processor: PkgPayloadUnpacker
+  Arguments:
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%'
+    pkg_payload_path: '%RECIPE_CACHE_DIR%/%NAME%/gp.pkg/Payload'
+
+- Processor: Copier
+  Arguments:
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%/%NAME%.app/Contents'
+    source_path: '%RECIPE_CACHE_DIR%/%NAME%/Contents'
+
+- Processor: Versioner
+  Arguments:
+    input_plist_path: '%RECIPE_CACHE_DIR%/%NAME%/%NAME%.app/Contents/Info.plist'
+
+- Processor: com.github.homebysix.FindAndReplace/FindAndReplace
+  Arguments:
+    find: '-'
+    input_string: '%version%'
+    replace: '.'
+  Comment: |
+    Replace dots for hyphens in the version number because
+        - WorkSpace ONE UEM doesn't allow hyphens
+        - Munki version should be the same as UEM version so Hub can detect properly if it is updated
+
+- Processor: MunkiPkginfoMerger
+  Arguments:
+    additional_pkginfo:
+      version: '%output_string%'
+
+- Processor: MunkiImporter
+  Arguments:
+    pkg_path: '%pathname%'
+    repo_subdirectory: '%MUNKI_REPO_SUBDIR%'
