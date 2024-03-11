@@ -507,11 +507,6 @@ class WorkSpaceOneImporter(Processor):
         else:
             icon_id = ''
 
-        # UEM does not allow hyphen '-' in internal version number, so replace hyphens with dots '.'
-        app_version_uem = app_version.replace('-', '.')
-        self.output(f"UEM version number: {app_version_uem}", verbose_level=4)
-        if app_version_uem != app_version:
-            self.output(f"UEM version number needed to be adjusted to: {app_version_uem}", verbose_level=2)
 
         ## Create a dict with the app details to be passed to WS1
         ## to create the App object
@@ -521,11 +516,11 @@ class WorkSpaceOneImporter(Processor):
             app_details = {"pkgInfoBlobId": str(pkginfo_id),
                            "applicationBlobId": str(pkg_id),
                            "applicationIconId": str(icon_id),
-                           "version": str(app_version_uem)}
+                           "version": str(app_version)}
         else:
             app_details = {"pkgInfoBlobId": str(pkginfo_id),
                            "applicationBlobId": str(pkg_id),
-                           "version": str(app_version_uem)}
+                           "version": str(app_version)}
 
         ## Make the API call to create the App object
         self.output("Creating App Object in WorkSpaceOne...")
