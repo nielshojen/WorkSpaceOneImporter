@@ -507,6 +507,7 @@ class WorkSpaceOneImporter(Processor):
         else:
             icon_id = ''
 
+
         ## Create a dict with the app details to be passed to WS1
         ## to create the App object
         ## include applicationIconId only if we have one

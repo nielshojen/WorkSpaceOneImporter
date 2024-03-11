@@ -1,0 +1,137 @@
+Description: Imports GlobalProtect into munki.
+Identifier: com.github.codeskipper.munki.PaloAltoNetworksGlobalProtect
+ParentRecipe: com.github.peshay.download.GlobalProtect
+MinimumVersion: 0.6.1
+
+Input:
+  NAME: GlobalProtect
+  DISPLAY_NAME: Palo Alto Networks GlobalProtect
+  MUNKI_REPO_SUBDIR: apps/Palo Alto Networks
+  MUNKI_CATEGORY: IT
+  HOSTNAME: YOUR_PALO_ALTO_PORTAL_ADDRESS
+  PLATFORM: mac
+
+  pkginfo:
+    catalogs:
+    - testing
+    category: IT
+    developer: Palo Alto Networks
+    description: GlobalProtect delivers the protection of next-generation security platform to the mobile workforce in
+      order to stop targeted cyberattacks, evasive application traffic, phishing, malicious websites,
+        command-and-control traffic, and known and unknown threats.
+    display_name: '%DISPLAY_NAME%'
+    name: '%NAME%'
+    notes: |
+        2024-03-05 Intended to process the software package from YOUR company firewall - you need to specify your
+        portal HOSTNAME in the recipe override
+    unattended_install: true
+    unattended_uninstall: true
+    comment: |
+      tried to specify blocking_applications: - GlobalProtect
+      but that does not work well as the LaunchAgent has KeepAlive enabled so it restarts before it can be updated
+    preinstall_script: |
+        #!/bin/bash
+        ## Description: Checks for global preferences file and populates
+        ## it with the default portal if needed.
+        ## Body ###########################################################
+        ## Declare Variables ##############################################
+
+        # Get current Console user
+        active_user=$( stat -f "%Su" /dev/console )
+
+        # Global Prefs File
+        gPrefs=/Library/Preferences/com.paloaltonetworks.GlobalProtect.settings.plist
+
+        ## Logic ##########################################################
+
+        # Check to see if the global preference file already exists...
+        if [[ -e $gPrefs ]]; then
+            echo "Default global portal already exists. Skipping."
+        else
+            echo "Setting default global portal to: your-portal.your-domain.your-tld"
+            # If it does not already exist, create it and populate the default portal using the echo command
+            echo '<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>Palo Alto Networks</key>
+            <dict>
+                <key>GlobalProtect</key>
+                <dict>
+                    <key>PanSetup</key>
+                    <dict>
+                        <key>Portal</key>
+                        <string>your-portal.your-domain.your-tld</string>
+                        <key>Prelogon</key>
+                        <string>0</string>
+                    </dict>
+                    <key>Settings</key>
+                    <dict>
+                        <key>connect-method</key>
+                        <string>on-demand</string>
+                        <key>default-browser</key>
+                        <string>yes</string>
+                    </dict>
+                </dict>
+            </dict>
+        </dict>
+        </plist>
+        ' > $gPrefs
+
+            echo $?
+            # Kill the Preference caching daemon to prevent it from overwriting any changes
+            killall cfprefsd
+            echo $?
+        fi
+        # Check exit code.
+        exit $?
+    uninstall_method: uninstall_script
+    uninstall_script: |
+        #!/bin/zsh
+
+        ## call uninstall script inside installed app bundle
+        # This works better than Munki pkg uninstall as that leaves an empty app bundle in /Applications
+        /Applications/GlobalProtect.app/Contents/Resources/uninstall_gp.sh
+        exit $?
+
+
+
+Process:
+- Processor: FlatPkgUnpacker
+  Arguments:
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%'
+    flat_pkg_path: '%pathname%'
+
+- Processor: PkgPayloadUnpacker
+  Arguments:
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%'
+    pkg_payload_path: '%RECIPE_CACHE_DIR%/%NAME%/gp.pkg/Payload'
+
+- Processor: Copier
+  Arguments:
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%/%NAME%.app/Contents'
+    source_path: '%RECIPE_CACHE_DIR%/%NAME%/Contents'
+
+- Processor: Versioner
+  Arguments:
+    input_plist_path: '%RECIPE_CACHE_DIR%/%NAME%/%NAME%.app/Contents/Info.plist'
+
+- Processor: com.github.homebysix.FindAndReplace/FindAndReplace
+  Arguments:
+    find: '-'
+    input_string: '%version%'
+    replace: '.'
+  Comment: |
+    Replace hyphens with dots in the version number because
+        - WorkSpace ONE UEM doesn't allow hyphens
+        - Munki version should be the same as UEM version so Hub can detect properly if it is updated
+
+- Processor: MunkiPkginfoMerger
+  Arguments:
+    additional_pkginfo:
+      version: '%output_string%'
+
+- Processor: MunkiImporter
+  Arguments:
+    pkg_path: '%pathname%'
+    repo_subdirectory: '%MUNKI_REPO_SUBDIR%'
