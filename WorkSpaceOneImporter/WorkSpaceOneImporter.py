@@ -240,6 +240,7 @@ class WorkSpaceOneImporter(Processor):
                         "client_id": oauth_client_id,
                         "client_secret": oauth_client_secret
                         }
+        self.output(f"Oauth token request body: {request_body}", verbose_level=4)
         try:
             r = requests.post(oauth_token_url, data=request_body)
             r.raise_for_status()
@@ -248,6 +249,7 @@ class WorkSpaceOneImporter(Processor):
         except requests.exceptions.RequestException as e:
             raise ProcessorError(f'WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}')
         result = r.json()
+        self.output(f"Oauth token request result: {result}", verbose_level=4)
         return result['access_token']
 
     def get_oauth_headers(self, oauth_client_id, oauth_client_secret, oauth_token_url):
