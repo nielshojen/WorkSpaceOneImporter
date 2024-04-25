@@ -241,6 +241,7 @@ class WorkSpaceOneImporter(Processor):
                         "client_secret": oauth_client_secret
                         }
         self.output(f"Oauth token request body: {request_body}", verbose_level=4)
+        # headers = {"Content-Type": "application/x-www-form-urlencoded"}  # the default, making it explicit for clarity
         try:
             r = requests.post(oauth_token_url, data=request_body)
             r.raise_for_status()
@@ -250,6 +251,7 @@ class WorkSpaceOneImporter(Processor):
             raise ProcessorError(f'WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}')
         result = r.json()
         self.output(f"Oauth token request result: {result}", verbose_level=4)
+        # oauth_renew_limit = timestamp + result['expires_in'] - oauth_renew_margin
         return result['access_token']
 
     def get_oauth_headers(self, oauth_client_id, oauth_client_secret, oauth_token_url):
