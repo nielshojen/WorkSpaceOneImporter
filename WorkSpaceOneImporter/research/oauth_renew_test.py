@@ -10,7 +10,7 @@ with the new token.
 import requests
 import subprocess
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import time
 
 def get_timestamp():
@@ -99,18 +99,16 @@ def main():
         ws1_oauth_renew_margin = 10
         print(f'Using default for ws1_oauth_renew_margin: {ws1_oauth_renew_margin}')
 
-    if "AUTOPKG_ws1_keychain" in os.environ:
-        ws1_keychain = os.environ['AUTOPKG_ws1_keychain']
-        print(f'Found env var AUTOPKG_ws1_keychain: {ws1_keychain}')
+    if "AUTOPKG_ws1_oauth_keychain" in os.environ:
+        ws1_oauth_keychain = os.environ['AUTOPKG_ws1_oauth_keychain']
+        print(f'Found env var AUTOPKG_ws1_oauth_keychain: {ws1_oauth_keychain}')
     else:
-        ws1_keychain = "Autopkg_WS1"
-        print(f'Using default for ws1_keychain: {ws1_keychain}')
+        ws1_oauth_keychain = "Autopkg_WS1_OAuth"
+        print(f'Using default for ws1_oauth_keychain: {ws1_oauth_keychain}')
 
     # keychain = "login.keychain"
     service = "Autopkg_WS1_OAUTH"
     # service = "autopkg_tool_launcher"
-
-    payload = {'grant_type': 'client_credentials', 'client_id': ws1_oauth_client_id, 'client_secret': ws1_oauth_client_secret}
 
     # get timestamp, round to nearest whole second
     timestamp_start = get_timestamp()
@@ -119,32 +117,32 @@ def main():
     # init to test until a bit after the default 3600 seconds token validity period
     time_stop = timestamp_start + timedelta(seconds=4000)
 
-    # security list-keychains -u user | grep -q "${launcher_keychain}"
-    command = f"/usr/bin/security list-keychains -u user | grep -q {ws1_keychain}"
+    # check existing or create new dedicated keychain to store the Oauth token and timestamp to trigger renewal"
+    command = f"/usr/bin/security list-keychains -u user | grep -q {ws1_oauth_keychain}"
     result = subprocess.run(command, shell=True, capture_output=True)
     if not result.returncode == 0:
         # create new empty keychain
-        command = f"/usr/bin/security create-keychain -p {ws1_oauth_client_secret} {ws1_keychain}"
+        command = f"/usr/bin/security create-keychain -p {ws1_oauth_client_secret} {ws1_oauth_keychain}"
         subprocess.run(command, shell=True, capture_output=True)
 
-        # add keychain to beginning of user's keychain search list, so they can access it, delete the newlines and
+        # add keychain to beginning of user's keychain search list so we can find items in it, delete the newlines and
         # the double quotes
         command = "/usr/bin/security list-keychains -d user"
         result = subprocess.run(command, shell=True, capture_output=True)
         searchlist = result.stdout.decode().replace("\n", "")
         searchlist = searchlist.replace('"', '')
-        command = f"/usr/bin/security list-keychains -d user -s {ws1_keychain} {searchlist}"
+        command = f"/usr/bin/security list-keychains -d user -s {ws1_oauth_keychain} {searchlist}"
         subprocess.run(command, shell=True, capture_output=True)
 
         # removing relock timeout on keychain, thanks to https://forums.developer.apple.com/forums/thread/690665
-        command = f"/usr/bin/security set-keychain-settings {ws1_keychain}"
+        command = f"/usr/bin/security set-keychain-settings {ws1_oauth_keychain}"
         subprocess.run(command, shell=True, capture_output=True)
 
 
-    oauth_token = get_password_from_keychain(ws1_keychain, service,"oauth_token")
+    oauth_token = get_password_from_keychain(ws1_oauth_keychain, service,"oauth_token")
     if oauth_token is not None:
         print(f"Retrieved existing token from keychain: {oauth_token}")
-    oauth_token_renew_timestamp_str = get_password_from_keychain(ws1_keychain, service,
+    oauth_token_renew_timestamp_str = get_password_from_keychain(ws1_oauth_keychain, service,
                                                                  "oauth_token_renew_timestamp")
     if oauth_token_renew_timestamp_str is not None:
         oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
@@ -154,6 +152,9 @@ def main():
     while datetime.now().astimezone() < time_stop:
         timestamp = get_timestamp()
         if oauth_token is None or oauth_token_renew_timestamp is None or timestamp >= oauth_token_renew_timestamp:
+            # the Oauth renewal API body payload
+            payload = {'grant_type': 'client_credentials', 'client_id': ws1_oauth_client_id,
+                       'client_secret': ws1_oauth_client_secret}
 
             """
             response = requests.request("POST", url, data=payload)
@@ -202,8 +203,8 @@ def main():
 
         print(f"ToDo: test calling a program that can use the Oauth token")
 
-        result = set_password_in_keychain(ws1_keychain, service,"oauth_token", oauth_token)
-        result = set_password_in_keychain(ws1_keychain, service,
+        result = set_password_in_keychain(ws1_oauth_keychain, service,"oauth_token", oauth_token)
+        result = set_password_in_keychain(ws1_oauth_keychain, service,
                                           "oauth_token_renew_timestamp",
                                           oauth_token_renew_timestamp.isoformat())
 

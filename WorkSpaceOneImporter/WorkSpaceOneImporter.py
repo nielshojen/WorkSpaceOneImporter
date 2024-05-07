@@ -67,6 +67,36 @@ def getsha256hash(filename):
         return 'HASH_ERROR'
 
 
+def get_timestamp():
+    """
+    RFS3389 Timestamp rounded to nearest second
+    """
+    timestamp = (datetime.now().astimezone() + timedelta(milliseconds=500)).replace(microsecond=0)
+    return timestamp
+
+
+def get_password_from_keychain(keychain, service, account):
+    """
+    Fetch the secret (password) from the dedicated macOS keychain
+    """
+    command = f"/usr/bin/security find-generic-password -w -s '{service}' -a '{account}' '{keychain}'"
+    result = subprocess.run(command, shell=True, capture_output=True)
+    if result.returncode == 0:
+        password = result.stdout.decode().strip()
+        return password
+    else:
+        return None
+
+
+def set_password_in_keychain(keychain, service, account, password):
+    """
+    Store the secret (password) in the dedicated macOS keychain
+    """
+    command = f"/usr/bin/security add-generic-password -s '{service}' -a '{account}'  -w '{password}' '{keychain}'"
+    result = subprocess.run(command, shell=True, capture_output=True)
+    return result.returncode
+
+
 class WorkSpaceOneImporter(Processor):
     """Uploads apps from Munki repo to WorkSpace ONE"""
     input_variables = {
@@ -117,6 +147,14 @@ class WorkSpaceOneImporter(Processor):
         "ws1_oauth_token_url": {
             "required": False,
             "description": "Access Token renewal service URL for Oauth 2.0 authorization.",
+        },
+        "ws1_oauth_renew_margin": {
+            "required": False,
+            "description": "Oauth2 token is to be renewed when the specified percentage of the expiry time is left",
+        },
+        "ws1_oauth_keychain": {
+            "required": False,
+            "description": "Name for dedicated macOS keychain to store Oauth2 token and timestamp in.",
         },
         "ws1_force_import": {
             "required": False,
@@ -235,24 +273,103 @@ class WorkSpaceOneImporter(Processor):
         except ValueError:
             return False
 
+    def oauth_keychain_init(self):
+        """
+        init housekeeping vars for OAuth renewal, and prepare dedicated keychain to persist token and timestamp
+        """
+
+        # oauth2 token is to be renewed when a specified percentage of the expiry time is left
+        oauth_renew_margin_str = self.env.get("ws1_oauth_renew_margin")
+        if oauth_renew_margin_str is not None:
+            try:
+                oauth_renew_margin = float(oauth_renew_margin_str)
+                print(f'Found ws1_oauth_renew_margin: {oauth_renew_margin}')
+            except ValueError:
+                print('Found var ws1_oauth_renew_margin is NOT a float: '
+                      f"[{oauth_renew_margin_str}] - aborting!")
+                exit(code=1)
+        else:
+            oauth_renew_margin = 10
+            print(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin}')
+
+        oauth_keychain = self.env.get("ws1_oauth_keychain")
+        if oauth_keychain is not None:
+            self.output(f"Found setting ws1_oauth_keychain: {oauth_keychain}", verbose_level=3)
+        else:
+            oauth_keychain = "Autopkg_WS1_OAuth"
+            self.output(f"Using default for ws1_oauth_keychain: {oauth_keychain}", verbose_level=3)
+
+        # check existing or create new dedicated keychain to store the Oauth token and timestamp to trigger renewal
+        command = f"/usr/bin/security list-keychains -u user | grep -q {ws1_oauth_keychain}"
+        result = subprocess.run(command, shell=True, capture_output=True)
+        if not result.returncode == 0:
+            # create new empty keychain
+            command = f"/usr/bin/security create-keychain -p {ws1_oauth_client_secret} {ws1_oauth_keychain}"
+            subprocess.run(command, shell=True, capture_output=True)
+
+            # add keychain to beginning of user's keychain search list so we can find items in it, delete the
+            # newlines and the double quotes
+            command = "/usr/bin/security list-keychains -d user"
+            result = subprocess.run(command, shell=True, capture_output=True)
+            searchlist = result.stdout.decode().replace("\n", "")
+            searchlist = searchlist.replace('"', '')
+            command = f"/usr/bin/security list-keychains -d user -s {ws1_oauth_keychain} {searchlist}"
+            subprocess.run(command, shell=True, capture_output=True)
+
+            # removing relock timeout on keychain, thanks to https://forums.developer.apple.com/forums/thread/690665
+            command = f"/usr/bin/security set-keychain-settings {ws1_oauth_keychain}"
+            subprocess.run(command, shell=True, capture_output=True)
+        return oauth_keychain, oauth_renew_margin
+
     def get_oauth_token(self, oauth_client_id, oauth_client_secret, oauth_token_url):
-        request_body = {"grant_type": "client_credentials",
+        """
+        get OAuth2 token from dedicated keychain or fetch new token from Access token server with API
+        """
+        keychain_service = "Autopkg_WS1_OAUTH"
+        oauth_keychain, oauth_renew_margin = self.oauth_keychain_init()
+        oauth_token = get_password_from_keychain(oauth_keychain, keychain_service,"oauth_token")
+        if oauth_token is not None:
+            self.output(f"Retrieved existing token from keychain: {oauth_token}", verbose_level=4)
+
+        oauth_token_renew_timestamp_str = get_password_from_keychain(oauth_keychain, keychain_service,
+                                                                     "oauth_token_renew_timestamp")
+        if oauth_token_renew_timestamp_str is not None:
+            oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
+            self.output(
+                f"Retrieved timestamp to renew existing token from keychain: {oauth_token_renew_timestamp.isoformat()}",
+                verbose_level=4)
+        else:
+            oauth_token_renew_timestamp = None
+
+        timestamp = get_timestamp()
+        if oauth_token is None or oauth_token_renew_timestamp is None or timestamp >= oauth_token_renew_timestamp:
+            # need to get e new token
+            request_body = {"grant_type": "client_credentials",
                         "client_id": oauth_client_id,
                         "client_secret": oauth_client_secret
                         }
-        self.output(f"Oauth token request body: {request_body}", verbose_level=4)
-        # headers = {"Content-Type": "application/x-www-form-urlencoded"}  # the default, making it explicit for clarity
-        try:
-            r = requests.post(oauth_token_url, data=request_body)
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            raise ProcessorError(f'WorkSpaceOneImporter: Oauth token server response code: {err}')
-        except requests.exceptions.RequestException as e:
-            raise ProcessorError(f'WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}')
-        result = r.json()
-        self.output(f"Oauth token request result: {result}", verbose_level=4)
-        # oauth_renew_limit = timestamp + result['expires_in'] - oauth_renew_margin
-        return result['access_token']
+            self.output(f"Oauth token request body: {request_body}", verbose_level=4)
+
+            try:
+                r = requests.post(oauth_token_url, data=request_body)
+                r.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                raise ProcessorError(f'WorkSpaceOneImporter: Oauth token server response code: {err}')
+            except requests.exceptions.RequestException as e:
+                raise ProcessorError(f'WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}')
+            result = r.json()
+            self.output(f"Oauth token request result: {result}", verbose_level=4)
+            oauth_token = result['access_token']
+            renew_threshold = round(result['expires_in'] * (100 - oauth_renew_margin) / 100)
+            self.output(f"Access token threshold for renewal set to {renew_threshold} seconds", verbose_level=3)
+            oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(seconds=renew_threshold)
+            self.output(f"Oauth2 token should be renewed after: {oauth_token_renew_timestamp.isoformat()}", verbose_level=3)
+            set_password_in_keychain(ws1_oauth_keychain, service, "oauth_token", oauth_token)
+            set_password_in_keychain(ws1_oauth_keychain, service,
+                                     "oauth_token_renew_timestamp",
+                                     oauth_token_renew_timestamp.isoformat())
+        return oauth_token
+
 
     def get_oauth_headers(self, oauth_client_id, oauth_client_secret, oauth_token_url):
         oauth_token = self.get_oauth_token(oauth_client_id, oauth_client_secret, oauth_token_url)
@@ -300,9 +417,7 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         update_assignments = self.env.get("ws1_update_assignments").lower() in ('true', '1', 't')
-        # self.output(f"update_assignments: {update_assignments}", verbose_level=2)
-        # force_import = self.env.get("ws1_force_import")
-        # deployment2_delay = int(self.env.get("ws1_deployment2_delay"))
+
 
         # init result
         self.env["ws1_imported_new"] = False
@@ -1000,6 +1115,7 @@ class WorkSpaceOneImporter(Processor):
         elif icon_path is None:
             self.output("Could not find any icon file - skipping.")
         self.output(self.ws1_import(pkg, pi, icon_path))
+
 
 
 if __name__ == "__main__":
