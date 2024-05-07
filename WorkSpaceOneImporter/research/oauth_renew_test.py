@@ -62,6 +62,30 @@ def pretty_print_POST(req):
 
 
 def main():
+    """ Add variables from environment - inspired by
+        https://github.com/autopkg/autopkg/blob/master/Code/autopkg#L2140-L2147 """
+
+    if "AUTOPKG_ws1_oauth_token_url" in os.environ:
+        ws1_oauth_token_url = os.environ['AUTOPKG_ws1_oauth_token_url']
+        print(f'Found env var AUTOPKG_ws1_oauth_token_url: {ws1_oauth_token_url}')
+    else:
+        print('Did not find environment variable AUTOPKG_ws1_oauth_token_url - aborting!')
+        exit(code=1)
+
+    if "AUTOPKG_ws1_oauth_client_id" in os.environ:
+        ws1_oauth_client_id = os.environ['AUTOPKG_ws1_oauth_client_id']
+        print(f'Found env var AUTOPKG_ws1_oauth_client_id: {ws1_oauth_client_id}')
+    else:
+        print('Did not find environment variable AUTOPKG_ws1_oauth_client_id - aborting!')
+        exit(code=1)
+
+    if "AUTOPKG_ws1_oauth_client_secret" in os.environ:
+        ws1_oauth_client_secret = os.environ['AUTOPKG_ws1_oauth_client_secret']
+        print(f'Found env var AUTOPKG_ws1_oauth_client_secret: {ws1_oauth_client_secret}')
+    else:
+        print('Did not find environment variable AUTOPKG_ws1_oauth_client_secret - aborting!')
+        exit(code=1)
+
     # oauth2 token is to be renewed when a specified percentage of the expiry time is left
     if "AUTOPKG_ws1_oauth_renew_margin" in os.environ:
         try:
@@ -75,23 +99,18 @@ def main():
         ws1_oauth_renew_margin = 10
         print(f'Using default for ws1_oauth_renew_margin: {ws1_oauth_renew_margin}')
 
+    if "AUTOPKG_ws1_keychain" in os.environ:
+        ws1_keychain = os.environ['AUTOPKG_ws1_keychain']
+        print(f'Found env var AUTOPKG_ws1_keychain: {ws1_keychain}')
+    else:
+        ws1_keychain = "Autopkg_WS1"
+        print(f'Using default for ws1_keychain: {ws1_keychain}')
+
     # keychain = "login.keychain"
-    keychain = "Autopkg"
-    service = "Autopkg_WS1"
+    service = "Autopkg_WS1_OAUTH"
     # service = "autopkg_tool_launcher"
-    url = get_password_from_keychain(keychain, service, "WS1_OAUTH_TOKEN_URL")
-    if url is None:
-        print(f"Failed to get WS1_OAUTH_TOKEN_URL from keychain {keychain} - aborting")
-        exit(code=1)
-    client_id = get_password_from_keychain(keychain, service, "WS1_OAUTH_CLIENT_ID")
-    if client_id is None:
-        print(f"Failed to get WS1_OAUTH_CLIENT_ID from keychain {keychain} - aborting")
-        exit(code=1)
-    client_secret = get_password_from_keychain(keychain, service,"WS1_OAUTH_CLIENT_SECRET")
-    if client_secret is None:
-        print(f"Failed to get WS1_OAUTH_CLIENT_SECRET from keychain {keychain} - aborting")
-        exit(code=1)
-    payload = {'grant_type': 'client_credentials', 'client_id': client_id, 'client_secret': client_secret}
+
+    payload = {'grant_type': 'client_credentials', 'client_id': ws1_oauth_client_id, 'client_secret': ws1_oauth_client_secret}
 
     # get timestamp, round to nearest whole second
     timestamp_start = get_timestamp()
@@ -100,10 +119,32 @@ def main():
     # init to test until a bit after the default 3600 seconds token validity period
     time_stop = timestamp_start + timedelta(seconds=4000)
 
-    oauth_token = get_password_from_keychain(keychain, service,"oauth_token")
+    # security list-keychains -u user | grep -q "${launcher_keychain}"
+    command = f"/usr/bin/security list-keychains -u user | grep -q {ws1_keychain}"
+    result = subprocess.run(command, shell=True, capture_output=True)
+    if not result.returncode == 0:
+        # create new empty keychain
+        command = f"/usr/bin/security create-keychain -p {ws1_oauth_client_secret} {ws1_keychain}"
+        subprocess.run(command, shell=True, capture_output=True)
+
+        # add keychain to beginning of user's keychain search list, so they can access it, delete the newlines and
+        # the double quotes
+        command = "/usr/bin/security list-keychains -d user"
+        result = subprocess.run(command, shell=True, capture_output=True)
+        searchlist = result.stdout.decode().replace("\n", "")
+        searchlist = searchlist.replace('"', '')
+        command = f"/usr/bin/security list-keychains -d user -s {ws1_keychain} {searchlist}"
+        subprocess.run(command, shell=True, capture_output=True)
+
+        # removing relock timeout on keychain, thanks to https://forums.developer.apple.com/forums/thread/690665
+        command = f"/usr/bin/security set-keychain-settings {ws1_keychain}"
+        subprocess.run(command, shell=True, capture_output=True)
+
+
+    oauth_token = get_password_from_keychain(ws1_keychain, service,"oauth_token")
     if oauth_token is not None:
         print(f"Retrieved existing token from keychain: {oauth_token}")
-    oauth_token_renew_timestamp_str = get_password_from_keychain(keychain, service,
+    oauth_token_renew_timestamp_str = get_password_from_keychain(ws1_keychain, service,
                                                                  "oauth_token_renew_timestamp")
     if oauth_token_renew_timestamp_str is not None:
         oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
@@ -118,7 +159,7 @@ def main():
             response = requests.request("POST", url, data=payload)
             check what headers were added automatically to POST request, thanks to https://stackoverflow.com/a/23816211
             """
-            req = requests.Request("POST", url, data=payload)
+            req = requests.Request("POST", ws1_oauth_token_url, data=payload)
             prepared_req = req.prepare()
             pretty_print_POST(prepared_req)
 
@@ -161,8 +202,8 @@ def main():
 
         print(f"ToDo: test calling a program that can use the Oauth token")
 
-        result = set_password_in_keychain(keychain, service,"oauth_token", oauth_token)
-        result = set_password_in_keychain(keychain, service,
+        result = set_password_in_keychain(ws1_keychain, service,"oauth_token", oauth_token)
+        result = set_password_in_keychain(ws1_keychain, service,
                                           "oauth_token_renew_timestamp",
                                           oauth_token_renew_timestamp.isoformat())
 
