@@ -273,7 +273,7 @@ class WorkSpaceOneImporter(Processor):
         except ValueError:
             return False
 
-    def oauth_keychain_init(self):
+    def oauth_keychain_init(self, password):
         """
         init housekeeping vars for OAuth renewal, and prepare dedicated keychain to persist token and timestamp
         """
@@ -299,26 +299,39 @@ class WorkSpaceOneImporter(Processor):
             oauth_keychain = "Autopkg_WS1_OAuth"
             self.output(f"Using default for ws1_oauth_keychain: {oauth_keychain}", verbose_level=3)
 
-        # check existing or create new dedicated keychain to store the Oauth token and timestamp to trigger renewal
-        command = f"/usr/bin/security list-keychains -u user | grep -q {ws1_oauth_keychain}"
+        # check existing + unlock or create new dedicated keychain to store the Oauth token and timestamp to trigger
+        # renewal
+        command = f"/usr/bin/security list-keychains -u user | grep -q {oauth_keychain}"
         result = subprocess.run(command, shell=True, capture_output=True)
-        if not result.returncode == 0:
-            # create new empty keychain
-            command = f"/usr/bin/security create-keychain -p {ws1_oauth_client_secret} {ws1_oauth_keychain}"
-            subprocess.run(command, shell=True, capture_output=True)
-
-            # add keychain to beginning of user's keychain search list so we can find items in it, delete the
-            # newlines and the double quotes
-            command = "/usr/bin/security list-keychains -d user"
+        if result.returncode == 0:
+            command = f"/usr/bin/security unlock-keychain -p {password} {oauth_keychain}"
             result = subprocess.run(command, shell=True, capture_output=True)
-            searchlist = result.stdout.decode().replace("\n", "")
-            searchlist = searchlist.replace('"', '')
-            command = f"/usr/bin/security list-keychains -d user -s {ws1_oauth_keychain} {searchlist}"
-            subprocess.run(command, shell=True, capture_output=True)
+            if result.returncode == 0:
+                # unlock went fine
+                return oauth_keychain, oauth_renew_margin
+            else:
+                self.output(f"Unlocking keychain {oauth_keychain} failed, deleting it and creating a new one.")
+                command = f"/usr/bin/security delete-keychain {oauth_keychain}"
+                result = subprocess.run(command, shell=True, capture_output=True)
+                if not result.returncode == 0:
+                    raise ProcessorError(f"Deleting keychain {oauth_keychain} failed - bailing out.")
 
-            # removing relock timeout on keychain, thanks to https://forums.developer.apple.com/forums/thread/690665
-            command = f"/usr/bin/security set-keychain-settings {ws1_oauth_keychain}"
-            subprocess.run(command, shell=True, capture_output=True)
+        # create new empty keychain
+        command = f"/usr/bin/security create-keychain -p {password} {oauth_keychain}"
+        subprocess.run(command, shell=True, capture_output=True)
+
+        # add keychain to beginning of users keychain search list, so we can find items in it, first delete the
+        # newlines and the double quotes
+        command = "/usr/bin/security list-keychains -d user"
+        result = subprocess.run(command, shell=True, capture_output=True)
+        searchlist = result.stdout.decode().replace("\n", "")
+        searchlist = searchlist.replace('"', '')
+        command = f"/usr/bin/security list-keychains -d user -s {oauth_keychain} {searchlist}"
+        subprocess.run(command, shell=True, capture_output=True)
+
+        # removing relock timeout on keychain, thanks to https://forums.developer.apple.com/forums/thread/690665
+        command = f"/usr/bin/security set-keychain-settings {oauth_keychain}"
+        subprocess.run(command, shell=True, capture_output=True)
         return oauth_keychain, oauth_renew_margin
 
     def get_oauth_token(self, oauth_client_id, oauth_client_secret, oauth_token_url):
@@ -326,7 +339,7 @@ class WorkSpaceOneImporter(Processor):
         get OAuth2 token from dedicated keychain or fetch new token from Access token server with API
         """
         keychain_service = "Autopkg_WS1_OAUTH"
-        oauth_keychain, oauth_renew_margin = self.oauth_keychain_init()
+        oauth_keychain, oauth_renew_margin = self.oauth_keychain_init(oauth_client_secret)
         oauth_token = get_password_from_keychain(oauth_keychain, keychain_service,"oauth_token")
         if oauth_token is not None:
             self.output(f"Retrieved existing token from keychain: {oauth_token}", verbose_level=4)
@@ -357,15 +370,18 @@ class WorkSpaceOneImporter(Processor):
                 raise ProcessorError(f'WorkSpaceOneImporter: Oauth token server response code: {err}')
             except requests.exceptions.RequestException as e:
                 raise ProcessorError(f'WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}')
+            oauth_token_issued_timestamp = get_timestamp()
+            self.output(f"Oauth2 token issued at: {oauth_token_issued_timestamp.isoformat()}", verbose_level=2)
             result = r.json()
             self.output(f"Oauth token request result: {result}", verbose_level=4)
             oauth_token = result['access_token']
             renew_threshold = round(result['expires_in'] * (100 - oauth_renew_margin) / 100)
             self.output(f"Access token threshold for renewal set to {renew_threshold} seconds", verbose_level=3)
             oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(seconds=renew_threshold)
-            self.output(f"Oauth2 token should be renewed after: {oauth_token_renew_timestamp.isoformat()}", verbose_level=3)
-            set_password_in_keychain(ws1_oauth_keychain, service, "oauth_token", oauth_token)
-            set_password_in_keychain(ws1_oauth_keychain, service,
+            self.output(f"Oauth2 token should be renewed after: {oauth_token_renew_timestamp.isoformat()}",
+                        verbose_level=2)
+            set_password_in_keychain(oauth_keychain, keychain_service, "oauth_token", oauth_token)
+            set_password_in_keychain(oauth_keychain, keychain_service,
                                      "oauth_token_renew_timestamp",
                                      oauth_token_renew_timestamp.isoformat())
         return oauth_token
