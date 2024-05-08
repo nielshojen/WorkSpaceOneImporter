@@ -363,7 +363,7 @@ class WorkSpaceOneImporter(Processor):
                         "client_id": oauth_client_id,
                         "client_secret": oauth_client_secret
                         }
-            self.output(f"Oauth token request body: {request_body}", verbose_level=4)
+            self.output(f"OAuth token request body: {request_body}", verbose_level=4)
 
             try:
                 r = requests.post(oauth_token_url, data=request_body)
@@ -373,19 +373,23 @@ class WorkSpaceOneImporter(Processor):
             except requests.exceptions.RequestException as e:
                 raise ProcessorError(f'WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}')
             oauth_token_issued_timestamp = get_timestamp()
-            self.output(f"Oauth2 token issued at: {oauth_token_issued_timestamp.isoformat()}", verbose_level=2)
+            self.output(f"OAuth token issued at: {oauth_token_issued_timestamp.isoformat()}", verbose_level=2)
             result = r.json()
-            self.output(f"Oauth token request result: {result}", verbose_level=4)
+            self.output(f"OAuth token request result: {result}", verbose_level=4)
             oauth_token = result['access_token']
             renew_threshold = round(result['expires_in'] * (100 - oauth_renew_margin) / 100)
-            self.output(f"Access token threshold for renewal set to {renew_threshold} seconds", verbose_level=3)
+            self.output(f"OAuth token threshold for renewal set to {renew_threshold} seconds", verbose_level=3)
             oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(seconds=renew_threshold)
-            self.output(f"Oauth2 token should be renewed after: {oauth_token_renew_timestamp.isoformat()}",
+            self.output(f"OAuth token should be renewed after: {oauth_token_renew_timestamp.isoformat()}",
                         verbose_level=2)
-            set_password_in_keychain(oauth_keychain, keychain_service, "oauth_token", oauth_token)
-            set_password_in_keychain(oauth_keychain, keychain_service,
+            result = set_password_in_keychain(oauth_keychain, keychain_service, "oauth_token", oauth_token)
+            if result is not 0:
+                self.output("OAuth token could not be saved in dedicated keychain", verbose_level=2)
+            result = set_password_in_keychain(oauth_keychain, keychain_service,
                                      "oauth_token_renew_timestamp",
                                      oauth_token_renew_timestamp.isoformat())
+            if result is not 0:
+                self.output("OAuth token renewal timestamp could not be saved in dedicated keychain", verbose_level=2)
         return oauth_token
 
 
