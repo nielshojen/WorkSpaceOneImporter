@@ -308,6 +308,7 @@ class WorkSpaceOneImporter(Processor):
             result = subprocess.run(command, shell=True, capture_output=True)
             if result.returncode == 0:
                 # unlock went fine
+                self.output(f"Unlock OK for keychain {oauth_keychain}", verbose_level=4)
                 return oauth_keychain, oauth_renew_margin
             else:
                 self.output(f"Unlocking keychain {oauth_keychain} failed, deleting it and creating a new one.")
@@ -357,6 +358,7 @@ class WorkSpaceOneImporter(Processor):
         timestamp = get_timestamp()
         if oauth_token is None or oauth_token_renew_timestamp is None or timestamp >= oauth_token_renew_timestamp:
             # need to get e new token
+            self.output("Renewing OAuth access token", verbose_level=3)
             request_body = {"grant_type": "client_credentials",
                         "client_id": oauth_client_id,
                         "client_secret": oauth_client_secret
