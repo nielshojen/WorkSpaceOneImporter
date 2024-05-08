@@ -314,7 +314,7 @@ class WorkSpaceOneImporter(Processor):
                 self.output(f"Unlocking keychain {oauth_keychain} failed, deleting it and creating a new one.")
                 command = f"/usr/bin/security delete-keychain {oauth_keychain}"
                 result = subprocess.run(command, shell=True, capture_output=True)
-                if not result.returncode == 0:
+                if result.returncode != 0:
                     raise ProcessorError(f"Deleting keychain {oauth_keychain} failed - bailing out.")
 
         # create new empty keychain
@@ -383,12 +383,12 @@ class WorkSpaceOneImporter(Processor):
             self.output(f"OAuth token should be renewed after: {oauth_token_renew_timestamp.isoformat()}",
                         verbose_level=2)
             result = set_password_in_keychain(oauth_keychain, keychain_service, "oauth_token", oauth_token)
-            if result is not 0:
+            if result != 0:
                 self.output("OAuth token could not be saved in dedicated keychain", verbose_level=2)
             result = set_password_in_keychain(oauth_keychain, keychain_service,
                                      "oauth_token_renew_timestamp",
                                      oauth_token_renew_timestamp.isoformat())
-            if result is not 0:
+            if result != 0:
                 self.output("OAuth token renewal timestamp could not be saved in dedicated keychain", verbose_level=2)
         return oauth_token
 
