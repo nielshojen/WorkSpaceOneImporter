@@ -301,7 +301,7 @@ class WorkSpaceOneImporter(Processor):
 
         # check existing + unlock or create new dedicated keychain to store the Oauth token and timestamp to trigger
         # renewal
-        command = f"/usr/bin/security list-keychains -u user | grep -q {oauth_keychain}"
+        command = f"/usr/bin/security list-keychains -d user | grep -q {oauth_keychain}"
         result = subprocess.run(command, shell=True, capture_output=True)
         if result.returncode == 0:
             command = f"/usr/bin/security unlock-keychain -p {password} {oauth_keychain}"
