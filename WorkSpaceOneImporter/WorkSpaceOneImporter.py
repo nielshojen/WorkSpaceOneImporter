@@ -77,7 +77,7 @@ def get_timestamp():
 
 def get_password_from_keychain(keychain, service, account):
     """
-    Fetch the secret (password) from the dedicated macOS keychain
+    Fetch the secret (password) from the dedicated macOS keychain, return None if not found
     """
     command = f"/usr/bin/security find-generic-password -w -s '{service}' -a '{account}' '{keychain}'"
     result = subprocess.run(command, shell=True, capture_output=True)
@@ -90,8 +90,16 @@ def get_password_from_keychain(keychain, service, account):
 
 def set_password_in_keychain(keychain, service, account, password):
     """
-    Store the secret (password) in the dedicated macOS keychain
+    Store the secret (password) in the dedicated macOS keychain, return exitcode 0 for success
     """
+
+    # first check if there pre-existing password, if so, it must be deleted first
+    if get_password_from_keychain(keychain, service, account) is not None:
+        command = f"/usr/bin/security delete-generic-password -s '{service}' -a '{account}' '{keychain}'"
+        result = subprocess.run(command, shell=True, capture_output=True)
+        if result.returncode != 0:
+            return result.returncode
+
     command = f"/usr/bin/security add-generic-password -s '{service}' -a '{account}'  -w '{password}' '{keychain}'"
     result = subprocess.run(command, shell=True, capture_output=True)
     return result.returncode
@@ -285,9 +293,7 @@ class WorkSpaceOneImporter(Processor):
                 oauth_renew_margin = float(oauth_renew_margin_str)
                 print(f'Found ws1_oauth_renew_margin: {oauth_renew_margin}')
             except ValueError:
-                print('Found var ws1_oauth_renew_margin is NOT a float: '
-                      f"[{oauth_renew_margin_str}] - aborting!")
-                exit(code=1)
+                raise ProcessorError(f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!")
         else:
             oauth_renew_margin = 10
             print(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin}')
