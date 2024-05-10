@@ -399,6 +399,7 @@ class WorkSpaceOneImporter(Processor):
                                      oauth_token_renew_timestamp.isoformat())
             if result != 0:
                 self.output("OAuth token renewal timestamp could not be saved in dedicated keychain", verbose_level=2)
+        self.output(f"re-using OAuth token until: {oauth_token_renew_timestamp.isoformat()}", verbose_level=2)
         return oauth_token
 
 
