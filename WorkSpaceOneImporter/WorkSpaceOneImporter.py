@@ -354,7 +354,10 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_renew_timestamp_str = get_password_from_keychain(oauth_keychain, keychain_service,
                                                                      "oauth_token_renew_timestamp")
         if oauth_token_renew_timestamp_str is not None:
-            oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
+            try:
+                oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
+            except ValueError as e:
+                raise ProcessorError(f"Could not read timestamp from keychain: {e} - bailing out!")
             self.output(
                 f"Retrieved timestamp to renew existing token from keychain: {oauth_token_renew_timestamp.isoformat()}",
                 verbose_level=4)
