@@ -336,9 +336,10 @@ class WorkSpaceOneImporter(Processor):
         command = f"/usr/bin/security list-keychains -d user -s {oauth_keychain} {searchlist}"
         subprocess.run(command, shell=True, capture_output=True)
 
-        # removing relock timeout on keychain, thanks to https://forums.developer.apple.com/forums/thread/690665
-        command = f"/usr/bin/security set-keychain-settings {oauth_keychain}"
+        # Setting (NOT removing) relock timeout on keychain, thanks to https://forums.developer.apple.com/forums/thread/690665
+        command = f"/usr/bin/security set-keychain-settings -t 15 {oauth_keychain}"
         subprocess.run(command, shell=True, capture_output=True)
+        self.output(f"keychain {oauth_keychain} settings adjusted to timeout of 15 seconds.", verbose_level=3)
         return oauth_keychain, oauth_renew_margin
 
     def get_oauth_token(self, oauth_client_id, oauth_client_secret, oauth_token_url):
@@ -400,7 +401,7 @@ class WorkSpaceOneImporter(Processor):
             if result != 0:
                 self.output("OAuth token renewal timestamp could not be saved in dedicated keychain", verbose_level=2)
         self.output(f"Current timestamp: {timestamp.isoformat()} - "
-                    "re-using current OAuth token until: {oauth_token_renew_timestamp.isoformat()}", verbose_level=2)
+                    f"re-using current OAuth token until: {oauth_token_renew_timestamp.isoformat()}", verbose_level=2)
         return oauth_token
 
 
