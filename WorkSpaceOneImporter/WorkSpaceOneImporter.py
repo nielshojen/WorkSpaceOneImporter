@@ -340,14 +340,14 @@ class WorkSpaceOneImporter(Processor):
         oauth_keychain, oauth_renew_margin = self.oauth_keychain_init(oauth_client_secret)
 
         oauth_token = self.env.get("ws1_oauth_token")
-        if len(oauth_token) is not 0:
+        if oauth_token is not None:
             self.output(f"Retrieved existing token from environment: {oauth_token}", verbose_level=4)
         else:
             oauth_token = get_password_from_keychain(oauth_keychain, keychain_service,"oauth_token")
             if oauth_token is not None:
                 self.output(f"Retrieved existing token from keychain: {oauth_token}", verbose_level=4)
         oauth_token_renew_timestamp_str = self.env.get("ws1_oauth_renew_timestamp")
-        if len(oauth_token_renew_timestamp_str) is not 0:
+        if oauth_token_renew_timestamp_str is not None:
             self.output(f"Retrieved existing token renew timestamp from environment: {oauth_token_renew_timestamp_str}", verbose_level=4)
         else:
             oauth_token_renew_timestamp_str = get_password_from_keychain(oauth_keychain, keychain_service,
