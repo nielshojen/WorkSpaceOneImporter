@@ -164,6 +164,14 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "description": "Name for dedicated macOS keychain to store Oauth2 token and timestamp in.",
         },
+        "ws1_oauth_token": {
+            "required": False,
+            "description": "Existing Oauth2 token for WS1 UEM API access.",
+        },
+        "ws1_oauth_renew_timestamp": {
+            "required": False,
+            "description": "timestamp for existing Oauth2 token to be renewed.",
+        },
         "ws1_force_import": {
             "required": False,
             "default": "False",
@@ -192,26 +200,6 @@ class WorkSpaceOneImporter(Processor):
             "required": True,
             "description": "how to deploy the app, Auto or On-Demand.",
         },
-        # "ws1_deployment_date": {
-        #     "required": False,
-        #     "description": "Sets the date that the deployment of the app should begin. If not specified, current date "
-        #                    "is chosen. Not implemented yet.",
-        # },
-        # "ws1_smart_group2_names": {
-        #     "required": False,
-        #     "default": "",
-        #     "description": "The names of the secondary smart group(s) the app should be assigned to, typically for "
-        #                    "production. Recipe input var WS1_SMART_GROUP2_NAMES could not be passed as a processor "
-        #                    "argument because it can have variable length, and that makes variable substitution hard, "
-        #                    "so processor reads recipe input var instead. "
-        #                    "Specify the group names as an array of strings. Under development.",
-        # },
-        # "ws1_deployment2_delay": {
-        #     "required": False,
-        #     "default": "14",
-        #     "description": "Set the number of days to wait before deployment to the secondary smart group(s) should "
-        #                    "begin. MUST specify as string value. Typically for production. Under development.",
-        # },
         "ws1_assignment-rules": {
             "required": False,
             "description": "Define recipe Input-variable \"ws1_app_assignments\" instead of this documentation "
@@ -245,7 +233,7 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_importer_summary_result": {
             "description": "Description of interesting results."
-        },
+        }
     }
     description = __doc__
 
@@ -345,23 +333,32 @@ class WorkSpaceOneImporter(Processor):
 
     def get_oauth_token(self, oauth_client_id, oauth_client_secret, oauth_token_url):
         """
-        get OAuth2 token from dedicated keychain or fetch new token from Access token server with API
+        get OAuth2 token from either environment, dedicated keychain, or
+        fetch new token from Access token server with API
         """
         keychain_service = "Autopkg_WS1_OAUTH"
         oauth_keychain, oauth_renew_margin = self.oauth_keychain_init(oauth_client_secret)
-        oauth_token = get_password_from_keychain(oauth_keychain, keychain_service,"oauth_token")
-        if oauth_token is not None:
-            self.output(f"Retrieved existing token from keychain: {oauth_token}", verbose_level=4)
 
-        oauth_token_renew_timestamp_str = get_password_from_keychain(oauth_keychain, keychain_service,
+        oauth_token = self.env.get("ws1_oauth_token")
+        if len(oauth_token) is not 0:
+            self.output(f"Retrieved existing token from environment: {oauth_token}", verbose_level=4)
+        else:
+            oauth_token = get_password_from_keychain(oauth_keychain, keychain_service,"oauth_token")
+            if oauth_token is not None:
+                self.output(f"Retrieved existing token from keychain: {oauth_token}", verbose_level=4)
+        oauth_token_renew_timestamp_str = self.env.get("ws1_oauth_renew_timestamp")
+        if len(oauth_token_renew_timestamp_str) is not 0:
+            self.output(f"Retrieved existing token renew timestamp from environment: {oauth_token_renew_timestamp_str}", verbose_level=4)
+        else:
+            oauth_token_renew_timestamp_str = get_password_from_keychain(oauth_keychain, keychain_service,
                                                                      "oauth_token_renew_timestamp")
         if oauth_token_renew_timestamp_str is not None:
             try:
                 oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
             except ValueError as e:
-                raise ProcessorError(f"Could not read timestamp from keychain: {e} - bailing out!")
+                raise ProcessorError(f"Could not read timestamp - bailing out!")
             self.output(
-                f"Retrieved timestamp to renew existing token from keychain: {oauth_token_renew_timestamp.isoformat()}",
+                f"Retrieved timestamp to renew existing token: {oauth_token_renew_timestamp.isoformat()}",
                 verbose_level=4)
         else:
             oauth_token_renew_timestamp = None
@@ -393,9 +390,11 @@ class WorkSpaceOneImporter(Processor):
             oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(seconds=renew_threshold)
             self.output(f"OAuth token should be renewed after: {oauth_token_renew_timestamp.isoformat()}",
                         verbose_level=2)
+            self.env["ws1_oauth_token"] = oauth_token
             result = set_password_in_keychain(oauth_keychain, keychain_service, "oauth_token", oauth_token)
             if result != 0:
                 self.output("OAuth token could not be saved in dedicated keychain", verbose_level=2)
+            self.env["ws1_oauth_renew_timestamp"] =  oauth_token_renew_timestamp.isoformat()
             result = set_password_in_keychain(oauth_keychain, keychain_service,
                                      "oauth_token_renew_timestamp",
                                      oauth_token_renew_timestamp.isoformat())
