@@ -1,4 +1,5 @@
 Comment: |
+    2024-06-20 - recipe deprecated due to product name change by Microsoft, new product is just Teams.
     2024-02-22 - needed to change the NAME to skip the parenthesis in (work or school) to avoid upload error to WS1 UEM
 Description: Creates a munki package for Microsoft Teams (work or school), and imports it into WorkSpace ONE UEM.
 Identifier: com.github.codeskipper.ws1.Microsoft Teams work or school
@@ -22,6 +23,7 @@ Input:
     display_name: '%DISPLAY_NAME%'
     name: '%NAME%'
     notes: |
+        2024-06-20 - recipe deprecated due to product name change by Microsoft, new product is just Teams.
         2024-02-22 - needed to change the NAME to skip the parenthesis in (work or school) to avoid upload error to WS1 UEM
     unattended_install: true
     unattended_uninstall: true
@@ -41,6 +43,17 @@ Input:
   WS1_PUSH_MODE: PUSH_MODE_SETTING
 
 Process:
+- Processor: DeprecationWarning
+  Arguments:
+    warning_message: |
+      Due to Microsoft changing the name of the application this recipe has been deprecated. Please use the new Microsoft Teams Recipes here:
+
+      https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1/MicrosoftTeams.ws1.recipe.yaml
+
+- Processor: StopProcessingIf
+  Arguments:
+    predicate: TRUEPREDICATE
+
 - Processor: com.github.codeskipper.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
   Arguments:
     ws1_oauth_client_id: '%WS1_OAUTH_CLIENT_ID%'
