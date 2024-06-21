@@ -43,17 +43,6 @@ Input:
   WS1_PUSH_MODE: PUSH_MODE_SETTING
 
 Process:
-- Processor: DeprecationWarning
-  Arguments:
-    warning_message: |
-      Due to Microsoft changing the name of the application this recipe has been deprecated. Please use the new Microsoft Teams Recipes here:
-
-      https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1/MicrosoftTeams.ws1.recipe.yaml
-
-- Processor: StopProcessingIf
-  Arguments:
-    predicate: TRUEPREDICATE
-
 - Processor: com.github.codeskipper.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
   Arguments:
     ws1_oauth_client_id: '%WS1_OAUTH_CLIENT_ID%'
