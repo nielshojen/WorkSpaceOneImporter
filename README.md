@@ -23,6 +23,7 @@ Done:
  * added support for Oauth
  * added support to specify advanced app assignment (API v.2) settings and update on schedule
  * added production ready example recipes (moved from my autopkg-recipe repo)
+ * added support for re-using OAuth tokens
 
 ToDo:
  * cleanup code, confirm to Autopkg standards
