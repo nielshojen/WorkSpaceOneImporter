@@ -748,6 +748,8 @@ class WorkSpaceOneImporter(Processor):
 
         self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
 
+        self.ws1_app_version_prune(BASEURL, headers, ogid, app_name)
+
         return "Application was successfully uploaded to WorkSpaceOne."
 
     def ws1_app_assignments(self, base_url, app_assignments, headers, ws1_app_id):
@@ -999,6 +1001,29 @@ class WorkSpaceOneImporter(Processor):
                 f"Unable to assign the app [{self.env['NAME']}] to the group [{smart_group}]")
         self.env["ws1_app_assignments_changed"] = True
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
+
+    def ws1_app_version_prune(self, base_url, headers, og_id, app_name ):
+        num_versions = 5
+        num_versions_found = 0
+
+        try:
+            condensed_app_name = app_name.replace(" ", "%20")
+            r = requests.get(f"{base_url}/api/mam/apps/search?locationgroupid={og_id}&applicationname={condensed_app_name}&platform=10", headers=headers)
+        except:
+            raise ProcessorError('Something went wrong searching for app versions on server')
+        if r.status_code == 200:
+            search_results = r.json()
+            for app in search_results["Application"]:
+                if app["ApplicationName"] in app_name:
+                    num_versions_found += 1
+                    ws1_app_id = app["Id"]["Value"]
+                    self.env["ws1_app_id"] = ws1_app_id
+                    self.output(f"App ID: {ws1_app_id}", verbose_level=2)
+                    self.output(f"App platform: {app['Platform']}", verbose_level=3)
+                    self.output(f"App version: {app['ActualFileVersion']}", verbose_level=2)
+
+        self.output(f"App {app_name}  - found {num_versions_found} versions")
+
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
