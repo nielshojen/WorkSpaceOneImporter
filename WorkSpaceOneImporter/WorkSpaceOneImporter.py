@@ -1006,6 +1006,8 @@ class WorkSpaceOneImporter(Processor):
         num_versions = 5
         num_versions_found = 0
 
+        self.output(f"Looking for existing versions of {app_name} on WorkspaceONE")
+
         try:
             condensed_app_name = app_name.replace(" ", "%20")
             r = requests.get(f"{base_url}/api/mam/apps/search?locationgroupid={og_id}&applicationname={condensed_app_name}&platform=10", headers=headers)
