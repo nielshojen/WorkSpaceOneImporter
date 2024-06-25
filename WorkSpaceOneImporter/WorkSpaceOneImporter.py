@@ -535,7 +535,7 @@ class WorkSpaceOneImporter(Processor):
         try:
             condensed_app_name = app_name.replace(" ", "%20")
             r = requests.get(f"{BASEURL}/api/mam/apps/search?locationgroupid={ogid}&applicationname="
-                             f"{condensed_app_name}&platform=10", headers=headers)
+                             f"{condensed_app_name}", headers=headers)
         except:
             raise ProcessorError('Something went wrong handling pre-existing app version on server')
         if r.status_code == 200:
