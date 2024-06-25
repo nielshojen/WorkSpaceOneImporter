@@ -281,7 +281,8 @@ class WorkSpaceOneImporter(Processor):
                 oauth_renew_margin = float(oauth_renew_margin_str)
                 print(f'Found ws1_oauth_renew_margin: {oauth_renew_margin}')
             except ValueError:
-                raise ProcessorError(f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!")
+                raise ProcessorError(
+                    f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!")
         else:
             oauth_renew_margin = 10
             print(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin}')
@@ -343,15 +344,16 @@ class WorkSpaceOneImporter(Processor):
         if oauth_token is not None:
             self.output(f"Retrieved existing token from environment: {oauth_token}", verbose_level=4)
         else:
-            oauth_token = get_password_from_keychain(oauth_keychain, keychain_service,"oauth_token")
+            oauth_token = get_password_from_keychain(oauth_keychain, keychain_service, "oauth_token")
             if oauth_token is not None:
                 self.output(f"Retrieved existing token from keychain: {oauth_token}", verbose_level=4)
         oauth_token_renew_timestamp_str = self.env.get("ws1_oauth_renew_timestamp")
         if oauth_token_renew_timestamp_str is not None:
-            self.output(f"Retrieved existing token renew timestamp from environment: {oauth_token_renew_timestamp_str}", verbose_level=4)
+            self.output(f"Retrieved existing token renew timestamp from environment: {oauth_token_renew_timestamp_str}",
+                        verbose_level=4)
         else:
             oauth_token_renew_timestamp_str = get_password_from_keychain(oauth_keychain, keychain_service,
-                                                                     "oauth_token_renew_timestamp")
+                                                                         "oauth_token_renew_timestamp")
         if oauth_token_renew_timestamp_str is not None:
             try:
                 oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
@@ -368,9 +370,9 @@ class WorkSpaceOneImporter(Processor):
             # need to get e new token
             self.output("Renewing OAuth access token", verbose_level=3)
             request_body = {"grant_type": "client_credentials",
-                        "client_id": oauth_client_id,
-                        "client_secret": oauth_client_secret
-                        }
+                            "client_id": oauth_client_id,
+                            "client_secret": oauth_client_secret
+                            }
             self.output(f"OAuth token request body: {request_body}", verbose_level=4)
 
             try:
@@ -394,16 +396,15 @@ class WorkSpaceOneImporter(Processor):
             result = set_password_in_keychain(oauth_keychain, keychain_service, "oauth_token", oauth_token)
             if result != 0:
                 self.output("OAuth token could not be saved in dedicated keychain", verbose_level=2)
-            self.env["ws1_oauth_renew_timestamp"] =  oauth_token_renew_timestamp.isoformat()
+            self.env["ws1_oauth_renew_timestamp"] = oauth_token_renew_timestamp.isoformat()
             result = set_password_in_keychain(oauth_keychain, keychain_service,
-                                     "oauth_token_renew_timestamp",
-                                     oauth_token_renew_timestamp.isoformat())
+                                              "oauth_token_renew_timestamp",
+                                              oauth_token_renew_timestamp.isoformat())
             if result != 0:
                 self.output("OAuth token renewal timestamp could not be saved in dedicated keychain", verbose_level=2)
         self.output(f"Current timestamp: {timestamp.isoformat()} - "
                     f"re-using current OAuth token until: {oauth_token_renew_timestamp.isoformat()}", verbose_level=2)
         return oauth_token
-
 
     def get_oauth_headers(self, oauth_client_id, oauth_client_secret, oauth_token_url):
         oauth_token = self.get_oauth_token(oauth_client_id, oauth_client_secret, oauth_token_url)
@@ -451,7 +452,6 @@ class WorkSpaceOneImporter(Processor):
         oauth_token_url = self.env.get("ws1_oauth_token_url")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         update_assignments = self.env.get("ws1_update_assignments").lower() in ('true', '1', 't')
-
 
         # init result
         self.env["ws1_imported_new"] = False
@@ -531,16 +531,19 @@ class WorkSpaceOneImporter(Processor):
             ogid = result['OrganizationGroups'][0]['Id']
         self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
 
-        ## Check if app version is already present on WS1 server
+        # Check for app versions already present on WS1 server
         try:
             condensed_app_name = app_name.replace(" ", "%20")
-            r = requests.get(
-                BASEURL + '/api/mam/apps/search?locationgroupid=%s&applicationname=%s' % (ogid, condensed_app_name),
-                headers=headers)
+            r = requests.get(f"{BASEURL}/api/mam/apps/search?locationgroupid={ogid}&applicationname="
+                             f"{condensed_app_name}&platform=10", headers=headers)
         except:
             raise ProcessorError('Something went wrong handling pre-existing app version on server')
         if r.status_code == 200:
             search_results = r.json()
+            # handle older versions of app already present on WS1 UEM
+            self.ws1_app_version_prune(BASEURL, headers, ogid, app_name, search_results)
+
+            # handle any updates that might be needed for the latest app version already present on WS1 UEM
             for app in search_results["Application"]:
                 if app["Platform"] == 10 and app["ActualFileVersion"] == str(app_version) and \
                         app['ApplicationName'] in app_name:
@@ -660,7 +663,6 @@ class WorkSpaceOneImporter(Processor):
         else:
             icon_id = ''
 
-
         ## Create a dict with the app details to be passed to WS1
         ## to create the App object
         ## include applicationIconId only if we have one
@@ -747,8 +749,6 @@ class WorkSpaceOneImporter(Processor):
         """
 
         self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
-
-        self.ws1_app_version_prune(BASEURL, headers, ogid, app_name)
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
@@ -1002,30 +1002,22 @@ class WorkSpaceOneImporter(Processor):
         self.env["ws1_app_assignments_changed"] = True
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
-    def ws1_app_version_prune(self, base_url, headers, og_id, app_name ):
+    def ws1_app_version_prune(self, base_url, headers, og_id, app_name, search_results):
         num_versions = 5
         num_versions_found = 0
 
         self.output(f"Looking for existing versions of {app_name} on WorkspaceONE")
 
-        try:
-            condensed_app_name = app_name.replace(" ", "%20")
-            r = requests.get(f"{base_url}/api/mam/apps/search?locationgroupid={og_id}&applicationname={condensed_app_name}&platform=10", headers=headers)
-        except:
-            raise ProcessorError('Something went wrong searching for app versions on server')
-        if r.status_code == 200:
-            search_results = r.json()
-            for app in search_results["Application"]:
-                if app["ApplicationName"] in app_name:
-                    num_versions_found += 1
-                    ws1_app_id = app["Id"]["Value"]
-                    self.env["ws1_app_id"] = ws1_app_id
-                    self.output(f"App ID: {ws1_app_id}", verbose_level=2)
-                    self.output(f"App platform: {app['Platform']}", verbose_level=3)
-                    self.output(f"App version: {app['ActualFileVersion']}", verbose_level=2)
+        for app in search_results["Application"]:
+            if app["ApplicationName"] in app_name:
+                num_versions_found += 1
+                ws1_app_id = app["Id"]["Value"]
+                self.env["ws1_app_id"] = ws1_app_id
+                self.output(f"App ID: {ws1_app_id}", verbose_level=2)
+                self.output(f"App platform: {app['Platform']}", verbose_level=3)
+                self.output(f"App version: {app['ActualFileVersion']}", verbose_level=2)
 
         self.output(f"App {app_name}  - found {num_versions_found} versions")
-
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
@@ -1176,7 +1168,6 @@ class WorkSpaceOneImporter(Processor):
         elif icon_path is None:
             self.output("Could not find any icon file - skipping.")
         self.output(self.ws1_import(pkg, pi, icon_path))
-
 
 
 if __name__ == "__main__":
