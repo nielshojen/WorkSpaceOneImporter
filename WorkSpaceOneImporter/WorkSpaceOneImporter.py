@@ -535,7 +535,7 @@ class WorkSpaceOneImporter(Processor):
         try:
             condensed_app_name = app_name.replace(" ", "%20")
             r = requests.get(f"{BASEURL}/api/mam/apps/search?locationgroupid={ogid}&applicationname="
-                             f"{condensed_app_name}&platform=10", headers=headers)
+                             f"{condensed_app_name}, headers=headers)
         except:
             raise ProcessorError('Something went wrong handling pre-existing app version on server')
         if r.status_code == 200:
@@ -1009,7 +1009,7 @@ class WorkSpaceOneImporter(Processor):
         self.output(f"Looking for existing versions of {app_name} on WorkspaceONE")
 
         for app in search_results["Application"]:
-            if app["ApplicationName"] in app_name:
+            if app["Platform"] == 10 and app["ApplicationName"] in app_name:
                 num_versions_found += 1
                 ws1_app_id = app["Id"]["Value"]
                 self.env["ws1_app_id"] = ws1_app_id
