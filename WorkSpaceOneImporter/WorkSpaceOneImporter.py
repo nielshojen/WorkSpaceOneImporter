@@ -1012,11 +1012,7 @@ class WorkSpaceOneImporter(Processor):
             if app["Platform"] == 10 and app["ApplicationName"] in app_name:
                 num_versions_found += 1
                 ws1_app_id = app["Id"]["Value"]
-                self.env["ws1_app_id"] = ws1_app_id
-                self.output(f"App ID: {ws1_app_id}", verbose_level=2)
-                self.output(f"App platform: {app['Platform']}", verbose_level=3)
-                self.output(f"App version: {app['ActualFileVersion']}", verbose_level=2)
-
+                self.output(f"App ID: [{ws1_app_id}] App version: [{app['ActualFileVersion']}] Assigned device count: [{app['AssignedDeviceCount']}]", verbose_level=3)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
 
     def main(self):
