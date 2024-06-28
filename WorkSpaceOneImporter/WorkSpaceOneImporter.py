@@ -1035,17 +1035,12 @@ class WorkSpaceOneImporter(Processor):
         app_list.sort(key=lambda x: x['date'])
         self.output(app_list, verbose_level=4)
         self.output("Updating prune status", verbose_level=4)
-        index = 0
-        for x in app_list:
+        for index, row in enumerate(app_list):
             if index < (num_versions_found - keep_versions):
-                x["status"] = "TO BE PRUNED"
+                row["status"] = "TO BE PRUNED"
             else:
-                x["status"] = "keep"
-            self.output(x, verbose_level=4)
-            """self.output(f"App_ID:{x['App_ID']} UUID:{x['UUID']} version:{x['version']} date:{x['date']} "
-                        f"num:{x['num']} status:{x['status']}", verbose_level=2)
-            """
-            index = index + 1
+                row["status"] = "keep"
+            self.output(row, verbose_level=2)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
 
     def main(self):
