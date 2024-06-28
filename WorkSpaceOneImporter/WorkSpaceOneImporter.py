@@ -1030,12 +1030,12 @@ class WorkSpaceOneImporter(Processor):
                 app_list.append({ "App_ID":app['Id']['Value'], "UUID:":app['Uuid'], "version":app['ActualFileVersion'], "date":ws1_app_ass_day0_str, "num":app['AssignedDeviceCount'] })
 
         app_list.sort(key= lambda x:x['version'])
-        for x in app_list.count():
+        for x in app_list:
             self.output(f"App_ID: {x['App_ID']} version: {x['version']} date: {x['date']} num: {x['num']}",
                         verbose_level=3)
 
         app_list.sort(key= lambda x:x['date'])
-        for x in app_list.count():
+        for x in app_list:
             self.output(f"App_ID: {x['App_ID']} version: {x['version']} date: {x['date']} num: {x['num']}",
                         verbose_level=3)
 
