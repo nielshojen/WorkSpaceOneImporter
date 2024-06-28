@@ -1033,11 +1033,12 @@ class WorkSpaceOneImporter(Processor):
         tab_header = app_list[0].keys()
         app_list.sort(key= lambda x:x['version'])
         tab_rows = [x.values() for x in app_list]
-        self.output(tabulate.tabulate(tab_header, tab_rows), verbose_level=3)
+        print(tabulate.tabulate(tab_header, tab_rows))
+        # self.output(tabulate.tabulate(tab_header, tab_rows), verbose_level=3)
 
         app_list.sort(key= lambda x:x['date'])
         tab_rows = [x.values() for x in app_list]
-        self.output(tabulate.tabulate(tab_header, tab_rows), verbose_level=3)
+        print(tabulate.tabulate(tab_header, tab_rows))
 
         self.output(f"App {app_name}  - found {num_versions_found} versions")
 
