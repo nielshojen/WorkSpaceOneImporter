@@ -993,6 +993,7 @@ class WorkSpaceOneImporter(Processor):
         self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
 
         self.output(f"Looking for old versions of {app_name} on WorkspaceONE")
+        app_list = []
 
         for app in search_results["Application"]:
             if app["Platform"] == 10 and app["ApplicationName"] in app_name:
@@ -1026,6 +1027,14 @@ class WorkSpaceOneImporter(Processor):
                             f"deployment date: {ws1_app_ass_day0_str} "
                             f"Assigned device count: [{app['AssignedDeviceCount']}]",
                             verbose_level=3)
+                app_list.append({ "App_ID":app['Id']['Value'], "UUID:":app['Uuid'], "version":app['ActualFileVersion'], "date":ws1_app_ass_day0_str, "num":app['AssignedDeviceCount'] })
+
+        app_list.sort(key= lambda x:x['version'])
+        self.output(app_list, verbose_level=3)
+
+        app_list.sort(key= lambda x:x['date'])
+        self.output(app_list, verbose_level=3)
+
         self.output(f"App {app_name}  - found {num_versions_found} versions")
 
     def main(self):
