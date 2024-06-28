@@ -1020,7 +1020,7 @@ class WorkSpaceOneImporter(Processor):
                     num_versions_found += 1
                     app_list.append(
                         {"App_ID": app['Id']['Value'], "UUID:": app['Uuid'], "version": app['ActualFileVersion'],
-                         "date": ws1_app_ass_day0_str, "num": app['AssignedDeviceCount'], "Status": "n/a"})
+                         "date": ws1_app_ass_day0_str, "num": app['AssignedDeviceCount'], "status": "n/a"})
                 else:
                     self.output("Failed to find deployment date in Assignments, skipping "
                                 f"version:{app['ActualFileVersion']}...!")
@@ -1034,13 +1034,13 @@ class WorkSpaceOneImporter(Processor):
         # sort by date
         app_list.sort(key=lambda x: x['date'])
         for index, row in enumerate(app_list):
-            if index < num_versions_found - keep_versions:
+            if index < (num_versions_found - keep_versions):
                 row["status"] = "TO BE PRUNED"
             else:
                 row["status"] = "keep"
-            self.output(f"App_ID:{row['App_ID']} UUID:{row['UUID']} version:{row['version']} date:{row['date']} num:{row['num']} status:{row['status']}",
-                        verbose_level=3)
-
+            self.output(
+                f"App_ID:{row['App_ID']} UUID:{row['UUID']} version:{row['version']} date:{row['date']} "
+                f"num:{row['num']} status:{row['status']}", verbose_level=3)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
 
     def main(self):
