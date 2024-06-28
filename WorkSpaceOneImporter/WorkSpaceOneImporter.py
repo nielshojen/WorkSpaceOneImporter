@@ -1015,15 +1015,15 @@ class WorkSpaceOneImporter(Processor):
                     # datetime.fromisoformat() can't handle the above in current Python v3.10
                     # alternative would be to install python-dateutil but that would introduce a new dependency
                     edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
-                    self.output(f"Deployment date found in existing assignment #0: {[edate]} ", verbose_level=2)
+                    self.output(f"Deployment date found in assignment #0: {[edate]} ", verbose_level=4)
                     ws1_app_ass_day0_str = datetime.fromisoformat(edate).date().isoformat()
                 else:
                     self.output("Failed to find deployment date in Assignments, skipping...!")
                     ws1_app_ass_day0_str = "UNKNOWN!"
 
-                self.output(f"App ID: [{app['Id']['Value']}] App UUID:{app['Uuid']} "
-                            f"App version: [{app['ActualFileVersion']}] "
-                            f"First deployment date: {ws1_app_ass_day0_str}"
+                self.output(f"App ID: [{app['Id']['Value']}] UUID: [{app['Uuid']}] "
+                            f"version: [{app['ActualFileVersion']}] "
+                            f"deployment date: {ws1_app_ass_day0_str} "
                             f"Assigned device count: [{app['AssignedDeviceCount']}]",
                             verbose_level=3)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
