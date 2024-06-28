@@ -559,6 +559,7 @@ class WorkSpaceOneImporter(Processor):
                     ws1_app_id = app["Id"]["Value"]
                     self.env["ws1_app_id"] = ws1_app_id
                     self.output('Pre-existing App ID: %s' % ws1_app_id, verbose_level=2)
+                    self.output(f"Pre-existing App version: {app_version}", verbose_level=2)
                     self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                     # if not self.env.get("ws1_force_import").lower() == "true":
                     if not force_import:
