@@ -1029,11 +1029,15 @@ class WorkSpaceOneImporter(Processor):
                             verbose_level=3)
                 app_list.append({ "App_ID":app['Id']['Value'], "UUID:":app['Uuid'], "version":app['ActualFileVersion'], "date":ws1_app_ass_day0_str, "num":app['AssignedDeviceCount'] })
 
+        import tabulate
+        tab_header = app_list[0].keys()
         app_list.sort(key= lambda x:x['version'])
-        self.output(app_list, verbose_level=3)
+        tab_rows = [x.values() for x in app_list]
+        self.output(tabulate.tabulate(tab_header, tab_rows), verbose_level=3)
 
         app_list.sort(key= lambda x:x['date'])
-        self.output(app_list, verbose_level=3)
+        tab_rows = [x.values() for x in app_list]
+        self.output(tabulate.tabulate(tab_header, tab_rows), verbose_level=3)
 
         self.output(f"App {app_name}  - found {num_versions_found} versions")
 
