@@ -451,7 +451,6 @@ class WorkSpaceOneImporter(Processor):
 
         return headers, headers_v2
 
-
     def get_smartgroup_id(self, base_url, smartgroup, headers):
         """Get Smart Group ID and UUID to assign the package to"""
 
@@ -565,7 +564,8 @@ class WorkSpaceOneImporter(Processor):
                     if not force_import:
                         if update_assignments and not assignment_group == 'none':
                             self.output("updating simple app assignment", verbose_level=2)
-                            app_assignment = self.ws1_app_assignment_conf(api_base_url, assignment_pushmode, assignment_group,
+                            app_assignment = self.ws1_app_assignment_conf(api_base_url, assignment_pushmode,
+                                                                          assignment_group,
                                                                           headers)
                             self.ws1_app_assign(api_base_url, assignment_group, app_assignment, headers, ws1_app_id)
                             self.env["ws1_importer_summary_result"] = {
@@ -984,7 +984,7 @@ class WorkSpaceOneImporter(Processor):
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
     def ws1_app_version_prune(self, api_base_url, headers, og_id, app_name, search_results):
-        num_versions = 5
+        keep_versions = 5
         num_versions_found = 0
 
         # prepare API V2 headers
@@ -997,8 +997,6 @@ class WorkSpaceOneImporter(Processor):
 
         for app in search_results["Application"]:
             if app["Platform"] == 10 and app["ApplicationName"] in app_name:
-                num_versions_found += 1
-
                 # get assignment rules to find first deployment date
                 try:
                     r = requests.get(f"{api_base_url}/api/mam/apps/{app['Uuid']}/assignment-rules", headers=headers_v2)
@@ -1018,25 +1016,29 @@ class WorkSpaceOneImporter(Processor):
                     edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
                     self.output(f"Deployment date found in assignment #0: {[edate]} ", verbose_level=4)
                     ws1_app_ass_day0_str = datetime.fromisoformat(edate).date().isoformat()
-                else:
-                    self.output("Failed to find deployment date in Assignments, skipping...!")
-                    ws1_app_ass_day0_str = "UNKNOWN!"
 
+                    num_versions_found += 1
+                    app_list.append(
+                        {"App_ID": app['Id']['Value'], "UUID:": app['Uuid'], "version": app['ActualFileVersion'],
+                         "date": ws1_app_ass_day0_str, "num": app['AssignedDeviceCount'], "Status": ""})
+                else:
+                    self.output("Failed to find deployment date in Assignments, skipping "
+                                f"version:{app['ActualFileVersion']}...!")
+                    ws1_app_ass_day0_str = "UNKNOWN!"
                 self.output(f"App ID: [{app['Id']['Value']}] UUID: [{app['Uuid']}] "
                             f"version: [{app['ActualFileVersion']}] "
                             f"deployment date: {ws1_app_ass_day0_str} "
                             f"Assigned device count: [{app['AssignedDeviceCount']}]",
                             verbose_level=3)
-                app_list.append({ "App_ID":app['Id']['Value'], "UUID:":app['Uuid'], "version":app['ActualFileVersion'], "date":ws1_app_ass_day0_str, "num":app['AssignedDeviceCount'] })
 
-        app_list.sort(key= lambda x:x['version'])
-        for x in app_list:
-            self.output(f"App_ID: {x['App_ID']} version: {x['version']} date: {x['date']} num: {x['num']}",
-                        verbose_level=3)
-
-        app_list.sort(key= lambda x:x['date'])
-        for x in app_list:
-            self.output(f"App_ID: {x['App_ID']} version: {x['version']} date: {x['date']} num: {x['num']}",
+        # sort by date
+        app_list.sort(key=lambda x: x['date'])
+        for index, row in enumerate(app_list):
+            if index < num_versions_found - keep_versions:
+                row["status"] = "***to be pruned***"
+            else:
+                row["status"] = "keep"
+            self.output(f"App_ID:{row['App_ID']} UUID:{row['UUID']} version:{row['version']} date:{row['date']} num:{row['num']} status:{row['status']}",
                         verbose_level=3)
 
         self.output(f"App {app_name}  - found {num_versions_found} versions")
