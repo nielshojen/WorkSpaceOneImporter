@@ -1031,8 +1031,9 @@ class WorkSpaceOneImporter(Processor):
                             f"Assigned device count: [{app['AssignedDeviceCount']}]",
                             verbose_level=3)
 
-        # sort by date
+        self.output("Sorting app version list by date", verbose_level=4)
         app_list.sort(key=lambda x: x['date'])
+        self.output("Updating prune status", verbose_level=4)
         for index, row in enumerate(app_list):
             if index < (num_versions_found - keep_versions):
                 row["status"] = "TO BE PRUNED"
