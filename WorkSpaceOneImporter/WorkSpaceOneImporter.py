@@ -992,16 +992,15 @@ class WorkSpaceOneImporter(Processor):
         headers_v2['Accept'] = headers['Accept'] + ';version=2'
         self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
 
-        self.output(f"Looking for existing versions of {app_name} on WorkspaceONE")
+        self.output(f"Looking for old versions of {app_name} on WorkspaceONE")
 
         for app in search_results["Application"]:
             if app["Platform"] == 10 and app["ApplicationName"] in app_name:
                 num_versions_found += 1
-                ws1_app_id = app["Id"]["Value"]
 
-                # get assignment rules to find fist deployment date
+                # get assignment rules to find first deployment date
                 try:
-                    r = requests.get(f"{api_base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
+                    r = requests.get(f"{api_base_url}/api/mam/apps/{app['Uuid']}/assignment-rules", headers=headers_v2)
                     result = r.json()
                 except:
                     raise ProcessorError("API call to get existing app assignment rules failed")
@@ -1020,11 +1019,11 @@ class WorkSpaceOneImporter(Processor):
                     ws1_app_ass_day0_str = datetime.fromisoformat(edate).date().isoformat()
                 else:
                     self.output("Failed to find deployment date in Assignments, skipping...!")
-                    ws1_app_ass_day0 = "UNKNOWN!"
+                    ws1_app_ass_day0_str = "UNKNOWN!"
 
-                self.output(f"App ID: [{ws1_app_id}] App UUID:{app['Uuid']} "
+                self.output(f"App ID: [{app['Id']['Value']}] App UUID:{app['Uuid']} "
                             f"App version: [{app['ActualFileVersion']}] "
-                            f"First deployment date: {ws1_app_ass_day0}"
+                            f"First deployment date: {ws1_app_ass_day0_str}"
                             f"Assigned device count: [{app['AssignedDeviceCount']}]",
                             verbose_level=3)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
