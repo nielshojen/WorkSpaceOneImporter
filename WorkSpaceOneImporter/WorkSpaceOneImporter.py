@@ -200,15 +200,15 @@ class WorkSpaceOneImporter(Processor):
             "required": True,
             "description": "how to deploy the app, Auto or On-Demand.",
         },
-        "ws1_assignment-rules": {
+        "ws1_assignment_rules": {
             "required": False,
             "description": "Define recipe Input-variable \"ws1_app_assignments\" instead of this documentation "
                            "placeholder. NOT as Processor input var as it is "
                            "too complex to be be substituted. MUST override.\n"
                            "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n"
-                           "Under development.",
         }
     }
+
     output_variables = {
         "makecatalogs_resultcode": {
             "description": "Result code from the makecatalogs operation.",
@@ -413,6 +413,45 @@ class WorkSpaceOneImporter(Processor):
                    "Content-Type": "application/json"}
         return headers
 
+    def ws1_auth_prep(self):
+        ws1_api_token = self.env.get("ws1_api_token")
+        ws1_api_username = self.env.get("ws1_api_username")
+        ws1_api_password = self.env.get("ws1_api_password")
+        ws1_api_basicauth_b64 = self.env.get("ws1_b64encoded_api_credentials")
+        oauth_client_id = self.env.get("ws1_oauth_client_id")
+        oauth_client_secret = self.env.get("ws1_oauth_client_secret")
+        oauth_token_url = self.env.get("ws1_oauth_token_url")
+
+        # if placeholder value is set, ignore and set to None
+        if ws1_api_basicauth_b64 == 'B64ENCODED_API_CREDENTIALS_HERE':
+            self.output('Ignoring standard placeholder value supplied for b64encoded_api_credentials, setting default '
+                        'value of None', verbose_level=2)
+            ws1_api_basicauth_b64 = None
+
+        if self.is_url(oauth_token_url) and oauth_client_id and oauth_client_secret:
+            self.output('Oauth client credentials were supplied, proceeding to use these.')
+            headers = self.get_oauth_headers(oauth_client_id, oauth_client_secret, oauth_token_url)
+        else:
+            # create baseline headers
+            if ws1_api_basicauth_b64:  # if specified, take precedence over USERNAME and PASSWORD
+                basicauth = ws1_api_basicauth_b64
+                self.output('b64encoded_api_credentials found and used for Basic authorization header instead of '
+                            'api_username and api_password', verbose_level=1)
+            else:  # if NOT specified, use USERNAME and PASSWORD
+                hashed_auth = base64.b64encode('{}:{}'.format(ws1_api_username, ws1_api_password).encode("UTF-8"))
+                basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
+            self.output('Authorization header: {}'.format(basicauth), verbose_level=3)
+            headers = {'aw-tenant-code': ws1_api_token,
+                       'Accept': 'application/json',
+                       'Content-Type': 'application/json',
+                       'authorization': basicauth}
+        headers_v2 = dict(headers)
+        headers_v2['Accept'] = headers['Accept'] + ';version=2'
+        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
+
+        return headers, headers_v2
+
+
     def get_smartgroup_id(self, base_url, smartgroup, headers):
         """Get Smart Group ID and UUID to assign the package to"""
 
@@ -436,44 +475,32 @@ class WorkSpaceOneImporter(Processor):
         return sg_id, sg_uuid
 
     def ws1_import(self, pkg_path, pkg_info_path, icon_path):
+        """ high-level method for Workspace ONE API interactions like uploading an app, app assignment(s) and pruning
+        old app versions"""
         self.output(
             "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])
-        BASEURL = self.env.get("ws1_api_url")
-        CONSOLEURL = self.env.get("ws1_console_url")
-        GROUPID = self.env.get("ws1_groupid")
-        APITOKEN = self.env.get("ws1_api_token")
-        USERNAME = self.env.get("ws1_api_username")
-        PASSWORD = self.env.get("ws1_api_password")
-        SMARTGROUP = self.env.get("ws1_smart_group_name")
-        PUSHMODE = self.env.get("ws1_push_mode")
-        BASICAUTH = self.env.get("ws1_b64encoded_api_credentials")
-        oauth_client_id = self.env.get("ws1_oauth_client_id")
-        oauth_client_secret = self.env.get("ws1_oauth_client_secret")
-        oauth_token_url = self.env.get("ws1_oauth_token_url")
+        api_base_url = self.env.get("ws1_api_url")
+        console_url = self.env.get("ws1_console_url")
+        org_group_id = self.env.get("ws1_groupid")
+        assignment_group = self.env.get("ws1_smart_group_name")
+        assignment_pushmode = self.env.get("ws1_push_mode")
         force_import = self.env.get("ws1_force_import").lower() in ('true', '1', 't')
         update_assignments = self.env.get("ws1_update_assignments").lower() in ('true', '1', 't')
 
         # init result
         self.env["ws1_imported_new"] = False
 
-        # if placeholder value is set, ignore and set to None
-        if BASICAUTH == 'B64ENCODED_API_CREDENTIALS_HERE':
-            self.output('Ignoring standard placeholder value supplied for b64encoded_api_credentials, setting default '
-                        'value of None', verbose_level=2)
-            BASICAUTH = None
-
-        if not self.is_url(CONSOLEURL):
+        if not self.is_url(console_url):
             self.output('WS1 Console URL input value [{}] does not look like a valid URL, setting example value'
-                        .format(CONSOLEURL), verbose_level=2)
-            CONSOLEURL = 'https://my-mobile-admin-console.my-org.org'
+                        .format(console_url), verbose_level=2)
+            console_url = 'https://my-mobile-admin-console.my-org.org'
 
         # fetch the app assignments Input from the recipe
         app_assignments = self.env.get("ws1_app_assignments")
         self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=3)
 
-        # Get some global variables for later use app_version = self.env["munki_importer_summary_result"]["data"][
-        # "version"] app_name = self.env["munki_importer_summary_result"]["data"]["name"] get app name and version
-        # from pkginfo, don't rely on munki_importer_summary_result being filled in current session
+        # Get some global variables for later use from pkginfo, don't rely on
+        # munki_importer_summary_result being filled in current session
         try:
             with open(pkg_info_path, 'rb') as fp:
                 pkg_info = plistlib.load(fp)
@@ -489,59 +516,42 @@ class WorkSpaceOneImporter(Processor):
         app_name = pkg_info["name"]
 
         # Init the MacSesh so we can use the trusted certs in macOS Keychains to verify SSL.
-        # Needed especially in networks with local proxy and custom certificates.
+        # Needed especially in networks with TLS packet inspection and custom certificates.
         macsesh.inject_into_requests()
 
-        # take care of headers for authorization
-        if self.is_url(oauth_token_url) and oauth_client_id and oauth_client_secret:
-            self.output('Oauth client credentials were supplied, proceeding to use these.')
-            headers = self.get_oauth_headers(oauth_client_id, oauth_client_secret, oauth_token_url)
-        else:
-            # create baseline headers
-            if BASICAUTH:  # if specified, take precedence over USERNAME and PASSWORD
-                basicauth = BASICAUTH
-                self.output('b64encoded_api_credentials found and used for Basic authorization header instead of '
-                            'api_username and api_password', verbose_level=1)
-            else:  # if NOT specified, use USERNAME and PASSWORD
-                hashed_auth = base64.b64encode('{}:{}'.format(USERNAME, PASSWORD).encode("UTF-8"))
-                basicauth = 'Basic {}'.format(hashed_auth.decode("utf-8"))
-            self.output('Authorization header: {}'.format(basicauth), verbose_level=3)
-            headers = {'aw-tenant-code': APITOKEN,
-                       'Accept': 'application/json',
-                       'Content-Type': 'application/json',
-                       'authorization': basicauth}
-        headers_v2 = dict(headers)
-        headers_v2['Accept'] = headers['Accept'] + ';version=2'
-        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
+        # take care of headers for WS1 REST API authentication
+        headers, headers_v2 = self.ws1_auth_prep()
 
         # get OG ID from GROUPID
         try:
-            r = requests.get(BASEURL + '/api/system/groups/search?groupid=' + GROUPID, headers=headers_v2)
+            r = requests.get(api_base_url + '/api/system/groups/search?groupid=' + org_group_id, headers=headers_v2)
             result = r.json()
             r.raise_for_status()
         except AttributeError:
             raise ProcessorError(
-                f'WorkSpaceOneImporter: Unable to retrieve an ID for the Organizational GroupID specified: {GROUPID}')
+                "WorkSpaceOneImporter:"
+                f"Unable to retrieve an ID for the Organizational GroupID specified: {org_group_id}")
         except requests.exceptions.HTTPError as err:
             raise ProcessorError(
                 f'WorkSpaceOneImporter: Server responded with error when making the OG ID API call: {err}')
         except requests.exceptions.RequestException as e:
             ProcessorError(f'WorkSpaceOneImporter: Error making the OG ID API call: {e}')
-        if GROUPID in result['OrganizationGroups'][0]['GroupId']:
+        if org_group_id in result['OrganizationGroups'][0]['GroupId']:
             ogid = result['OrganizationGroups'][0]['Id']
         self.output('Organisation group ID: {}'.format(ogid), verbose_level=2)
 
         # Check for app versions already present on WS1 server
         try:
             condensed_app_name = app_name.replace(" ", "%20")
-            r = requests.get(f"{BASEURL}/api/mam/apps/search?locationgroupid={ogid}&applicationname="
+            r = requests.get(f"{api_base_url}/api/mam/apps/search?locationgroupid={ogid}&applicationname="
                              f"{condensed_app_name}", headers=headers)
         except:
             raise ProcessorError('Something went wrong handling pre-existing app version on server')
         if r.status_code == 200:
             search_results = r.json()
+
             # handle older versions of app already present on WS1 UEM
-            self.ws1_app_version_prune(BASEURL, headers, ogid, app_name, search_results)
+            self.ws1_app_version_prune(api_base_url, headers, ogid, app_name, search_results)
 
             # handle any updates that might be needed for the latest app version already present on WS1 UEM
             for app in search_results["Application"]:
@@ -553,11 +563,11 @@ class WorkSpaceOneImporter(Processor):
                     self.output("Pre-existing App platform: {}".format(app["Platform"]), verbose_level=3)
                     # if not self.env.get("ws1_force_import").lower() == "true":
                     if not force_import:
-                        if update_assignments and not SMARTGROUP == 'none':
+                        if update_assignments and not assignment_group == 'none':
                             self.output("updating simple app assignment", verbose_level=2)
-                            app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP,
+                            app_assignment = self.ws1_app_assignment_conf(api_base_url, assignment_pushmode, assignment_group,
                                                                           headers)
-                            self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
+                            self.ws1_app_assign(api_base_url, assignment_group, app_assignment, headers, ws1_app_id)
                             self.env["ws1_importer_summary_result"] = {
                                 "summary_text": "The following new app assignment was made in WS1:",
                                 "report_fields": [
@@ -568,12 +578,12 @@ class WorkSpaceOneImporter(Processor):
                                 "data": {
                                     "name": self.env["NAME"],
                                     "version": app_version,
-                                    "assignment_group": SMARTGROUP,
+                                    "assignment_group": assignment_group,
                                 },
                             }
                         elif update_assignments and not app_assignments == 'none':
                             self.output("updating advanced app assignment", verbose_level=2)
-                            self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
+                            self.ws1_app_assignments(api_base_url, app_assignments, headers, ws1_app_id)
                         elif update_assignments:
                             raise ProcessorError("update_assignments is True, but ws1_smart_group_name is not"
                                                  " specified and neither is ws1_app_assignments")
@@ -586,7 +596,7 @@ class WorkSpaceOneImporter(Processor):
                             f"App [{app_name}] version [{app_version}] already present on server, and "
                             f"ws1_force_import==True, attempting to delete on server first.")
                         try:
-                            r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                            r = requests.delete('{}/api/mam/apps/internal/{}'.format(api_base_url, ws1_app_id),
                                                 headers=headers)
                         except:
                             raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
@@ -595,13 +605,13 @@ class WorkSpaceOneImporter(Processor):
                             self.output('App delete result: {}'.format(result), verbose_level=3)
                             raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
                         try:
-                            r = requests.get('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                            r = requests.get('{}/api/mam/apps/internal/{}'.format(api_base_url, ws1_app_id),
                                              headers=headers)
                             if not r.status_code == 401:
                                 result = r.json()
                                 self.output('App not deleted yet, status: {} - retrying'.format(result['Status']),
                                             verbose_level=2)
-                                r = requests.delete('{}/api/mam/apps/internal/{}'.format(BASEURL, ws1_app_id),
+                                r = requests.delete('{}/api/mam/apps/internal/{}'.format(api_base_url, ws1_app_id),
                                                     headers=headers)
                         except:
                             raise ProcessorError('ws1_force_import - delete of pre-existing app failed, aborting.')
@@ -617,7 +627,7 @@ class WorkSpaceOneImporter(Processor):
             self.output("Uploading pkg...")
             # upload pkg, dmg, mpkg file (application/json)
             headers['Content-Type'] = 'application/json'
-            posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
+            posturl = api_base_url + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_path) + '&organizationGroupId=' + \
                       str(ogid)
             try:
@@ -633,7 +643,7 @@ class WorkSpaceOneImporter(Processor):
             self.output("Uploading pkg_info...")
             # upload pkginfo plist (application/json)
             headers['Content-Type'] = 'application/json'
-            posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
+            posturl = api_base_url + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(pkg_info_path) + '&organizationGroupId=' + \
                       str(ogid)
             try:
@@ -649,7 +659,7 @@ class WorkSpaceOneImporter(Processor):
             self.output("Uploading icon...")
             # upload icon file (application/json)
             headers['Content-Type'] = 'application/json'
-            posturl = BASEURL + '/api/mam/blobs/uploadblob?filename=' + \
+            posturl = api_base_url + '/api/mam/blobs/uploadblob?filename=' + \
                       os.path.basename(icon_path) + '&organizationGroupId=' + \
                       str(ogid)
             try:
@@ -680,7 +690,7 @@ class WorkSpaceOneImporter(Processor):
         ## Make the API call to create the App object
         self.output("Creating App Object in WorkSpaceOne...")
         self.output('app_details: {}'.format(app_details), verbose_level=3)
-        r = requests.post(BASEURL + '/api/mam/groups/%s/macos/apps' % ogid, headers=headers, json=app_details)
+        r = requests.post(api_base_url + '/api/mam/groups/%s/macos/apps' % ogid, headers=headers, json=app_details)
         if not r.status_code == 201:
             result = r.json()
             self.output('App create result: {}'.format(result), verbose_level=3)
@@ -693,7 +703,7 @@ class WorkSpaceOneImporter(Processor):
         self.output("App create ApplicationId: {}".format(ws1_app_id), verbose_level=3)
         self.env["ws1_app_id"] = ws1_app_id
         self.env["ws1_imported_new"] = True
-        app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(CONSOLEURL, ws1_app_id)
+        app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(console_url, ws1_app_id)
         self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
         self.env["ws1_importer_summary_result"] = {
             "summary_text": "The following new app was imported in WS1:",
@@ -715,44 +725,15 @@ class WorkSpaceOneImporter(Processor):
         https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync
         """
         # get WS1 Smart Group ID from its name
-        if not SMARTGROUP == 'none':
-            app_assignment = self.ws1_app_assignment_conf(BASEURL, PUSHMODE, SMARTGROUP, headers)
-            self.ws1_app_assign(BASEURL, SMARTGROUP, app_assignment, headers, ws1_app_id)
-
-        """
-        First attempt to assign secondary smart groups using APIv1 - abandoned in favour of APIv2
-        If recipe operator gave us a single string instead of a list of strings, convert it to a
-        list of strings
-
-        if self.env["WS1_SMART_GROUP2_NAMES"] and isinstance(self.env["WS1_SMART_GROUP2_NAMES"], str):
-           self.env["WS1_SMART_GROUP2_NAMES"] = [self.env["WS1_SMART_GROUP2_NAMES"]]
-        smart_group2_names = self.env.get("WS1_SMART_GROUP2_NAMES")
-        if smart_group2_names:
-            self.output(f"Secondary smart groups are type: [{type(smart_group2_names)}]", verbose_level=3)
-            self.output(f"Secondary smart groups are: [{smart_group2_names}]", verbose_level=3)
-            app_assignment["AssignmentId"] = 2
-            sg_ids = []
-            for sg in smart_group2_names:
-                # get WS1 Smart Group ID from its name
-                sg_id = self.get_smartgroup_id(BASEURL, sg, headers)
-                sg_ids.append(f"{sg_id}")
-            app_assignment["SmartGroupIds"] = sg_ids
-
-            self.output(f"Secondary smart group deployment delay is: [{deployment2_delay}] days", verbose_level=2)
-            today = date.today()
-            deploy_date = today + timedelta(days=deployment2_delay)
-            app_assignment["DeploymentParameters"]["EffectiveDate"] = deploy_date.isoformat() + "T12:00:00.000+00:00"
-
-            #self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
-            #raise ProcessorError("code to make second app assignment with delay not ready yet, bailing out.")
-            self.ws1_app_assign(BASEURL, smart_group2_names[0], app_assignment, headers, ws1_app_id)
-        """
-
-        self.ws1_app_assignments(BASEURL, app_assignments, headers, ws1_app_id)
+        if not assignment_group == 'none':
+            app_assignment = self.ws1_app_assignment_conf(api_base_url, assignment_pushmode, assignment_group, headers)
+            self.ws1_app_assign(api_base_url, assignment_group, app_assignment, headers, ws1_app_id)
+        else:
+            self.ws1_app_assignments(api_base_url, app_assignments, headers, ws1_app_id)
 
         return "Application was successfully uploaded to WorkSpaceOne."
 
-    def ws1_app_assignments(self, base_url, app_assignments, headers, ws1_app_id):
+    def ws1_app_assignments(self, api_base_url, app_assignments, headers, ws1_app_id):
         """
         prep app assignment rules and make API V2 assignments PUT call
         MAM (Mobile Application Management) REST API V2  - PUT /apps/{applicationUuid}/assignment-rules
@@ -766,7 +747,7 @@ class WorkSpaceOneImporter(Processor):
         """
         # call Get for internal app to get app UUID
         try:
-            r = requests.get(f"{base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
+            r = requests.get(f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
             result = r.json()
         except:
             raise ProcessorError("API call to get internal app details failed")
@@ -785,7 +766,7 @@ class WorkSpaceOneImporter(Processor):
 
             # get any existing assignment rules and see if they need updating
             try:
-                r = requests.get(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
+                r = requests.get(f"{api_base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
                 result = r.json()
             except:
                 raise ProcessorError("API call to get existing app assignment rules failed")
@@ -840,7 +821,7 @@ class WorkSpaceOneImporter(Processor):
                 for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
                     self.output(
                         f"App assignment[{priority_index}] Smart Group name: [{smart_group_name}]", verbose_level=2)
-                    sg_id, sg_uuid = self.get_smartgroup_id(base_url, smart_group_name, headers)
+                    sg_id, sg_uuid = self.get_smartgroup_id(api_base_url, smart_group_name, headers)
                     app_assignment["distribution"]["smart_groups"].append(sg_uuid)
                 # smart_group_names is used as input, NOT in API call
                 del app_assignment["distribution"]["smart_group_names"]
@@ -914,7 +895,7 @@ class WorkSpaceOneImporter(Processor):
 
                 try:
                     # Make the WS1 APIv2 call to assign the App
-                    r = requests.put(f"{base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2,
+                    r = requests.put(f"{api_base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2,
                                      data=payload)
                 except:
                     raise ProcessorError(
@@ -955,10 +936,10 @@ class WorkSpaceOneImporter(Processor):
                     ws1_importer_summary_result["data"]["new_assignment_rules"] = new_assignment_rules
                     self.env["ws1_importer_summary_result"] = ws1_importer_summary_result
 
-    def ws1_app_assignment_conf(self, BASEURL, PUSHMODE, SMARTGROUP, headers):
+    def ws1_app_assignment_conf(self, api_base_url, assignment_pushmode, assignment_group, headers):
         """ assemble app_assignment to pass in API V1 call """
-        sg_id, sg_uuid = self.get_smartgroup_id(BASEURL, SMARTGROUP, headers)
-        if PUSHMODE == 'Auto':
+        sg_id, sg_uuid = self.get_smartgroup_id(api_base_url, assignment_group, headers)
+        if assignment_pushmode == 'Auto':
             setMacOsDesiredStateManagement = True
         else:
             setMacOsDesiredStateManagement = False
@@ -967,7 +948,7 @@ class WorkSpaceOneImporter(Processor):
                 sg_id
             ],
             "DeploymentParameters": {
-                "PushMode": PUSHMODE,
+                "PushMode": assignment_pushmode,
                 "AssignmentId": 1,
                 "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,
                 "RemoveOnUnEnroll": False,
@@ -1002,9 +983,14 @@ class WorkSpaceOneImporter(Processor):
         self.env["ws1_app_assignments_changed"] = True
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
-    def ws1_app_version_prune(self, base_url, headers, og_id, app_name, search_results):
+    def ws1_app_version_prune(self, api_base_url, headers, og_id, app_name, search_results):
         num_versions = 5
         num_versions_found = 0
+
+        # prepare API V2 headers
+        headers_v2 = dict(headers)
+        headers_v2['Accept'] = headers['Accept'] + ';version=2'
+        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
 
         self.output(f"Looking for existing versions of {app_name} on WorkspaceONE")
 
@@ -1012,7 +998,35 @@ class WorkSpaceOneImporter(Processor):
             if app["Platform"] == 10 and app["ApplicationName"] in app_name:
                 num_versions_found += 1
                 ws1_app_id = app["Id"]["Value"]
-                self.output(f"App ID: [{ws1_app_id}] App version: [{app['ActualFileVersion']}] Assigned device count: [{app['AssignedDeviceCount']}]", verbose_level=3)
+
+                # get assignment rules to find fist deployment date
+                try:
+                    r = requests.get(f"{api_base_url}/api/mam/apps/{ws1_app_uuid}/assignment-rules", headers=headers_v2)
+                    result = r.json()
+                except:
+                    raise ProcessorError("API call to get existing app assignment rules failed")
+                if not r.status_code == 200:
+                    raise ProcessorError(
+                        f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 "
+                        f"- message: {result['message']}.")
+                if result["assignments"][0]["distribution"]["effective_date"]:
+                    # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
+                    # time may have a float as seconds or an int
+                    # no timezone is returned in UEM v.22.12 but suspect that might change
+                    # datetime.fromisoformat() can't handle the above in current Python v3.10
+                    # alternative would be to install python-dateutil but that would introduce a new dependency
+                    edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
+                    self.output(f"Deployment date found in existing assignment #0: {[edate]} ", verbose_level=2)
+                    ws1_app_ass_day0_str = datetime.fromisoformat(edate).date().isoformat()
+                else:
+                    self.output("Failed to find deployment date in Assignments, skipping...!")
+                    ws1_app_ass_day0 = "UNKNOWN!"
+
+                self.output(f"App ID: [{ws1_app_id}] App UUID:{app['Uuid']} "
+                            f"App version: [{app['ActualFileVersion']}] "
+                            f"First deployment date: {ws1_app_ass_day0}"
+                            f"Assigned device count: [{app['AssignedDeviceCount']}]",
+                            verbose_level=3)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
 
     def main(self):
