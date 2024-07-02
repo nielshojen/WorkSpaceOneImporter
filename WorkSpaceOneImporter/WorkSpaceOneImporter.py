@@ -104,6 +104,14 @@ def set_password_in_keychain(keychain, service, account, password):
     result = subprocess.run(command, shell=True, capture_output=True)
     return result.returncode
 
+def extract_first_integer_from_string(s):
+    # Search for the first occurrence of a sequence of digits
+    match = re.search(r'\d+', s)
+    if match:
+        # Convert the first match to an integer and return it
+        return int(match.group())
+    return None
+
 
 class WorkSpaceOneImporter(Processor):
     """Uploads apps from Munki repo to WorkSpace ONE"""
@@ -197,8 +205,8 @@ class WorkSpaceOneImporter(Processor):
                            "early access.",
         },
         "ws1_push_mode": {
-            "required": True,
-            "description": "how to deploy the app, Auto or On-Demand.",
+            "required": False,
+            "description": "for a simple app assignment, how to deploy the app, can be Auto or On-Demand.",
         },
         "ws1_assignment_rules": {
             "required": False,
@@ -206,7 +214,20 @@ class WorkSpaceOneImporter(Processor):
                            "placeholder. NOT as Processor input var as it is "
                            "too complex to be be substituted. MUST override.\n"
                            "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n"
-        }
+        },
+        "ws1_app_versions_to_keep": {
+            "required": False,
+            "default": "5",
+            "description":
+                "The number of versions of an app to keep in WS1. Default:5. See also app_versions_prune",
+        },
+        "ws1_app_versions_prune": {
+            "required": False,
+            "default": "dry_run",
+            "description":
+                "Whether to prune old versions of an app on WS1. Possible values: True or False or "
+                "dry_run. Default:dry_run. See also app_versions_to_keep",
+        },
     }
 
     output_variables = {
@@ -984,8 +1005,23 @@ class WorkSpaceOneImporter(Processor):
         self.env["ws1_app_assignments_changed"] = True
         self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
-    def ws1_app_version_prune(self, api_base_url, headers, og_id, app_name, search_results):
-        keep_versions = 5
+    def ws1_app_versions_prune(self, api_base_url, headers, app_name, search_results):
+
+        # get ws1_app_versions_to_keep, defaults to 5
+        keep_versions = extract_first_integer_from_string(self.env.get("ws1_app_versions_to_keep", "5"))
+        if keep_versions < 1 or keep_versions > 10:
+            self.output(f"ws1_app_versions_to_keep setting {keep_versions} is out or range, setting default of 5.")
+            keep_versions = 5
+
+        if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
+            app_versions_prune = True
+        elif self.env.get("ws1_app_versions_prune", "False").lower() in ("false", "1", "f"):
+            # app_versions_prune = False
+            self.output("app_versions_prune is set to False, skipping")
+            return None
+        else:
+            app_versions_prune = "dry_run"
+
         num_versions_found = 0
 
         # prepare API V2 headers
@@ -1043,6 +1079,10 @@ class WorkSpaceOneImporter(Processor):
                 row["status"] = "keep"
             self.output(row, verbose_level=2)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
+        if app_versions_prune:
+            for row in app_list:
+                if row['status'] == "TO BE PRUNED":
+                    self.output(f"Deleting old version {row['version']} (soon to be implemented)")
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
