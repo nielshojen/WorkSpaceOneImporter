@@ -306,7 +306,7 @@ class WorkSpaceOneImporter(Processor):
                     f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!")
         else:
             oauth_renew_margin = 10
-            print(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin}')
+            self.output(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin:0f}', verbose_level=3)
 
         oauth_keychain = self.env.get("ws1_oauth_keychain")
         if oauth_keychain is not None:
