@@ -571,7 +571,7 @@ class WorkSpaceOneImporter(Processor):
             search_results = r.json()
 
             # handle older versions of app already present on WS1 UEM
-            self.ws1_app_version_prune(api_base_url, headers, ogid, app_name, search_results)
+            self.ws1_app_versions_prune(api_base_url, headers, app_name, search_results)
 
             # handle any updates that might be needed for the latest app version already present on WS1 UEM
             for app in search_results["Application"]:
