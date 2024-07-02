@@ -1014,9 +1014,9 @@ class WorkSpaceOneImporter(Processor):
             keep_versions = 5
 
         if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
-            app_versions_prune = True
+            app_versions_prune = "True"
         elif self.env.get("ws1_app_versions_prune", "False").lower() in ("false", "1", "f"):
-            # app_versions_prune = False
+            # app_versions_prune = "False"
             self.output("app_versions_prune is set to False, skipping")
             return None
         else:
@@ -1079,7 +1079,7 @@ class WorkSpaceOneImporter(Processor):
                 row["status"] = "keep"
             self.output(row, verbose_level=2)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
-        if app_versions_prune:
+        if app_versions_prune == "True":
             for row in app_list:
                 if row['status'] == "TO BE PRUNED":
                     self.output(f"Deleting old version {row['version']} (soon to be implemented)")
