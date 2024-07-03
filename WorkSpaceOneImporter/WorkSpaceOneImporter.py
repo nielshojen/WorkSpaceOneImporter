@@ -1037,7 +1037,7 @@ class WorkSpaceOneImporter(Processor):
         # prepare API V2 headers
         headers_v2 = dict(headers)
         headers_v2['Accept'] = headers['Accept'] + ';version=2'
-        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
+        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=4)
 
         self.output(f"Looking for old versions of {app_name} on WorkspaceONE")
         app_list = []
@@ -1054,21 +1054,22 @@ class WorkSpaceOneImporter(Processor):
                     raise ProcessorError(
                         f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 "
                         f"- message: {result['message']}.")
-                if result["assignments"][0]["distribution"]["effective_date"]:
+                try:
+                # if result["assignments"][0]["distribution"]["effective_date"]:
                     # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
                     # time may have a float as seconds or an int
                     # no timezone is returned in UEM v.22.12 but suspect that might change
                     # datetime.fromisoformat() can't handle the above in current Python v3.10
                     # alternative would be to install python-dateutil but that would introduce a new dependency
-                    edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
-                    self.output(f"Deployment date found in assignment #0: {[edate]} ", verbose_level=4)
-                    ws1_app_ass_day0_str = datetime.fromisoformat(edate).date().isoformat()
+                    e_date = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
+                    self.output(f"Deployment date found in assignment #0: {[e_date]} ", verbose_level=4)
+                    ws1_app_ass_day0_str = datetime.fromisoformat(e_date).date().isoformat()
 
                     num_versions_found += 1
                     app_list.append(
                         {"App_ID": app['Id']['Value'], "UUID:": app['Uuid'], "version": app['ActualFileVersion'],
                          "date": ws1_app_ass_day0_str, "num": app['AssignedDeviceCount'], "status": "n/a"})
-                else:
+                except IndexError:
                     self.output("Failed to find deployment date in Assignments, skipping "
                                 f"version:{app['ActualFileVersion']}...!")
                     ws1_app_ass_day0_str = "UNKNOWN!"
