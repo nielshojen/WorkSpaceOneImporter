@@ -107,8 +107,11 @@ You'll need to specify credentials for either Oauth or Basic authentication.
 * [`ws1_smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_smart_group_name)
 * [`ws1_push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_push_mode)
 * [`ws1_app_assignments`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments)
+* [`ws1_update_assignments`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_update_assignments)
+* [`ws1_app_versions_to_keep`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep)
+* [`ws1_app_versions_prune`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_prune)
 
-### Input variables being deprecated
+### deprecated Input variables
 * [`ws1_munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_munki_repo_path)
 MUNKI_REPO setting from Autopkg can be used, no need for separate input variable.
 
@@ -227,7 +230,7 @@ https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/Suspicio
 ### yaml format preferred
 More recipes for this processor are available in [my recipe repo](ws1) and those are in yaml format as that is easier to use.
 ___
-Create a recipe override first (if you prefer plist format):
+Create a recipe override like this first (if you prefer plist format):
 ```autopkg make-override SuspiciousPackage.ws1.recipe```
 
 Again yaml format is easier to deal with, especially if you leave only the input variables you need to override and strip away the rest.

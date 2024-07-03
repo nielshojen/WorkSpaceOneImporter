@@ -212,14 +212,14 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "description": "Define recipe Input-variable \"ws1_app_assignments\" instead of this documentation "
                            "placeholder. NOT as Processor input var as it is "
-                           "too complex to be be substituted. MUST override.\n"
+                           "too complex to be be substituted. MUST override.\n\n"
                            "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n"
         },
         "ws1_app_versions_to_keep": {
             "required": False,
             "default": "5",
             "description":
-                "The number of versions of an app to keep in WS1. Default:5. See also app_versions_prune"
+                "The number of versions of an app to keep in WS1. Default:5. See also app_versions_prune.\n\n"
                 "NB - please make sure to provide the input variable as type string in the recipe override, using "
                 " an integer will result in a hard to trace runtime error 'expected string or bytes-like object'",
         },
@@ -1055,12 +1055,11 @@ class WorkSpaceOneImporter(Processor):
                         f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 "
                         f"- message: {result['message']}.")
                 try:
-                # if result["assignments"][0]["distribution"]["effective_date"]:
-                    # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
-                    # time may have a float as seconds or an int
-                    # no timezone is returned in UEM v.22.12 but suspect that might change
-                    # datetime.fromisoformat() can't handle the above in current Python v3.10
-                    # alternative would be to install python-dateutil but that would introduce a new dependency
+                    """ ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
+                    time may have a float as seconds or an int
+                    no timezone is returned in UEM v.22.12 but suspect that might change
+                    datetime.fromisoformat() can't handle the above in current Python v3.10
+                    alternative would be to install python-dateutil but that would introduce a new dependency"""
                     e_date = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
                     self.output(f"Deployment date found in assignment #0: {[e_date]} ", verbose_level=4)
                     ws1_app_ass_day0_str = datetime.fromisoformat(e_date).date().isoformat()
