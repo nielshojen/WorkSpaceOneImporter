@@ -301,13 +301,13 @@ class WorkSpaceOneImporter(Processor):
         if oauth_renew_margin_str is not None:
             try:
                 oauth_renew_margin = float(oauth_renew_margin_str)
-                self.output(f'Found ws1_oauth_renew_margin: {oauth_renew_margin:.1f}', verbose_level=3)
+                self.output(str(f'Found ws1_oauth_renew_margin: {oauth_renew_margin:.1f}'), verbose_level=3)
             except ValueError:
                 raise ProcessorError(
-                    f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!")
+                    str(f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!"))
         else:
             oauth_renew_margin = 10
-            self.output(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin:.1f}', verbose_level=3)
+            self.output(str(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin:.1f}'), verbose_level=3)
 
         oauth_keychain = self.env.get("ws1_oauth_keychain")
         if oauth_keychain is not None:
