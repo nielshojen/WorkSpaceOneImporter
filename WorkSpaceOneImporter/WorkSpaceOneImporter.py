@@ -268,7 +268,8 @@ class WorkSpaceOneImporter(Processor):
             result = subprocess.run(" ".join(cmd), shell=True, cwd=repo, capture_output=True)
             self.output(result, verbose_level=2)
         except subprocess.CalledProcessError as e:
-            print(e.stderr)
+            # print(e.stderr)
+            self.output(e.stderr)
             raise e
 
     def git_lfs_pull(self, repo, filename):
@@ -300,13 +301,13 @@ class WorkSpaceOneImporter(Processor):
         if oauth_renew_margin_str is not None:
             try:
                 oauth_renew_margin = float(oauth_renew_margin_str)
-                print(f'Found ws1_oauth_renew_margin: {oauth_renew_margin}')
+                self.output(f'Found ws1_oauth_renew_margin: {oauth_renew_margin:.1f}', verbose_level=3)
             except ValueError:
                 raise ProcessorError(
                     f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!")
         else:
             oauth_renew_margin = 10
-            self.output(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin:0f}', verbose_level=3)
+            self.output(f'Using default for ws1_oauth_renew_margin: {oauth_renew_margin:.1f}', verbose_level=3)
 
         oauth_keychain = self.env.get("ws1_oauth_keychain")
         if oauth_keychain is not None:
