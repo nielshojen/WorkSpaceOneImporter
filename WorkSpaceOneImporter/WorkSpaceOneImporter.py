@@ -301,10 +301,10 @@ class WorkSpaceOneImporter(Processor):
         if oauth_renew_margin_str is not None:
             try:
                 oauth_renew_margin = float(oauth_renew_margin_str)
-                self.output(str(f'Found ws1_oauth_renew_margin: {oauth_renew_margin:.1f}'), verbose_level=3)
+                self.output(f'Found ws1_oauth_renew_margin: {oauth_renew_margin:.1f}', verbose_level=3)
             except ValueError:
                 raise ProcessorError(
-                    str(f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!"))
+                    f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!")
         else:
             oauth_renew_margin = 10
             # oauth_renew_margin_str = str(f"oauth_renew_margin:.1f")
@@ -1013,7 +1013,8 @@ class WorkSpaceOneImporter(Processor):
         # get ws1_app_versions_to_keep, defaults to 5
         keep_versions = extract_first_integer_from_string(self.env.get("ws1_app_versions_to_keep", 5))
         if keep_versions < 1 or keep_versions > 10:
-            self.output(f"ws1_app_versions_to_keep setting {keep_versions} is out or range, setting default of 5.")
+            self.output(f"{type(keep_versions)}", verbose_level=4)
+            self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out or range, setting default of 5.")
             keep_versions = 5
 
         if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
