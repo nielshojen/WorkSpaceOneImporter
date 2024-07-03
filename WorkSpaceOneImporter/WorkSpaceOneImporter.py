@@ -219,7 +219,9 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "default": "5",
             "description":
-                "The number of versions of an app to keep in WS1. Default:5. See also app_versions_prune",
+                "The number of versions of an app to keep in WS1. Default:5. See also app_versions_prune"
+                "NB - please make sure to provide the input variable as type string in the recipe override, using "
+                " an integer will result in a hard to trace runtime error 'expected string or bytes-like object'",
         },
         "ws1_app_versions_prune": {
             "required": False,
@@ -1010,11 +1012,14 @@ class WorkSpaceOneImporter(Processor):
 
     def ws1_app_versions_prune(self, api_base_url, headers, app_name, search_results):
 
-        # get ws1_app_versions_to_keep, defaults to 5
+        """
+        get ws1_app_versions_to_keep, defaults to 5
+        NB - please make sure to provide the input variable as type string in the recipe override, providing as
+          an int will result in a hard to trace runtime error "expected string or bytes-like object"
+        """
         keep_versions_str = self.env.get("ws1_app_versions_to_keep", "5")
         keep_versions = extract_first_integer_from_string(keep_versions_str)
         if keep_versions < 1 or keep_versions > 10:
-            self.output(f"{type(keep_versions)}", verbose_level=4)
             self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out or range, setting default of 5.")
             keep_versions = 5
 
@@ -1087,7 +1092,7 @@ class WorkSpaceOneImporter(Processor):
         if app_versions_prune == "True":
             for row in app_list:
                 if row['status'] == "TO BE PRUNED":
-                    self.output(f"Deleting old version {row['version']} (soon to be implemented)")
+                    self.output(f"Deleting old version {row['version']} (to be implemented soon)")
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
