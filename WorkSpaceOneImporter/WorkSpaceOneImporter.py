@@ -1011,7 +1011,8 @@ class WorkSpaceOneImporter(Processor):
     def ws1_app_versions_prune(self, api_base_url, headers, app_name, search_results):
 
         # get ws1_app_versions_to_keep, defaults to 5
-        keep_versions = extract_first_integer_from_string(self.env.get("ws1_app_versions_to_keep", 5))
+        keep_versions_str = self.env.get("ws1_app_versions_to_keep", "5")
+        keep_versions = extract_first_integer_from_string(keep_versions_str)
         if keep_versions < 1 or keep_versions > 10:
             self.output(f"{type(keep_versions)}", verbose_level=4)
             self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out or range, setting default of 5.")
