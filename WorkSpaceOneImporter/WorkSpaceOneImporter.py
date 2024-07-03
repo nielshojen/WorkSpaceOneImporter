@@ -307,9 +307,9 @@ class WorkSpaceOneImporter(Processor):
                     str(f"Found var ws1_oauth_renew_margin is NOT a float: [{oauth_renew_margin_str}] - aborting!"))
         else:
             oauth_renew_margin = 10
-            oauth_renew_margin_str = str(f"oauth_renew_margin:.1f")
-            self.output(f"Type of oauth_renew_margin_str: {type(oauth_renew_margin_str)}", verbose_level=4)
-            self.output(f"Using default for ws1_oauth_renew_margin: {oauth_renew_margin_str}", verbose_level=3)
+            # oauth_renew_margin_str = str(f"oauth_renew_margin:.1f")
+            # self.output(f"Type of oauth_renew_margin_str: {type(oauth_renew_margin_str)}", verbose_level=4)
+            self.output(f"Using default for ws1_oauth_renew_margin: {oauth_renew_margin:.1f}", verbose_level=3)
 
         oauth_keychain = self.env.get("ws1_oauth_keychain")
         if oauth_keychain is not None:
@@ -1011,7 +1011,7 @@ class WorkSpaceOneImporter(Processor):
     def ws1_app_versions_prune(self, api_base_url, headers, app_name, search_results):
 
         # get ws1_app_versions_to_keep, defaults to 5
-        keep_versions = extract_first_integer_from_string(self.env.get("ws1_app_versions_to_keep", "5"))
+        keep_versions = extract_first_integer_from_string(self.env.get("ws1_app_versions_to_keep", 5))
         if keep_versions < 1 or keep_versions > 10:
             self.output(f"ws1_app_versions_to_keep setting {keep_versions} is out or range, setting default of 5.")
             keep_versions = 5
