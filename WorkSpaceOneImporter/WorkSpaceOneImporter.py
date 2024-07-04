@@ -1094,7 +1094,7 @@ class WorkSpaceOneImporter(Processor):
                 if row['status'] == "TO BE PRUNED":
                     self.output(f"Deleting old version {row['version']}...")
                     try:
-                        r = requests.delete(f"{api_base_url}/api/mam/apps/internal/{[row"App_ID"]}", headers=headers)
+                        r = requests.delete(f"{api_base_url}/api/mam/apps/internal/{row['App_ID']}", headers=headers)
                     except:
                         raise ProcessorError("ws1_app_versions_prune - delete of pre-existing app failed, aborting.")
                     if not r.status_code == 202 and not r.status_code == 204:
