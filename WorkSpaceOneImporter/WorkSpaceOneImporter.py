@@ -1092,7 +1092,7 @@ class WorkSpaceOneImporter(Processor):
         if app_versions_prune == "True":
             for row in app_list:
                 if row['status'] == "TO BE PRUNED":
-                    self.output(f"Deleting old version {row['version']}...")
+                    self.output(f"Deleting old version {row['version']}...", verbose_level=3)
                     try:
                         r = requests.delete(f"{api_base_url}/api/mam/apps/internal/{row['App_ID']}", headers=headers)
                     except:
@@ -1101,6 +1101,8 @@ class WorkSpaceOneImporter(Processor):
                         result = r.json()
                         self.output(f"App delete result: {result}", verbose_level=3)
                         raise ProcessorError("ws1_app_versions_prune - delete of old app version failed, aborting.")
+                    else:
+                        self.output(f"Successfully deleted old version {row['version']}", verbose_level=1)
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
