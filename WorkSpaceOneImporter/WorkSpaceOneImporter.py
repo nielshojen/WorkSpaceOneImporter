@@ -473,7 +473,7 @@ class WorkSpaceOneImporter(Processor):
                        'authorization': basicauth}
         headers_v2 = dict(headers)
         headers_v2['Accept'] = headers['Accept'] + ';version=2'
-        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=3)
+        self.output(f'API v.2 call headers: {headers_v2}', verbose_level=4)
 
         return headers, headers_v2
 
@@ -789,7 +789,7 @@ class WorkSpaceOneImporter(Processor):
             # prepare API V2 headers
             headers_v2 = dict(headers)
             headers_v2['Accept'] = headers['Accept'] + ';version=2'
-            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=2)
+            self.output(f'API v.2 call headers: {headers_v2}', verbose_level=4)
 
             # get any existing assignment rules and see if they need updating
             try:
