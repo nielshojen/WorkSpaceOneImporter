@@ -1112,7 +1112,7 @@ class WorkSpaceOneImporter(Processor):
                 self.output(f"Successfully deleted {num_pruned} old versions", verbose_level=1)
                 self.env["ws1_pruned"] = True
                 self.env["ws1_importer_summary_result"] = {
-                    "summary_text": "To be updated by processor later",
+                    "summary_text": "Old software versions pruned",
                     "report_fields": [
                         "name",
                         "pruned_versions"
