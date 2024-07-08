@@ -1091,7 +1091,7 @@ class WorkSpaceOneImporter(Processor):
         self.output(f"App {app_name}  - found {num_versions_found} versions")
         if app_versions_prune == "True":
             num_pruned = 0
-            pruned_versions = []
+            pruned_versions = ""
             for row in app_list:
                 if row['status'] == "TO BE PRUNED":
                     self.output(f"Deleting old version {row['version']}...", verbose_level=3)
@@ -1106,7 +1106,7 @@ class WorkSpaceOneImporter(Processor):
                     else:
                         self.output(f"Successfully deleted old version {row['version']}", verbose_level=2)
                         row["status"] = "PRUNED"
-                        pruned_versions.append(f"[{row['version']}] ")
+                        pruned_versions += f"[{row['version']}] "
                         num_pruned += 1
             if num_pruned > 0:
                 self.output(f"Successfully deleted {num_pruned} old versions", verbose_level=1)
@@ -1119,7 +1119,7 @@ class WorkSpaceOneImporter(Processor):
                     ],
                     "data": {
                         "name": app_name,
-                        "pruned_versions": str(pruned_versions)
+                        "pruned_versions": pruned_versions
                     }
                 }
 
