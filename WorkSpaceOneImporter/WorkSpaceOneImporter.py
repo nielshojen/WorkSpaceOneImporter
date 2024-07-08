@@ -1119,7 +1119,7 @@ class WorkSpaceOneImporter(Processor):
                     ],
                     "data": {
                         "name": app_name,
-                        "pruned_versions": pruned_versions
+                        "pruned_versions": str(pruned_versions)
                     }
                 }
 
