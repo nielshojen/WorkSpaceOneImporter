@@ -1019,8 +1019,8 @@ class WorkSpaceOneImporter(Processor):
         """
         keep_versions_str = self.env.get("ws1_app_versions_to_keep", "5")
         keep_versions = extract_first_integer_from_string(keep_versions_str)
-        if keep_versions < 1 or keep_versions > 10:
-            self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out or range, setting default of 5.")
+        if keep_versions < 1 or keep_versions > 45:
+            self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out of range, setting default of 5.")
             keep_versions = 5
 
         if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
@@ -1104,11 +1104,12 @@ class WorkSpaceOneImporter(Processor):
                         self.output(f"App delete result: {result}", verbose_level=3)
                         raise ProcessorError("ws1_app_versions_prune - delete of old app version failed, aborting.")
                     else:
-                        self.output(f"Successfully deleted old version {row['version']}", verbose_level=1)
+                        self.output(f"Successfully deleted old version {row['version']}", verbose_level=2)
                         row["status"] = "PRUNED"
                         pruned_versions.append(f"[{row['version']}] ")
                         num_pruned += 1
             if num_pruned > 0:
+                self.output(f"Successfully deleted {num_pruned} old versions", verbose_level=1)
                 self.env["ws1_pruned"] = True
                 ws1_importer_summary_result = self.env.get("ws1_importer_summary_result")
                 ws1_importer_summary_result["report_fields"].append("name")
