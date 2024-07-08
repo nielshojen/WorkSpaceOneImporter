@@ -1111,12 +1111,17 @@ class WorkSpaceOneImporter(Processor):
             if num_pruned > 0:
                 self.output(f"Successfully deleted {num_pruned} old versions", verbose_level=1)
                 self.env["ws1_pruned"] = True
-                ws1_importer_summary_result = self.env.get("ws1_importer_summary_result")
-                ws1_importer_summary_result["report_fields"].append("name")
-                ws1_importer_summary_result["report_fields"].append("pruned_versions")
-                ws1_importer_summary_result["data"]["name"] = app_name
-                ws1_importer_summary_result["data"]["pruned_versions"] = pruned_versions
-                self.env["ws1_importer_summary_result"] = ws1_importer_summary_result
+                self.env["ws1_importer_summary_result"] = {
+                    "summary_text": "To be updated by processor later",
+                    "report_fields": [
+                        "name",
+                        "pruned_versions"
+                    ],
+                    "data": {
+                        "name": app_name,
+                        "pruned_versions": pruned_versions
+                    }
+                }
 
 
 
