@@ -1090,6 +1090,8 @@ class WorkSpaceOneImporter(Processor):
             self.output(row, verbose_level=2)
         self.output(f"App {app_name}  - found {num_versions_found} versions")
         if app_versions_prune == "True":
+            num_pruned = 0
+            pruned_versions = ""
             for row in app_list:
                 if row['status'] == "TO BE PRUNED":
                     self.output(f"Deleting old version {row['version']}...", verbose_level=3)
@@ -1103,6 +1105,20 @@ class WorkSpaceOneImporter(Processor):
                         raise ProcessorError("ws1_app_versions_prune - delete of old app version failed, aborting.")
                     else:
                         self.output(f"Successfully deleted old version {row['version']}", verbose_level=1)
+                        row["status"] = "PRUNED"
+                        pruned_versions.append(f"[{row['version']}] ")
+                        num_pruned += 1
+            if num_pruned > 0:
+                self.env["ws1_pruned"] = True
+                ws1_importer_summary_result = self.env.get("ws1_importer_summary_result")
+                ws1_importer_summary_result["report_fields"].append("name")
+                ws1_importer_summary_result["report_fields"].append("pruned_versions")
+                ws1_importer_summary_result["data"]["name"] = app_name
+                ws1_importer_summary_result["data"]["pruned_versions"] = pruned_versions
+                self.env["ws1_importer_summary_result"] = ws1_importer_summary_result
+
+
+
 
     def main(self):
         """Rebuild Munki catalogs in repo_path"""
