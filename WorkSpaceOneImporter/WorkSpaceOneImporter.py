@@ -217,9 +217,17 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_app_versions_to_keep": {
             "required": False,
+            "description":
+                "The number of versions of an app to keep in WS1. Please set this in a recipe (override).\n"
+                " See also app_versions_prune.\n\n"
+                "NB - please make sure to provide the input variable as type string in the recipe override, using "
+                " an integer will result in a hard to trace runtime error 'expected string or bytes-like object'",
+        },
+        "ws1_app_versions_to_keep_default": {
+            "required": False,
             "default": "5",
             "description":
-                "The number of versions of an app to keep in WS1. Default:5. See also app_versions_prune.\n\n"
+                "The default number of versions of an app to keep in WS1. Default:5. See also app_versions_prune.\n\n"
                 "NB - please make sure to provide the input variable as type string in the recipe override, using "
                 " an integer will result in a hard to trace runtime error 'expected string or bytes-like object'",
         },
@@ -1013,15 +1021,24 @@ class WorkSpaceOneImporter(Processor):
     def ws1_app_versions_prune(self, api_base_url, headers, app_name, search_results):
 
         """
-        get ws1_app_versions_to_keep, defaults to 5
+        get ws1_app_versions_to_keep_default, defaults to 5
+        """
+        keep_versions_default_str = self.env.get("ws1_app_versions_to_keep_default", "5")
+        keep_versions_default = extract_first_integer_from_string(keep_versions_default_str)
+        if keep_versions_default < 1:
+            self.output(f"ws1_app_versions_to_keep setting {keep_versions_default:d} is out of range, setting default of 5.")
+            keep_versions = 5
+
+        """
         NB - please make sure to provide the input variable as type string in the recipe override, providing as
           an int will result in a hard to trace runtime error "expected string or bytes-like object"
         """
-        keep_versions_str = self.env.get("ws1_app_versions_to_keep", "5")
+        keep_versions_str = self.env.get("ws1_app_versions_to_keep", keep_versions_default_str)
         keep_versions = extract_first_integer_from_string(keep_versions_str)
-        if keep_versions < 1 or keep_versions > 45:
-            self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out of range, setting default of 5.")
-            keep_versions = 5
+        if keep_versions < 1:
+            self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out of range, "
+                        f"setting default of {keep_versions_default}.")
+            keep_versions = keep_versions_default
 
         if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
             app_versions_prune = "True"
