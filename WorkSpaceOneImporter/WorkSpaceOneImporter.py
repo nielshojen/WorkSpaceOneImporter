@@ -1035,7 +1035,7 @@ class WorkSpaceOneImporter(Processor):
           an int will result in a hard to trace runtime error "expected string or bytes-like object"
         """
         keep_versions_str = self.env.get("ws1_app_versions_to_keep")
-        if len(keep_versions_str) > 0:
+        if keep_versions_str is not None:
             keep_versions = extract_first_integer_from_string(keep_versions_str)
         else:
             keep_versions = 0
