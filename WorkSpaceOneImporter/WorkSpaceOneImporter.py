@@ -1100,6 +1100,8 @@ class WorkSpaceOneImporter(Processor):
                     except:
                         raise ProcessorError("ws1_app_versions_prune - delete of pre-existing app failed, aborting.")
                     if not r.status_code == 202 and not r.status_code == 204:
+                        self.output(f"App delete status code: {r.status_code}", verbose_level=4)
+                        self.output(f"App delete response: {r.text}", verbose_level=4)
                         result = r.json()
                         self.output(f"App delete result: {result}", verbose_level=3)
                         raise ProcessorError("ws1_app_versions_prune - delete of old app version failed, aborting.")
