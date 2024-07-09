@@ -1026,8 +1026,9 @@ class WorkSpaceOneImporter(Processor):
         keep_versions_default_str = self.env.get("ws1_app_versions_to_keep_default", "5")
         keep_versions_default = extract_first_integer_from_string(keep_versions_default_str)
         if keep_versions_default < 1:
-            self.output(f"ws1_app_versions_to_keep setting {keep_versions_default:d} is out of range, setting default of 5.")
-            keep_versions = 5
+            self.output(f"ws1_app_versions_to_keep setting {keep_versions_default:d} is out of range, setting default "
+                        f"of 5.")
+            keep_versions_default = 5
 
         """
         NB - please make sure to provide the input variable as type string in the recipe override, providing as
@@ -1039,6 +1040,8 @@ class WorkSpaceOneImporter(Processor):
             self.output(f"ws1_app_versions_to_keep setting {keep_versions:d} is out of range, "
                         f"setting default of {keep_versions_default}.")
             keep_versions = keep_versions_default
+        else:
+            self.output(f"ws1_app_versions_to_keep is set to: {keep_versions}", verbose_level=2)
 
         if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
             app_versions_prune = "True"
@@ -1048,6 +1051,7 @@ class WorkSpaceOneImporter(Processor):
             return None
         else:
             app_versions_prune = "dry_run"
+        self.output(f"ws1_app_versions_prune is set to: {app_versions_prune}", verbose_level=2)
 
         num_versions_found = 0
 
