@@ -1141,11 +1141,13 @@ class WorkSpaceOneImporter(Processor):
                     "summary_text": "Old software versions pruned",
                     "report_fields": [
                         "name",
-                        "pruned_versions"
+                        "pruned_versions",
+                        "pruned_versions_num"
                     ],
                     "data": {
                         "name": app_name,
-                        "pruned_versions": pruned_versions
+                        "pruned_versions": pruned_versions,
+                        "pruned_versions_num": num_pruned
                     }
                 }
 
