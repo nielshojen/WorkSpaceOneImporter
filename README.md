@@ -24,6 +24,7 @@ Done:
  * added support to specify advanced app assignment (API v.2) settings and update on schedule
  * added production ready example recipes (moved from my autopkg-recipe repo)
  * added support for re-using OAuth tokens
+ * new feature to prune old software versions from WS1 UEM
 
 ToDo:
  * cleanup code, confirm to Autopkg standards
@@ -109,6 +110,7 @@ You'll need to specify credentials for either Oauth or Basic authentication.
 * [`ws1_app_assignments`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments)
 * [`ws1_update_assignments`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_update_assignments)
 * [`ws1_app_versions_to_keep`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep)
+* [`ws1_app_versions_to_keep_default`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep_default)
 * [`ws1_app_versions_prune`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_prune)
 
 ### deprecated Input variables
