@@ -20,23 +20,20 @@
 """Autopkg processor to upload files from a Munki repo to VMWare Workspace ONE UEM using REST API"""
 
 import base64
+import hashlib
+import json
 import os.path
 import plistlib
-import hashlib
+import re
 import subprocess
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
+import macsesh  # dependency, needs to be installed
 import requests  # dependency, needs to be installed
-import json
-import macsesh    # dependency, needs to be installed
-import re
-
 from autopkglib import Processor, ProcessorError, get_pref
 from autopkglib.munkirepolibs.AutoPkgLib import AutoPkgLib
-
 from requests_toolbelt import StreamingIterator  # dependency from requests
-
-from urllib.parse import urlparse
 
 __all__ = ["WorkSpaceOneImporter"]
 
