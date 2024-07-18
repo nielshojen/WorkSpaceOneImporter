@@ -22,18 +22,18 @@
 import base64
 import hashlib
 import json
+import macsesh  # dependency, needs to be installed
 import os.path
 import plistlib
 import re
-import subprocess
-from datetime import datetime, timedelta
-from urllib.parse import urlparse
-
-import macsesh  # dependency, needs to be installed
 import requests  # dependency, needs to be installed
+import subprocess
 from autopkglib import Processor, ProcessorError, get_pref
-from autopkglib.munkirepolibs.AutoPkgLib import AutoPkgLib
+from datetime import datetime, timedelta
+
+# from autopkglib.munkirepolibs.AutoPkgLib import AutoPkgLib
 from requests_toolbelt import StreamingIterator  # dependency from requests
+from urllib.parse import urlparse
 
 __all__ = ["WorkSpaceOneImporter"]
 
@@ -196,7 +196,7 @@ class WorkSpaceOneImporter(Processor):
             "description": 'If "false", in case no version was imported into Munki in this session, find latest version'
             " in munki_repo to import into WS1.\n\n"
             "Default: true, meaning only newly imported versions are imported to WS1, this is default to preserve "
-                           "previous behaviour.",
+            "previous behaviour.",
         },
         "ws1_smart_group_name": {
             "required": False,
@@ -1073,7 +1073,7 @@ class WorkSpaceOneImporter(Processor):
                 # if there's an existing assignment rule, use its effective_date as base deployment date, else
                 # use today's date
                 if result["assignments"][0]["distribution"]["effective_date"]:
-                    # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
+                    # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the
                     # time may have a float as seconds or an int
                     # no timezone is returned in UEM v.22.12 but suspect that might change
                     # datetime.fromisoformat() can't handle the above in current Python v3.10
@@ -1462,7 +1462,10 @@ class WorkSpaceOneImporter(Processor):
                 )
 
         self.output("Sorting app version list by date", verbose_level=4)
+
+        # Unexpected type(s):((x: Any) -> Any)Possible type(s):(None)(Callable[Any, SupportsDunderLT | SupportsDunderGT])
         app_list.sort(key=lambda x: x["date"])
+
         self.output(app_list, verbose_level=4)
         self.output("Updating prune status", verbose_level=4)
         for index, row in enumerate(app_list):
