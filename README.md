@@ -1,8 +1,14 @@
-# WorkSpaceOneImporter
+### WorkSpaceOneImporter
+___
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 WorkSpaceOneImporter is an AutoPkg Processor that can automatically import packages into VMWare WorkSpace ONE, as well as assign them to one or multiple smart groups, and set certain deployment options such as Push Mode.
 Being adapted from [jprichards/AirWatchImporter](https://github.com/jprichards/AirWatchImporter).
 
-## WORKING
+---
+### Roadmap
+
 Project is working stable in production. You can reach me as @mart in MacAdmins Slack. Issues and PRs welcome in GitHub.
 
 Done:
@@ -25,14 +31,16 @@ Done:
  * added production ready example recipes (moved from my autopkg-recipe repo)
  * added support for re-using OAuth tokens
  * new feature to prune old software versions from WS1 UEM
+ * cleanup code, confirm to Autopkg codestyle standards, added pre-commit
 
 ToDo:
- * cleanup code, confirm to Autopkg standards
  * maybe move to Autopkg repo recipe subfolder
+ * cleanup code, consistent use of f-strings
  * document usage in wiki
  * maybe establish separate demo repo
  * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
 
+---
 
 ## Dependencies
 
@@ -53,6 +61,7 @@ sudo -H /Library/AutoPkg/Python3/Python.framework/Versions/Current/bin/pip3 inst
 sudo -H /Library/AutoPkg/Python3/Python.framework/Versions/Current/bin/pip3 install requests_toolbelt
 ```
 
+---
 ## AutoPkg Shared Processor
 
 As of AutoPkg 0.4.0 you can use this processor as a shared processor.
@@ -69,6 +78,7 @@ Then use this as the processor in your recipes:
 com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter
 ```
 
+---
 ## Sensitive input variables
 The processor currently requires sensitive keys like password and API token to be populated in your recipe (override) Input variables, or by command line keys.
 
@@ -79,7 +89,7 @@ Instead of keeping secrets in plain text recipe override files, they can be adde
 You can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script). I'm in the process of setting this up and adapting from [the example provided by Gusto](https://engineering.gusto.com/running-autopkg-in-github-actions/). I intend to share the setup when I've got it stable enough for production.
 
 
-
+---
 ## Available Input Variables
 
 ### All start with "ws1_" now
@@ -245,3 +255,18 @@ Again yaml format is easier to deal with, especially if you leave only the input
 ````
 autopkg run -vvvv --key force_munkiimport=true --key force_import=false SuspiciousPackage.ws1.recipe
 ````
+
+---
+### code-style and pre-commit hooks
+Uses the same environment as Autopkg.
+
+Install the pre-commit hook like so:
+````
+/Library/AutoPkg/Python3/Python.framework/Versions/Current/bin/pre-commit install --install-hooks
+````
+
+isort needed `profile = "black"`  in [[isort.cfg]] and `args: ["--profile", "black"]` in [[.pre-commit-config.yaml]] to avoid conflict with black
+
+line-length was set at 120 in [[isort.cfg] and in [[.flake8]] just because it was the default I got used to in PyCharm
+
+Found a useful hint to integrate flake8 in PyCharm as external tool [here](https://gist.github.com/tossmilestone/23139d870841a3d5cba2aea28da1a895).
