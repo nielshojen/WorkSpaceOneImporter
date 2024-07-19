@@ -239,6 +239,7 @@ https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/Suspicio
 </plist>
 ```
 
+---
 ### yaml format preferred
 More recipes for this processor are available in [my recipe repo](ws1) and those are in yaml format as that is easier to use.
 ___
