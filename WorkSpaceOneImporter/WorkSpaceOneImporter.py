@@ -1416,7 +1416,7 @@ class WorkSpaceOneImporter(Processor):
                         f"- message: {result['message']}."
                     )
                 try:
-                    """ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the time
+                    """ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the
                     time may have a float as seconds or an int
                     no timezone is returned in UEM v.22.12 but suspect that might change
                     datetime.fromisoformat() can't handle the above in current Python v3.10
@@ -1461,6 +1461,8 @@ class WorkSpaceOneImporter(Processor):
 
         self.output("Sorting app version list by date", verbose_level=4)
 
+        # PyCharm code inspection complains about this, not sure if it is
+        # see https://stackoverflow.com/q/78764269/4326287
         # Unexpected type(s):((x: Any) -> Any)Possible type(s):(None)(Callable[Any, SupportsDunderLT | SupportsDunderGT]) # noqa: E501
         app_list.sort(key=lambda x: x["date"])
 
@@ -1551,11 +1553,12 @@ class WorkSpaceOneImporter(Processor):
             "t",
         )
 
-        if "pkginfo_path" in self.env["munki_importer_summary_result"]["data"]:
+        # key munki_importer_summary_result might not exist, nor data or pkginfo_path, try-catch is simplest
+        try:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"][
                 "pkginfo_path"
             ]
-        else:
+        except (KeyError, TypeError):
             pkginfo_path = None
 
         if pkginfo_path:
