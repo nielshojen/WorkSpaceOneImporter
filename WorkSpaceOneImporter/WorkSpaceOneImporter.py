@@ -59,7 +59,7 @@ def getsha256hash(filename):
             hasher.update(chunk)
         fileref.close()
         return hasher.hexdigest()
-    except (OSError, IOError):
+    except OSError:
         return "HASH_ERROR"
 
 
@@ -152,8 +152,8 @@ class WorkSpaceOneImporter(Processor):
         },
         "ws1_oauth_client_id": {
             "required": False,
-            "description": "Client ID for Oauth 2.0 authorization - a more secure and recommended replacement for Basic "
-            "authentication.",
+            "description": "Client ID for Oauth 2.0 authorization - a more secure and recommended replacement for Basic"
+            " authentication.",
         },
         "ws1_oauth_client_secret": {
             "required": False,
@@ -224,7 +224,8 @@ class WorkSpaceOneImporter(Processor):
         "ws1_app_versions_to_keep_default": {
             "required": False,
             "default": "5",
-            "description": "The default number of versions of an app to keep in WS1. Default:5. See also app_versions_prune.\n\n"
+            "description": "The default number of versions of an app to keep in WS1. Default:5."
+            "See also app_versions_prune.\n\n"
             "NB - please make sure to provide the input variable as type string in the recipe override, using "
             " an integer will result in a hard to trace runtime error 'expected string or bytes-like object'",
         },
@@ -264,7 +265,7 @@ class WorkSpaceOneImporter(Processor):
     }
     description = __doc__
 
-    ### GIT FUNCTIONS
+    # GIT FUNCTIONS
     def git_run(self, repo, cmd):
         """shell out a command to git in the Munki repo"""
         cmd = ["git"] + cmd
@@ -427,8 +428,8 @@ class WorkSpaceOneImporter(Processor):
                 oauth_token_renew_timestamp = datetime.fromisoformat(
                     oauth_token_renew_timestamp_str
                 )
-            except ValueError as e:
-                raise ProcessorError(f"Could not read timestamp - bailing out!")
+            except ValueError:
+                raise ProcessorError("Could not read timestamp - bailing out!")
             self.output(
                 f"Retrieved timestamp to renew existing token: {oauth_token_renew_timestamp.isoformat()}",
                 verbose_level=4,
@@ -601,9 +602,9 @@ class WorkSpaceOneImporter(Processor):
                     sg_uuid = sg["SmartGroupUuid"]
                     self.output(f"Smart Group UUID: {sg_uuid}", verbose_level=2)
                     break
-        except:
+        except (ValueError, TypeError):
             raise ProcessorError(
-                f"failed to parse results from Smart Group search API call"
+                "failed to parse results from Smart Group search API call"
             )
         return sg_id, sg_uuid
 
@@ -650,7 +651,7 @@ class WorkSpaceOneImporter(Processor):
                 pkg_info = plistlib.load(fp)
         except IOError:
             raise ProcessorError(f"Could not read pkg_info file [{pkg_info_path}]")
-        except:
+        except Exception:
             raise ProcessorError(
                 f"Failed to parse pkg_info file [{pkg_info_path}] somehow."
             )
@@ -701,7 +702,7 @@ class WorkSpaceOneImporter(Processor):
                 f"{condensed_app_name}",
                 headers=headers,
             )
-        except:
+        except Exception:
             raise ProcessorError(
                 "Something went wrong handling pre-existing app version on server"
             )
@@ -785,14 +786,12 @@ class WorkSpaceOneImporter(Processor):
                         )
                         try:
                             r = requests.delete(
-                                "{}/api/mam/apps/internal/{}".format(
-                                    api_base_url, ws1_app_id
-                                ),
+                                f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}",
                                 headers=headers,
                             )
-                        except:
+                        except requests.exceptions.RequestException as err:
                             raise ProcessorError(
-                                "ws1_force_import - delete of pre-existing app failed, aborting."
+                                f"ws1_force_import - delete of pre-existing app failed, error: {err}, aborting."
                             )
                         if not r.status_code == 202 and not r.status_code == 204:
                             result = r.json()
@@ -818,14 +817,12 @@ class WorkSpaceOneImporter(Processor):
                                     verbose_level=2,
                                 )
                                 r = requests.delete(
-                                    "{}/api/mam/apps/internal/{}".format(
-                                        api_base_url, ws1_app_id
-                                    ),
+                                    f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}",
                                     headers=headers,
                                 )
-                        except:
+                        except requests.exceptions.RequestException as err:
                             raise ProcessorError(
-                                "ws1_force_import - delete of pre-existing app failed, aborting."
+                                f"ws1_force_import - delete of pre-existing app failed, error: {err} aborting."
                             )
                         self.output(
                             "Pre-existing App [ID: {}] now successfully deleted".format(
@@ -841,8 +838,8 @@ class WorkSpaceOneImporter(Processor):
                 )
             )
 
-        ## proceed with upload
-        if not pkg_path == None:
+        # proceed with upload
+        if pkg_path is not None:
             self.output("Uploading pkg...")
             # upload pkg, dmg, mpkg file (application/json)
             headers["Content-Type"] = "application/json"
@@ -866,7 +863,7 @@ class WorkSpaceOneImporter(Processor):
                 "WorkSpaceOneImporter: Did not receive a pkg_path from munkiimporter."
             )
 
-        if not pkg_info_path == None:
+        if pkg_info_path is not None:
             self.output("Uploading pkg_info...")
             # upload pkginfo plist (application/json)
             headers["Content-Type"] = "application/json"
@@ -890,7 +887,7 @@ class WorkSpaceOneImporter(Processor):
                 "WorkSpaceOneImporter: Did not receive a pkg_info_path from munkiimporter."
             )
 
-        if not icon_path == None:
+        if icon_path is not None:
             self.output("Uploading icon...")
             # upload icon file (application/json)
             headers["Content-Type"] = "application/json"
@@ -912,9 +909,8 @@ class WorkSpaceOneImporter(Processor):
         else:
             icon_id = ""
 
-        ## Create a dict with the app details to be passed to WS1
-        ## to create the App object
-        ## include applicationIconId only if we have one
+        # Create a dict with the app details to be passed to WS1 to create the App object
+        # include applicationIconId only if we have one
         if icon_id:
 
             app_details = {
@@ -930,7 +926,7 @@ class WorkSpaceOneImporter(Processor):
                 "version": str(app_version),
             }
 
-        ## Make the API call to create the App object
+        # Make the API call to create the App object
         self.output("Creating App Object in WorkSpaceOne...")
         self.output("app_details: {}".format(app_details), verbose_level=3)
         r = requests.post(
@@ -945,7 +941,7 @@ class WorkSpaceOneImporter(Processor):
                 "WorkSpaceOneImporter: Unable to create the App Object."
             )
 
-        ## Now get the new App ID from the server
+        # Now get the new App ID from the server
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
         self.output(
             "App create response headers: {}".format(r.headers), verbose_level=4
@@ -1004,8 +1000,10 @@ class WorkSpaceOneImporter(Processor):
                 f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers
             )
             result = r.json()
-        except:
-            raise ProcessorError("API call to get internal app details failed")
+        except requests.exceptions.RequestException as err:
+            raise ProcessorError(
+                f"API call to get internal app details failed, error: {err}"
+            )
         if not r.status_code == 200:
             raise ProcessorError(
                 f"WorkSpaceOneImporter: Unable to get internal app details - message: {result['message']}."
@@ -1027,9 +1025,9 @@ class WorkSpaceOneImporter(Processor):
                     headers=headers_v2,
                 )
                 result = r.json()
-            except:
+            except requests.exceptions.RequestException as err:
                 raise ProcessorError(
-                    "API call to get existing app assignment rules failed"
+                    f"API call to get existing app assignment rules failed, error: {err}"
                 )
             if not r.status_code == 200:
                 raise ProcessorError(
@@ -1038,8 +1036,7 @@ class WorkSpaceOneImporter(Processor):
                 )
             if not result["assignments"] and not self.env.get("ws1_imported_new"):
                 self.output(
-                    f"No existing Assignment Rules found, operator must have removed those "
-                    "- skipping.",
+                    "No existing Assignment Rules found, operator must have removed those - skipping.",
                     verbose_level=1,
                 )
                 return
@@ -1052,20 +1049,19 @@ class WorkSpaceOneImporter(Processor):
                     if assignment["distribution"]["description"]:
                         if "#AUTOPKG_DONE" in assignment["distribution"]["description"]:
                             self.output(
-                                f"Assignment Rules are already marked as complete.",
+                                "Assignment Rules are already marked as complete.",
                                 verbose_level=1,
                             )
                             return
                         if "#AUTOPKG" not in assignment["distribution"]["description"]:
                             self.output(
-                                f"Assignment Rule description is NOT tagged as made by Autopkg - skipping.",
+                                "Assignment Rule description is NOT tagged as made by Autopkg - skipping.",
                                 verbose_level=1,
                             )
                             return
                     else:
                         self.output(
-                            f"Assignment Rule description not present, so NOT tagged as made by Autopkg "
-                            "- skipping.",
+                            "Assignment Rule description not present, so NOT tagged as made by Autopkg - skipping.",
                             verbose_level=1,
                         )
                         return
@@ -1209,8 +1205,10 @@ class WorkSpaceOneImporter(Processor):
                         f"App assignments data to send as json: {payload}",
                         verbose_level=2,
                     )
-                except:
-                    raise ProcessorError("Failed parsing app assignments as json")
+                except ValueError as err:
+                    raise ProcessorError(
+                        f"Failed parsing app assignments as json, error: {err}"
+                    )
 
                 try:
                     # Make the WS1 APIv2 call to assign the App
@@ -1219,9 +1217,9 @@ class WorkSpaceOneImporter(Processor):
                         headers=headers_v2,
                         data=payload,
                     )
-                except:
+                except requests.exceptions.RequestException as err:
                     raise ProcessorError(
-                        f"Something went wrong setting assignment-rules for app [{app_name}] version [{app_version}]"
+                        f"Failed setting assignment-rules for app [{app_name}] version [{app_version}], error: {err}"
                     )
                 if not r.status_code == 202:
                     result = r.json()
@@ -1301,14 +1299,14 @@ class WorkSpaceOneImporter(Processor):
     ):
         """Call WS1 API V1 assignments for to smart group(s) with the deployment settings
         MAM (Mobile Application Management) REST API V1  - POST /apps/internal/{applicationId}/assignments
-        https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync"""
+        https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync"""  # noqa: E501
         try:
             payload = json.dumps(app_assignment)
             self.output(
                 f"App assignments data to send: {app_assignment}", verbose_level=2
             )
-        except:
-            raise ProcessorError(f"failed to parse App assignment as json")
+        except ValueError:
+            raise ProcessorError("failed to parse App assignment as json")
 
         try:
             # Make the WS1 API call to assign the App
@@ -1317,7 +1315,7 @@ class WorkSpaceOneImporter(Processor):
                 headers=headers,
                 data=payload,
             )
-        except:
+        except requests.exceptions.RequestException:
             raise ProcessorError(
                 f"Something went wrong assigning the app [{self.env['NAME']}] to group [{smart_group}]"
             )
@@ -1408,7 +1406,7 @@ class WorkSpaceOneImporter(Processor):
                         headers=headers_v2,
                     )
                     result = r.json()
-                except:
+                except requests.exceptions.RequestException:
                     raise ProcessorError(
                         "API call to get existing app assignment rules failed"
                     )
@@ -1463,7 +1461,7 @@ class WorkSpaceOneImporter(Processor):
 
         self.output("Sorting app version list by date", verbose_level=4)
 
-        # Unexpected type(s):((x: Any) -> Any)Possible type(s):(None)(Callable[Any, SupportsDunderLT | SupportsDunderGT])
+        # Unexpected type(s):((x: Any) -> Any)Possible type(s):(None)(Callable[Any, SupportsDunderLT | SupportsDunderGT]) # noqa: E501
         app_list.sort(key=lambda x: x["date"])
 
         self.output(app_list, verbose_level=4)
@@ -1488,9 +1486,9 @@ class WorkSpaceOneImporter(Processor):
                             f"{api_base_url}/api/mam/apps/internal/{row['App_ID']}",
                             headers=headers,
                         )
-                    except:
+                    except requests.exceptions.RequestException as err:
                         raise ProcessorError(
-                            "ws1_app_versions_prune - delete of pre-existing app failed, aborting."
+                            f"ws1_app_versions_prune - delete of pre-existing app failed, error: {err}, aborting."
                         )
                     if not r.status_code == 202 and not r.status_code == 204:
                         self.output(
@@ -1553,11 +1551,11 @@ class WorkSpaceOneImporter(Processor):
             "t",
         )
 
-        try:
+        if "pkginfo_path" in self.env["munki_importer_summary_result"]["data"]:
             pkginfo_path = self.env["munki_importer_summary_result"]["data"][
                 "pkginfo_path"
             ]
-        except:
+        else:
             pkginfo_path = None
 
         if pkginfo_path:
@@ -1645,7 +1643,7 @@ class WorkSpaceOneImporter(Processor):
                     verbose_level=2,
                 )
                 found_match = False
-                for (path, dummy_dirs, files) in os.walk(installer_info_dir):
+                for (path, _subdirs, files) in os.walk(installer_info_dir):
                     for name in files:
                         if name == ".DS_Store":
                             continue
@@ -1659,9 +1657,9 @@ class WorkSpaceOneImporter(Processor):
                                 pkg_info = plistlib.load(fp)
                         except IOError:
                             raise ProcessorError(f"Could not read pkg_info file [{pi}]")
-                        except:
+                        except Exception as err:
                             raise ProcessorError(
-                                f"Could not parse pkg_info file [{pi}]"
+                                f"Could not parse pkg_info file [{pi}] error: {err}"
                             )
                         if (
                             "installer_item_hash" in pkg_info
@@ -1701,7 +1699,7 @@ class WorkSpaceOneImporter(Processor):
             raise ProcessorError(
                 "Could not read pkg_info file [{}] to check icon_name ".format(pi)
             )
-        except:
+        except Exception:
             raise ProcessorError(
                 "Failed to parse pkg_info file [{}] somehow.".format(pi)
             )
@@ -1728,5 +1726,6 @@ class WorkSpaceOneImporter(Processor):
 
 
 if __name__ == "__main__":
-    PROCESSOR = MakeCatalogsProcessor()
+    # PROCESSOR = MakeCatalogsProcessor()
+    PROCESSOR = WorkSpaceOneImporter()
     PROCESSOR.execute_shell()
