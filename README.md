@@ -266,9 +266,9 @@ Install the pre-commit hook like so:
 /Library/AutoPkg/Python3/Python.framework/Versions/Current/bin/pre-commit install --install-hooks
 ````
 
-isort needed `profile = "black"`  in [isort.cfg](.isort.cfg) and `args: ["--profile", "black"]` in [.pre-commit-config.yaml](.pre-commit-config.yaml) to avoid conflict with black
+isort needed `profile = "black"`  in [.isort.cfg](.isort.cfg) and `args: ["--profile", "black"]` in [.pre-commit-config.yaml](.pre-commit-config.yaml) to avoid conflict with black
 
-line-length was set at 120 in [isort.cfg](isort) and in [.flake8](.flake8) just because it was the default I got used to in PyCharm
+line-length was set at 120 in [.isort.cfg](.isort.cfg) and in [.flake8](.flake8) just because it was the default I got used to in PyCharm
 
 Found a useful hint to integrate flake8 in PyCharm as external tool [here](https://gist.github.com/tossmilestone/23139d870841a3d5cba2aea28da1a895).
 
