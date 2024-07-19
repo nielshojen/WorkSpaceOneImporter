@@ -22,18 +22,19 @@
 import base64
 import hashlib
 import json
-import macsesh  # dependency, needs to be installed
 import os.path
 import plistlib
 import re
-import requests  # dependency, needs to be installed
 import subprocess
-from autopkglib import Processor, ProcessorError, get_pref
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
+
+import macsesh  # dependency, needs to be installed
+import requests  # dependency, needs to be installed
+from autopkglib import Processor, ProcessorError, get_pref
 
 # from autopkglib.munkirepolibs.AutoPkgLib import AutoPkgLib
 from requests_toolbelt import StreamingIterator  # dependency from requests
-from urllib.parse import urlparse
 
 __all__ = ["WorkSpaceOneImporter"]
 

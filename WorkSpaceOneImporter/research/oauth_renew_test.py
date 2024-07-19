@@ -7,20 +7,27 @@ Found out the token validity period (expiry_time) is not documented in API from 
 with the new token.
 """
 
-import requests
-import subprocess
 import os
-from datetime import datetime, timedelta
+import subprocess
 import time
+from datetime import datetime, timedelta
+
+import requests
+
 
 def get_timestamp():
-    timestamp = (datetime.now().astimezone() + timedelta(milliseconds=500)).replace(microsecond=0)
+    timestamp = (datetime.now().astimezone() + timedelta(milliseconds=500)).replace(
+        microsecond=0
+    )
     return timestamp
+
 
 """
 Fetch the secrets (passwords) from the dedicated macOS keychain used in the launcher tool used for development of
 Autopkg processor
 """
+
+
 def get_password_from_keychain(keychain, service, account):
     command = f"/usr/bin/security find-generic-password -w -s '{service}' -a '{account}' '{keychain}'"
     result = subprocess.run(command, shell=True, capture_output=True)
@@ -50,61 +57,73 @@ def pretty_print_POST(req):
     """
 
     print(
-        '-----------PREPPED REQUEST START-----------\n'
-        f'Method: {req.method}\n' +
-        f'url: {req.url}\n' +
-        '-----------PREPPED REQUEST HEADERS-----------\n' +
-        ''.join(f'{k}: {v}\n' for k, v in req.headers.items()) +
-        '-----------PREPPED REQUEST BODY-----------\n' +
-        f'{req.body}\n' +
-        '-----------PREPPED REQUEST END-----------\n'
+        "-----------PREPPED REQUEST START-----------\n"
+        f"Method: {req.method}\n"
+        + f"url: {req.url}\n"
+        + "-----------PREPPED REQUEST HEADERS-----------\n"
+        + "".join(f"{k}: {v}\n" for k, v in req.headers.items())
+        + "-----------PREPPED REQUEST BODY-----------\n"
+        + f"{req.body}\n"
+        + "-----------PREPPED REQUEST END-----------\n"
     )
 
 
 def main():
-    """ Add variables from environment - inspired by
-        https://github.com/autopkg/autopkg/blob/master/Code/autopkg#L2140-L2147 """
+    """Add variables from environment - inspired by
+    https://github.com/autopkg/autopkg/blob/master/Code/autopkg#L2140-L2147"""
 
     if "AUTOPKG_ws1_oauth_token_url" in os.environ:
-        ws1_oauth_token_url = os.environ['AUTOPKG_ws1_oauth_token_url']
-        print(f'Found env var AUTOPKG_ws1_oauth_token_url: {ws1_oauth_token_url}')
+        ws1_oauth_token_url = os.environ["AUTOPKG_ws1_oauth_token_url"]
+        print(f"Found env var AUTOPKG_ws1_oauth_token_url: {ws1_oauth_token_url}")
     else:
-        print('Did not find environment variable AUTOPKG_ws1_oauth_token_url - aborting!')
+        print(
+            "Did not find environment variable AUTOPKG_ws1_oauth_token_url - aborting!"
+        )
         exit(code=1)
 
     if "AUTOPKG_ws1_oauth_client_id" in os.environ:
-        ws1_oauth_client_id = os.environ['AUTOPKG_ws1_oauth_client_id']
-        print(f'Found env var AUTOPKG_ws1_oauth_client_id: {ws1_oauth_client_id}')
+        ws1_oauth_client_id = os.environ["AUTOPKG_ws1_oauth_client_id"]
+        print(f"Found env var AUTOPKG_ws1_oauth_client_id: {ws1_oauth_client_id}")
     else:
-        print('Did not find environment variable AUTOPKG_ws1_oauth_client_id - aborting!')
+        print(
+            "Did not find environment variable AUTOPKG_ws1_oauth_client_id - aborting!"
+        )
         exit(code=1)
 
     if "AUTOPKG_ws1_oauth_client_secret" in os.environ:
-        ws1_oauth_client_secret = os.environ['AUTOPKG_ws1_oauth_client_secret']
-        print(f'Found env var AUTOPKG_ws1_oauth_client_secret: {ws1_oauth_client_secret}')
+        ws1_oauth_client_secret = os.environ["AUTOPKG_ws1_oauth_client_secret"]
+        print(
+            f"Found env var AUTOPKG_ws1_oauth_client_secret: {ws1_oauth_client_secret}"
+        )
     else:
-        print('Did not find environment variable AUTOPKG_ws1_oauth_client_secret - aborting!')
+        print(
+            "Did not find environment variable AUTOPKG_ws1_oauth_client_secret - aborting!"
+        )
         exit(code=1)
 
     # oauth2 token is to be renewed when a specified percentage of the expiry time is left
     if "AUTOPKG_ws1_oauth_renew_margin" in os.environ:
         try:
-            ws1_oauth_renew_margin = float(os.environ['AUTOPKG_ws1_oauth_renew_margin'])
-            print(f'Found env var AUTOPKG_ws1_oauth_renew_margin: {ws1_oauth_renew_margin}')
+            ws1_oauth_renew_margin = float(os.environ["AUTOPKG_ws1_oauth_renew_margin"])
+            print(
+                f"Found env var AUTOPKG_ws1_oauth_renew_margin: {ws1_oauth_renew_margin}"
+            )
         except ValueError:
-            print('Found env var AUTOPKG_ws1_oauth_renew_margin is NOT a float: '
-                  f"[{os.environ['AUTOPKG_ws1_oauth_renew_margin']}] - aborting!")
+            print(
+                "Found env var AUTOPKG_ws1_oauth_renew_margin is NOT a float: "
+                f"[{os.environ['AUTOPKG_ws1_oauth_renew_margin']}] - aborting!"
+            )
             exit(code=1)
     else:
         ws1_oauth_renew_margin = 10
-        print(f'Using default for ws1_oauth_renew_margin: {ws1_oauth_renew_margin}')
+        print(f"Using default for ws1_oauth_renew_margin: {ws1_oauth_renew_margin}")
 
     if "AUTOPKG_ws1_oauth_keychain" in os.environ:
-        ws1_oauth_keychain = os.environ['AUTOPKG_ws1_oauth_keychain']
-        print(f'Found env var AUTOPKG_ws1_oauth_keychain: {ws1_oauth_keychain}')
+        ws1_oauth_keychain = os.environ["AUTOPKG_ws1_oauth_keychain"]
+        print(f"Found env var AUTOPKG_ws1_oauth_keychain: {ws1_oauth_keychain}")
     else:
         ws1_oauth_keychain = "Autopkg_WS1_OAuth"
-        print(f'Using default for ws1_oauth_keychain: {ws1_oauth_keychain}')
+        print(f"Using default for ws1_oauth_keychain: {ws1_oauth_keychain}")
 
     # keychain = "login.keychain"
     service = "Autopkg_WS1_OAUTH"
@@ -130,7 +149,7 @@ def main():
         command = "/usr/bin/security list-keychains -d user"
         result = subprocess.run(command, shell=True, capture_output=True)
         searchlist = result.stdout.decode().replace("\n", "")
-        searchlist = searchlist.replace('"', '')
+        searchlist = searchlist.replace('"', "")
         command = f"/usr/bin/security list-keychains -d user -s {ws1_oauth_keychain} {searchlist}"
         subprocess.run(command, shell=True, capture_output=True)
 
@@ -138,23 +157,34 @@ def main():
         command = f"/usr/bin/security set-keychain-settings {ws1_oauth_keychain}"
         subprocess.run(command, shell=True, capture_output=True)
 
-
-    oauth_token = get_password_from_keychain(ws1_oauth_keychain, service,"oauth_token")
+    oauth_token = get_password_from_keychain(ws1_oauth_keychain, service, "oauth_token")
     if oauth_token is not None:
         print(f"Retrieved existing token from keychain: {oauth_token}")
-    oauth_token_renew_timestamp_str = get_password_from_keychain(ws1_oauth_keychain, service,
-                                                                 "oauth_token_renew_timestamp")
+    oauth_token_renew_timestamp_str = get_password_from_keychain(
+        ws1_oauth_keychain, service, "oauth_token_renew_timestamp"
+    )
     if oauth_token_renew_timestamp_str is not None:
-        oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
-        print(f"Retrieved timestamp to renew existing token from keychain: {oauth_token_renew_timestamp.isoformat()}")
+        oauth_token_renew_timestamp = datetime.fromisoformat(
+            oauth_token_renew_timestamp_str
+        )
+        print(
+            f"Retrieved timestamp to renew existing token from keychain: {oauth_token_renew_timestamp.isoformat()}"
+        )
     else:
         oauth_token_renew_timestamp = None
     while datetime.now().astimezone() < time_stop:
         timestamp = get_timestamp()
-        if oauth_token is None or oauth_token_renew_timestamp is None or timestamp >= oauth_token_renew_timestamp:
+        if (
+            oauth_token is None
+            or oauth_token_renew_timestamp is None
+            or timestamp >= oauth_token_renew_timestamp
+        ):
             # the Oauth renewal API body payload
-            payload = {'grant_type': 'client_credentials', 'client_id': ws1_oauth_client_id,
-                       'client_secret': ws1_oauth_client_secret}
+            payload = {
+                "grant_type": "client_credentials",
+                "client_id": ws1_oauth_client_id,
+                "client_secret": ws1_oauth_client_secret,
+            }
 
             """
             response = requests.request("POST", url, data=payload)
@@ -167,7 +197,8 @@ def main():
             print("Calling API to renew OAuth token.")
             s = requests.Session()
             """
-            # found out x-www-form-urlencoded is the default, tried making it explicit for clarity, but that causes a type-error
+            found out x-www-form-urlencoded is the default, tried making it explicit for clarity, but that causes a
+            type-error.
             prepared_req.headers = {"Content-Type": "application/x-www-form-urlencoded"}
             """
             response = s.send(prepared_req)
@@ -178,21 +209,33 @@ def main():
             if response.status_code == 200:
                 # get timestamp, round to nearest whole second
                 oauth_token_issued_timestamp = get_timestamp()
-                print(f"Oauth2 token issued at: {oauth_token_issued_timestamp.isoformat()}")
+                print(
+                    f"Oauth2 token issued at: {oauth_token_issued_timestamp.isoformat()}"
+                )
 
                 result = response.json()
-                oauth_token = result['access_token']
+                oauth_token = result["access_token"]
                 print(f"Access token: {oauth_token}")
                 print(f"Access token length: {len(result['access_token'])}")
                 print(f"Access token validity is {result['expires_in']} seconds")
 
-                renew_threshold = round(result['expires_in'] * (100 - ws1_oauth_renew_margin) / 100)
-                print(f"Access token threshold for renewal set to {renew_threshold} seconds")
-                oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(seconds=renew_threshold)
-                print(f"Oauth2 token should be renewed after: {oauth_token_renew_timestamp.isoformat()}")
+                renew_threshold = round(
+                    result["expires_in"] * (100 - ws1_oauth_renew_margin) / 100
+                )
+                print(
+                    f"Access token threshold for renewal set to {renew_threshold} seconds"
+                )
+                oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(
+                    seconds=renew_threshold
+                )
+                print(
+                    f"Oauth2 token should be renewed after: {oauth_token_renew_timestamp.isoformat()}"
+                )
 
                 # recalculate stop time until a bit after the actual token validity period from the API response
-                test_runtime = round(result['expires_in'] * (100 + ws1_oauth_renew_margin) / 100)
+                test_runtime = round(
+                    result["expires_in"] * (100 + ws1_oauth_renew_margin) / 100
+                )
                 time_stop = timestamp_start + timedelta(seconds=test_runtime)
                 print(f"Test stop scheduled for: {time_stop.isoformat()}")
 
@@ -201,12 +244,17 @@ def main():
                 print(f"Error: {response.text}")
                 exit(code=1)
 
-        print(f"ToDo: test calling a program that can use the Oauth token")
+        print("ToDo: test calling a program that can use the Oauth token")
 
-        result = set_password_in_keychain(ws1_oauth_keychain, service,"oauth_token", oauth_token)
-        result = set_password_in_keychain(ws1_oauth_keychain, service,
-                                          "oauth_token_renew_timestamp",
-                                          oauth_token_renew_timestamp.isoformat())
+        result = set_password_in_keychain(
+            ws1_oauth_keychain, service, "oauth_token", oauth_token
+        )
+        result = set_password_in_keychain(
+            ws1_oauth_keychain,
+            service,
+            "oauth_token_renew_timestamp",
+            oauth_token_renew_timestamp.isoformat(),
+        )
 
         timestamp = get_timestamp()
         print(f"Time: {timestamp.isoformat()}\tSleeping 5 minutes...")
