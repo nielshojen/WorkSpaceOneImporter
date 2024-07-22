@@ -495,9 +495,9 @@ class WorkSpaceOneImporter(Processor):
                     "OAuth token could not be saved in dedicated keychain",
                     verbose_level=2,
                 )
-            self.env[
-                "ws1_oauth_renew_timestamp"
-            ] = oauth_token_renew_timestamp.isoformat()
+            self.env["ws1_oauth_renew_timestamp"] = (
+                oauth_token_renew_timestamp.isoformat()
+            )
             result = set_password_in_keychain(
                 oauth_keychain,
                 keychain_service,
@@ -1269,9 +1269,9 @@ class WorkSpaceOneImporter(Processor):
                     ws1_importer_summary_result["data"][
                         "new_assignment_rules"
                     ] = new_assignment_rules
-                    self.env[
-                        "ws1_importer_summary_result"
-                    ] = ws1_importer_summary_result
+                    self.env["ws1_importer_summary_result"] = (
+                        ws1_importer_summary_result
+                    )
 
     def ws1_app_assignment_conf(
         self, api_base_url, assignment_pushmode, assignment_group, headers
@@ -1300,7 +1300,8 @@ class WorkSpaceOneImporter(Processor):
     ):
         """Call WS1 API V1 assignments for to smart group(s) with the deployment settings
         MAM (Mobile Application Management) REST API V1  - POST /apps/internal/{applicationId}/assignments
-        https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync"""  # noqa: E501
+        https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync
+        """  # noqa: E501
         try:
             payload = json.dumps(app_assignment)
             self.output(
@@ -1335,7 +1336,6 @@ class WorkSpaceOneImporter(Processor):
         )
 
     def ws1_app_versions_prune(self, api_base_url, headers, app_name, search_results):
-
         """
         get ws1_app_versions_to_keep_default, defaults to 5
         """
@@ -1421,7 +1421,8 @@ class WorkSpaceOneImporter(Processor):
                     time may have a float as seconds or an int
                     no timezone is returned in UEM v.22.12 but suspect that might change
                     datetime.fromisoformat() can't handle the above in current Python v3.10
-                    alternative would be to install python-dateutil but that would introduce a new dependency"""
+                    alternative would be to install python-dateutil but that would introduce a new dependency
+                    """
                     e_date = "".join(
                         result["assignments"][0]["distribution"][
                             "effective_date"
@@ -1647,7 +1648,7 @@ class WorkSpaceOneImporter(Processor):
                     verbose_level=2,
                 )
                 found_match = False
-                for (path, _subdirs, files) in os.walk(installer_info_dir):
+                for path, _subdirs, files in os.walk(installer_info_dir):
                     for name in files:
                         if name == ".DS_Store":
                             continue
