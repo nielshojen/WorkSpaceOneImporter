@@ -1,10 +1,13 @@
-### WorkSpaceOneImporter
+### WorkSpaceOneImporter processor and recipes
 ___
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-WorkSpaceOneImporter is an AutoPkg Processor that can automatically import packages into VMWare WorkSpace ONE, as well as assign them to one or multiple smart groups, and set certain deployment options such as Push Mode.
-Being adapted from [jprichards/AirWatchImporter](https://github.com/jprichards/AirWatchImporter).
+A set of recipes and a custom processor for use with Omnissa Workspace ONE UEM. Formerly known as a VMware business and product. Going back further, Airwatch was the product name for the MDM product.
+
+WorkSpaceOneImporter is a custom AutoPkg Processor for automating import of Mac product installer packages into Workspace ONE UEM. It can also assign them to one or multiple smart groups, and set certain deployment options such as Push Mode. It has support for automated staging to assignment groups.  Automated pruning of old versions can also be enabled and configured in detail if needed.
+
+Adapted from [jprichards/AirWatchImporter](https://github.com/jprichards/AirWatchImporter).
 
 ---
 ### Roadmap
@@ -34,9 +37,9 @@ Done:
  * cleanup code, confirm to Autopkg codestyle standards, added pre-commit
 
 ToDo:
- * maybe move to Autopkg repo recipe subfolder
+ * add to Autopkg repo recipe subfolder
  * cleanup code, consistent use of f-strings
- * document usage in wiki
+ * expand usage documentation in wiki
  * maybe establish separate demo repo
  * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
 
@@ -86,14 +89,14 @@ Instead of keeping secrets in plain text recipe override files, they can be adde
 
 
 ### best with CI/CD
-You can use a CI/CD tool like Github actions to wrap credentials securely as secrets and inject to your Autopkg action(script). I'm in the process of setting this up and adapting from [the example provided by Gusto](https://engineering.gusto.com/running-autopkg-in-github-actions/). I intend to share the setup when I've got it stable enough for production.
+You can use a CI/CD tool like GitHub actions to wrap credentials securely as secrets and inject to your Autopkg action(script). I'm running an adapted version of [the example provided by Gusto](https://engineering.gusto.com/running-autopkg-in-github-actions/) in production. Sharing a public version of the adapted code as documentation and/or demo is on the roadmap.
 
 
 ---
 ## Available Input Variables
 
-### All start with "ws1_" now
-When working to set up GitHub CI with this processor, it became clear consistent naming for input variables will make reading logs etc. much easier. Sorry if this breaks anybodies recipes, it should be easy to fix by adding the new prefix to the variables that don't have it yet.
+### All start with "ws1_"
+When working to set up GitHub CI with this processor, it became clear consistent naming for input variables will make reading logs etc. much easier.
 
 ### Choose your input vars
 You'll need to specify credentials for either Oauth or Basic authentication.
@@ -102,6 +105,9 @@ You'll need to specify credentials for either Oauth or Basic authentication.
 `ws1_console_url` is there as a convenience, so you can get a direct link to a newly imported package in the WS1 console.
 
 `ws1_smart_group_name` and `ws1_push_mode` let you make simple App Assignments to Assignment Groups, while `ws1_app_assignments` gives you complete control over the App Assignment settings, but needs more settings in the recipe override.
+
+`ws1_app_versions_prune` lets you prune old software versions, it is set to `dry_run` per default. Behaviour can be controlled in detail by setting `ws1_app_versions_to_keep` and `ws1_app_versions_to_keep_default`.
+
 
 * [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
 * [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
@@ -123,9 +129,6 @@ You'll need to specify credentials for either Oauth or Basic authentication.
 * [`ws1_app_versions_to_keep_default`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep_default)
 * [`ws1_app_versions_prune`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_prune)
 
-### deprecated Input variables
-* [`ws1_munki_repo_path`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_munki_repo_path)
-MUNKI_REPO setting from Autopkg can be used, no need for separate input variable.
 
 ### List available input variables
 You can list the custom processor info, including input variables from cli like so:
@@ -133,6 +136,8 @@ You can list the custom processor info, including input variables from cli like 
 ````
 autopkg processor-info WorkSpaceOneImporter --recipe com.github.codeskipper.WorkSpaceOneImporter
 ````
+
+---
 
 ## Sample Processor
 ```
@@ -240,8 +245,10 @@ https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/Suspicio
 ```
 
 ---
-### yaml format preferred
-More recipes for this processor are available in [my recipe repo](ws1) and those are in yaml format as that is easier to use.
+### yaml format in recipes
+My ws1 recipes are in yaml format thanks to the convincing examples from [Graham Pughs recipes](https://github.com/autopkg/grahampugh-recipes/tree/main#wait-these-are-all-yaml-files).  His [plist-yaml-plist conversion tool](https://github.com/grahampugh/plist-yaml-plist) has helped me as well, especially when writing new recipes.
+
+
 ___
 Create a recipe override like this first (if you prefer plist format):
 ```autopkg make-override SuspiciousPackage.ws1.recipe```
@@ -249,13 +256,28 @@ Create a recipe override like this first (if you prefer plist format):
 Again yaml format is easier to deal with, especially if you leave only the input variables you need to override and strip away the rest.
 ```autopkg make-override --format=yaml SuspiciousPackage.ws1.recipe.yaml```
 
-<br/>Edit it for settings to fit your environment<br/>
+<br/>
+Edit it for settings to fit your environment
+
 ```open -a bbedit SuspiciousPackage.ws1.recipe.yaml```
 
-<br/>Test like this, but be aware: verbose level > 2 will show your password etc. in plaintext on screen
-````
-autopkg run -vvvv --key force_munkiimport=true --key force_import=false SuspiciousPackage.ws1.recipe
-````
+<br/>
+
+### Testing
+You can run autopkg like this, but be aware: verbose level > 2 will show your password etc. in plaintext on screen
+```
+autopkg run -vvvv --key ws1_import_new_only=false --key ws1_update_assignments=true SuspiciousPackage.ws1.recipe.yaml
+```
+
+When testing, you may need to specify an increasing number of settings. You may find it helpful to set these like shell environment variables like so.
+```
+export AUTOPKG_verbose=2
+export AUTOPKG_ws1_import_new_only=false
+export AUTOPKG_ws1_update_assignments=True
+autopkg run SuspiciousPackage.ws1.recipe.yaml
+```
+
+During development, I've used a launcher script to store (secret) settings in a dedicated keychain and fetch just before calling autopkg. Sharing this script is on the roadmap.
 
 ---
 ### code-style and pre-commit hooks
