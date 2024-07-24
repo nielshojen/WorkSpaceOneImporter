@@ -52,7 +52,7 @@ def getsha256hash(filename):
     try:
         fileref = open(filename, "rb")
         while True:
-            chunk = fileref.read(2 ** 16)
+            chunk = fileref.read(2**16)
             if not chunk:
                 break
             hasher.update(chunk)
@@ -66,9 +66,7 @@ def get_timestamp():
     """
     RFS3389 Timestamp rounded to nearest second
     """
-    timestamp = (datetime.now().astimezone() + timedelta(milliseconds=500)).replace(
-        microsecond=0
-    )
+    timestamp = (datetime.now().astimezone() + timedelta(milliseconds=500)).replace(microsecond=0)
     return timestamp
 
 
@@ -133,18 +131,16 @@ class WorkSpaceOneImporter(Processor):
     input_variables = {
         "ws1_api_url": {
             "required": True,
-            "description": "Base url of WorkSpace ONE UEM REST API server "
-                           "(eg. https://myorg.awmdm.com)",
+            "description": "Base url of WorkSpace ONE UEM REST API server " "(eg. https://myorg.awmdm.com)",
         },
         "ws1_console_url": {
             "required": False,
             "description": "Base url of WorkSpace ONE UEM Console server for easy result lookup "
-                           "(eg. https://admin-mobile.myorg.com)",
+            "(eg. https://admin-mobile.myorg.com)",
         },
         "ws1_groupid": {
             "required": True,
-            "description": "Group ID of WorkSpace ONE Organization Group "
-                           "where files should be uploaded.",
+            "description": "Group ID of WorkSpace ONE Organization Group " "where files should be uploaded.",
         },
         "ws1_api_token": {
             "required": False,
@@ -153,27 +149,27 @@ class WorkSpaceOneImporter(Processor):
         "ws1_api_username": {
             "required": False,
             "description": "WorkSpace ONE REST API Username. Either api_username and api_password or "
-                           "b64encoded_api_credentials are required for Basic authentication.",
+            "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_api_password": {
             "required": False,
             "description": "WorkSpace ONE REST API User Password. Either api_username and api_password or "
-                           "b64encoded_api_credentials are required for Basic authentication.",
+            "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_b64encoded_api_credentials": {
             "required": False,
             "description": '"Basic " + Base64 encoded username:password. Either api_username and api_password or '
-                           "b64encoded_api_credentials are required for Basic authentication.",
+            "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_oauth_client_id": {
             "required": False,
             "description": "Client ID for Oauth 2.0 authorization - a more secure and recommended replacement for Basic"
-                           " authentication.",
+            " authentication.",
         },
         "ws1_oauth_client_secret": {
             "required": False,
             "description": "Client Secret for Oauth 2.0 authorization - a more secure and recommended replacement for "
-                           "Basic authentication.",
+            "Basic authentication.",
         },
         "ws1_oauth_token_url": {
             "required": False,
@@ -216,7 +212,7 @@ class WorkSpaceOneImporter(Processor):
         "ws1_smart_group_name": {
             "required": False,
             "description": "The name of the first smart group the app should be assigned to, typically testers / "
-                           "early access.",
+            "early access.",
         },
         "ws1_push_mode": {
             "required": False,
@@ -225,9 +221,9 @@ class WorkSpaceOneImporter(Processor):
         "ws1_assignment_rules": {
             "required": False,
             "description": 'Define recipe Input-variable "ws1_app_assignments" instead of this documentation '
-                           "placeholder. NOT as Processor input var as it is "
-                           "too complex to be be substituted. MUST override.\n\n"
-                           "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n",
+            "placeholder. NOT as Processor input var as it is "
+            "too complex to be be substituted. MUST override.\n\n"
+            "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n",
         },
         "ws1_app_versions_to_keep": {
             "required": False,
@@ -248,7 +244,7 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "default": "dry_run",
             "description": "Whether to prune old versions of an app on WS1. Possible values: True or False or "
-                           "dry_run. Default:dry_run. See also app_versions_to_keep",
+            "dry_run. Default:dry_run. See also app_versions_to_keep",
         },
     }
 
@@ -274,9 +270,7 @@ class WorkSpaceOneImporter(Processor):
         "ws1_app_assignments_changed": {
             "description": "True if a new app version was imported in this session to WS1 UEM",
         },
-        "ws1_importer_summary_result": {
-            "description": "Description of interesting results."
-        },
+        "ws1_importer_summary_result": {"description": "Description of interesting results."},
     }
     description = __doc__
 
@@ -287,9 +281,7 @@ class WorkSpaceOneImporter(Processor):
         self.output("Running " + " ".join(cmd), verbose_level=2)
         try:
             # result = subprocess.run(" ".join(cmd), shell=True, cwd=MUNKI_REPO, capture_output=hide_cmd_output)
-            result = subprocess.run(
-                " ".join(cmd), shell=True, cwd=repo, capture_output=True
-            )
+            result = subprocess.run(" ".join(cmd), shell=True, cwd=repo, capture_output=True)
             self.output(result, verbose_level=2)
         except subprocess.CalledProcessError as e:
             # print(e.stderr)
@@ -330,9 +322,7 @@ class WorkSpaceOneImporter(Processor):
 
         oauth_keychain = self.env.get("ws1_oauth_keychain")
         if oauth_keychain is not None:
-            self.output(
-                f"Found setting ws1_oauth_keychain: {oauth_keychain}", verbose_level=3
-            )
+            self.output(f"Found setting ws1_oauth_keychain: {oauth_keychain}", verbose_level=3)
         else:
             oauth_keychain = "Autopkg_WS1_OAuth"
             self.output(
@@ -345,24 +335,18 @@ class WorkSpaceOneImporter(Processor):
         command = f"/usr/bin/security list-keychains -d user | grep -q {oauth_keychain}"
         result = subprocess.run(command, shell=True, capture_output=True)
         if result.returncode == 0:
-            command = (
-                f"/usr/bin/security unlock-keychain -p {password} {oauth_keychain}"
-            )
+            command = f"/usr/bin/security unlock-keychain -p {password} {oauth_keychain}"
             result = subprocess.run(command, shell=True, capture_output=True)
             if result.returncode == 0:
                 # unlock went fine
                 self.output(f"Unlock OK for keychain {oauth_keychain}", verbose_level=4)
                 return oauth_keychain, oauth_renew_margin
             else:
-                self.output(
-                    f"Unlocking keychain {oauth_keychain} failed, deleting it and creating a new one."
-                )
+                self.output(f"Unlocking keychain {oauth_keychain} failed, deleting it and creating a new one.")
                 command = f"/usr/bin/security delete-keychain {oauth_keychain}"
                 result = subprocess.run(command, shell=True, capture_output=True)
                 if result.returncode != 0:
-                    raise ProcessorError(
-                        f"Deleting keychain {oauth_keychain} failed - bailing out."
-                    )
+                    raise ProcessorError(f"Deleting keychain {oauth_keychain} failed - bailing out.")
 
         # create new empty keychain
         command = f"/usr/bin/security create-keychain -p {password} {oauth_keychain}"
@@ -374,9 +358,7 @@ class WorkSpaceOneImporter(Processor):
         result = subprocess.run(command, shell=True, capture_output=True)
         searchlist = result.stdout.decode().replace("\n", "")
         searchlist = searchlist.replace('"', "")
-        command = (
-            f"/usr/bin/security list-keychains -d user -s {oauth_keychain} {searchlist}"
-        )
+        command = f"/usr/bin/security list-keychains -d user -s {oauth_keychain} {searchlist}"
         subprocess.run(command, shell=True, capture_output=True)
 
         # Setting (NOT removing) relock timeout on keychain, thanks to
@@ -395,9 +377,7 @@ class WorkSpaceOneImporter(Processor):
         fetch new token from Access token server with API
         """
         keychain_service = "Autopkg_WS1_OAUTH"
-        oauth_keychain, oauth_renew_margin = self.oauth_keychain_init(
-            oauth_client_secret
-        )
+        oauth_keychain, oauth_renew_margin = self.oauth_keychain_init(oauth_client_secret)
 
         oauth_token = self.env.get("ws1_oauth_token")
         if oauth_token is not None:
@@ -406,9 +386,7 @@ class WorkSpaceOneImporter(Processor):
                 verbose_level=4,
             )
         else:
-            oauth_token = get_password_from_keychain(
-                oauth_keychain, keychain_service, "oauth_token"
-            )
+            oauth_token = get_password_from_keychain(oauth_keychain, keychain_service, "oauth_token")
             if oauth_token is not None:
                 self.output(
                     f"Retrieved existing token from keychain: {oauth_token}",
@@ -426,9 +404,7 @@ class WorkSpaceOneImporter(Processor):
             )
         if oauth_token_renew_timestamp_str is not None:
             try:
-                oauth_token_renew_timestamp = datetime.fromisoformat(
-                    oauth_token_renew_timestamp_str
-                )
+                oauth_token_renew_timestamp = datetime.fromisoformat(oauth_token_renew_timestamp_str)
             except ValueError:
                 raise ProcessorError("Could not read timestamp - bailing out!")
             self.output(
@@ -439,11 +415,7 @@ class WorkSpaceOneImporter(Processor):
             oauth_token_renew_timestamp = None
 
         timestamp = get_timestamp()
-        if (
-                oauth_token is None
-                or oauth_token_renew_timestamp is None
-                or timestamp >= oauth_token_renew_timestamp
-        ):
+        if oauth_token is None or oauth_token_renew_timestamp is None or timestamp >= oauth_token_renew_timestamp:
             # need to get e new token
             self.output("Renewing OAuth access token", verbose_level=3)
             request_body = {
@@ -457,13 +429,9 @@ class WorkSpaceOneImporter(Processor):
                 r = requests.post(oauth_token_url, data=request_body)
                 r.raise_for_status()
             except requests.exceptions.HTTPError as err:
-                raise ProcessorError(
-                    f"WorkSpaceOneImporter: Oauth token server response code: {err}"
-                )
+                raise ProcessorError(f"WorkSpaceOneImporter: Oauth token server response code: {err}")
             except requests.exceptions.RequestException as e:
-                raise ProcessorError(
-                    f"WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}"
-                )
+                raise ProcessorError(f"WorkSpaceOneImporter: Something went wrong when getting Oauth token: {e}")
             oauth_token_issued_timestamp = get_timestamp()
             self.output(
                 f"OAuth token issued at: {oauth_token_issued_timestamp.isoformat()}",
@@ -472,32 +440,24 @@ class WorkSpaceOneImporter(Processor):
             result = r.json()
             self.output(f"OAuth token request result: {result}", verbose_level=4)
             oauth_token = result["access_token"]
-            renew_threshold = round(
-                result["expires_in"] * (100 - oauth_renew_margin) / 100
-            )
+            renew_threshold = round(result["expires_in"] * (100 - oauth_renew_margin) / 100)
             self.output(
                 f"OAuth token threshold for renewal set to {renew_threshold} seconds",
                 verbose_level=3,
             )
-            oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(
-                seconds=renew_threshold
-            )
+            oauth_token_renew_timestamp = oauth_token_issued_timestamp + timedelta(seconds=renew_threshold)
             self.output(
                 f"OAuth token should be renewed after: {oauth_token_renew_timestamp.isoformat()}",
                 verbose_level=2,
             )
             self.env["ws1_oauth_token"] = oauth_token
-            result = set_password_in_keychain(
-                oauth_keychain, keychain_service, "oauth_token", oauth_token
-            )
+            result = set_password_in_keychain(oauth_keychain, keychain_service, "oauth_token", oauth_token)
             if result != 0:
                 self.output(
                     "OAuth token could not be saved in dedicated keychain",
                     verbose_level=2,
                 )
-            self.env["ws1_oauth_renew_timestamp"] = (
-                oauth_token_renew_timestamp.isoformat()
-            )
+            self.env["ws1_oauth_renew_timestamp"] = oauth_token_renew_timestamp.isoformat()
             result = set_password_in_keychain(
                 oauth_keychain,
                 keychain_service,
@@ -517,9 +477,7 @@ class WorkSpaceOneImporter(Processor):
         return oauth_token
 
     def get_oauth_headers(self, oauth_client_id, oauth_client_secret, oauth_token_url):
-        oauth_token = self.get_oauth_token(
-            oauth_client_id, oauth_client_secret, oauth_token_url
-        )
+        oauth_token = self.get_oauth_token(oauth_client_id, oauth_client_secret, oauth_token_url)
         headers = {
             "Authorization": f"Bearer {oauth_token}",
             "Accept": "application/json",
@@ -546,17 +504,11 @@ class WorkSpaceOneImporter(Processor):
             ws1_api_basicauth_b64 = None
 
         if is_url(oauth_token_url) and oauth_client_id and oauth_client_secret:
-            self.output(
-                "Oauth client credentials were supplied, proceeding to use these."
-            )
-            headers = self.get_oauth_headers(
-                oauth_client_id, oauth_client_secret, oauth_token_url
-            )
+            self.output("Oauth client credentials were supplied, proceeding to use these.")
+            headers = self.get_oauth_headers(oauth_client_id, oauth_client_secret, oauth_token_url)
         else:
             # create baseline headers
-            if (
-                    ws1_api_basicauth_b64
-            ):  # if specified, take precedence over USERNAME and PASSWORD
+            if ws1_api_basicauth_b64:  # if specified, take precedence over USERNAME and PASSWORD
                 basicauth = ws1_api_basicauth_b64
                 self.output(
                     "b64encoded_api_credentials found and used for Basic authorization header instead of "
@@ -564,9 +516,7 @@ class WorkSpaceOneImporter(Processor):
                     verbose_level=1,
                 )
             else:  # if NOT specified, use USERNAME and PASSWORD
-                hashed_auth = base64.b64encode(
-                    f"{ws1_api_username}:{ws1_api_password}".encode("UTF-8")
-                )
+                hashed_auth = base64.b64encode(f"{ws1_api_username}:{ws1_api_password}".encode("UTF-8"))
                 basicauth = f"Basic {hashed_auth}".decode("utf-8")
             self.output(f"Authorization header: {basicauth}", verbose_level=3)
             headers = {
@@ -605,17 +555,13 @@ class WorkSpaceOneImporter(Processor):
                     self.output(f"Smart Group UUID: {sg_uuid}", verbose_level=2)
                     break
         except (ValueError, TypeError):
-            raise ProcessorError(
-                "failed to parse results from Smart Group search API call"
-            )
+            raise ProcessorError("failed to parse results from Smart Group search API call")
         return sg_id, sg_uuid
 
     def ws1_import(self, pkg_path, pkg_info_path, icon_path):
         """high-level method for Workspace ONE API interactions like uploading an app, app assignment(s) and pruning
         old app versions"""
-        self.output(
-            "Beginning the WorkSpace ONE import process for %s." % self.env["NAME"]
-        )
+        self.output("Beginning the WorkSpace ONE import process for %s." % self.env["NAME"])
         api_base_url = self.env.get("ws1_api_url")
         console_url = self.env.get("ws1_console_url")
         org_group_id = self.env.get("ws1_groupid")
@@ -640,9 +586,7 @@ class WorkSpaceOneImporter(Processor):
 
         # fetch the app assignments Input from the recipe
         app_assignments = self.env.get("ws1_app_assignments")
-        self.output(
-            f"App assignments Input from recipe: {app_assignments}", verbose_level=3
-        )
+        self.output(f"App assignments Input from recipe: {app_assignments}", verbose_level=3)
 
         # Get some global variables for later use from pkginfo, don't rely on
         # munki_importer_summary_result being filled in current session
@@ -652,9 +596,7 @@ class WorkSpaceOneImporter(Processor):
         except IOError:
             raise ProcessorError(f"Could not read pkg_info file [{pkg_info_path}]")
         except Exception:
-            raise ProcessorError(
-                f"Failed to parse pkg_info file [{pkg_info_path}] somehow."
-            )
+            raise ProcessorError(f"Failed to parse pkg_info file [{pkg_info_path}] somehow.")
         if "version" not in pkg_info:
             raise ProcessorError(f"version not found in pkginfo [{pkg_info_path}]")
         app_version = pkg_info["version"]
@@ -688,9 +630,7 @@ class WorkSpaceOneImporter(Processor):
                 f"WorkSpaceOneImporter: Server responded with error when making the OG ID API call: {err}"
             )
         except requests.exceptions.RequestException as e:
-            ProcessorError(
-                f"WorkSpaceOneImporter: Error making the OG ID API call: {e}"
-            )
+            ProcessorError(f"WorkSpaceOneImporter: Error making the OG ID API call: {e}")
         ogid = ""
         if org_group_id in result["OrganizationGroups"][0]["GroupId"]:
             ogid = result["OrganizationGroups"][0]["Id"]
@@ -700,14 +640,11 @@ class WorkSpaceOneImporter(Processor):
         try:
             condensed_app_name = app_name.replace(" ", "%20")
             r = requests.get(
-                f"{api_base_url}/api/mam/apps/search?locationgroupid={ogid}&applicationname="
-                f"{condensed_app_name}",
+                f"{api_base_url}/api/mam/apps/search?locationgroupid={ogid}&applicationname=" f"{condensed_app_name}",
                 headers=headers,
             )
         except Exception:
-            raise ProcessorError(
-                "Something went wrong handling pre-existing app version on server"
-            )
+            raise ProcessorError("Something went wrong handling pre-existing app version on server")
         if r.status_code == 200:
             search_results = r.json()
 
@@ -717,16 +654,14 @@ class WorkSpaceOneImporter(Processor):
             # handle any updates that might be needed for the latest app version already present on WS1 UEM
             for app in search_results["Application"]:
                 if (
-                        app["Platform"] == 10
-                        and app["ActualFileVersion"] == str(app_version)
-                        and app["ApplicationName"] in app_name
+                    app["Platform"] == 10
+                    and app["ActualFileVersion"] == str(app_version)
+                    and app["ApplicationName"] in app_name
                 ):
                     ws1_app_id = app["Id"]["Value"]
                     self.env["ws1_app_id"] = ws1_app_id
                     self.output("Pre-existing App ID: %s" % ws1_app_id, verbose_level=2)
-                    self.output(
-                        f"Pre-existing App version: {app_version}", verbose_level=2
-                    )
+                    self.output(f"Pre-existing App version: {app_version}", verbose_level=2)
                     self.output(
                         f"Pre-existing App platform: {app['Platform']}",
                         verbose_level=3,
@@ -734,9 +669,7 @@ class WorkSpaceOneImporter(Processor):
                     # if not self.env.get("ws1_force_import").lower() == "true":
                     if not force_import:
                         if update_assignments and not assignment_group == "none":
-                            self.output(
-                                "updating simple app assignment", verbose_level=2
-                            )
+                            self.output("updating simple app assignment", verbose_level=2)
                             app_assignment = self.ws1_app_assignment_conf(
                                 api_base_url,
                                 assignment_pushmode,
@@ -764,12 +697,8 @@ class WorkSpaceOneImporter(Processor):
                                 },
                             }
                         elif update_assignments and not app_assignments == "none":
-                            self.output(
-                                "updating advanced app assignment", verbose_level=2
-                            )
-                            self.ws1_app_assignments(
-                                api_base_url, app_assignments, headers, ws1_app_id
-                            )
+                            self.output("updating advanced app assignment", verbose_level=2)
+                            self.ws1_app_assignments(api_base_url, app_assignments, headers, ws1_app_id)
                         elif update_assignments:
                             raise ProcessorError(
                                 "update_assignments is True, but ws1_smart_group_name is not"
@@ -797,12 +726,8 @@ class WorkSpaceOneImporter(Processor):
                             )
                         if not r.status_code == 202 and not r.status_code == 204:
                             result = r.json()
-                            self.output(
-                                f"App delete result: {result}", verbose_level=3
-                            )
-                            raise ProcessorError(
-                                "ws1_force_import - delete of pre-existing app failed, aborting."
-                            )
+                            self.output(f"App delete result: {result}", verbose_level=3)
+                            raise ProcessorError("ws1_force_import - delete of pre-existing app failed, aborting.")
                         try:
                             r = requests.get(
                                 f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}",
@@ -822,15 +747,11 @@ class WorkSpaceOneImporter(Processor):
                             raise ProcessorError(
                                 f"ws1_force_import - delete of pre-existing app failed, error: {err} aborting."
                             )
-                        self.output(
-                            f"Pre-existing App [ID: {ws1_app_id}] now successfully deleted"
-                        )
+                        self.output(f"Pre-existing App [ID: {ws1_app_id}] now successfully deleted")
                         break
         elif r.status_code == 204:
             # app not found on WS1 server, so we're fine to proceed with upload
-            self.output(
-                f"App [{app_name}] version [{app_version}] is not yet present on server, will attempt upload"
-            )
+            self.output(f"App [{app_name}] version [{app_version}] is not yet present on server, will attempt upload")
 
         # proceed with upload
         if pkg_path is not None:
@@ -838,48 +759,40 @@ class WorkSpaceOneImporter(Processor):
             # upload pkg, dmg, mpkg file (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                    api_base_url
-                    + "/api/mam/blobs/uploadblob?filename="
-                    + os.path.basename(pkg_path)
-                    + "&organizationGroupId="
-                    + str(ogid)
+                api_base_url
+                + "/api/mam/blobs/uploadblob?filename="
+                + os.path.basename(pkg_path)
+                + "&organizationGroupId="
+                + str(ogid)
             )
             try:
                 res = stream_file(pkg_path, posturl, headers)
                 pkg_id = res["Value"]
                 self.output(f"Pkg ID: {pkg_id}")
             except KeyError:
-                raise ProcessorError(
-                    "WorkSpaceOneImporter: Something went wrong while uploading the pkg."
-                )
+                raise ProcessorError("WorkSpaceOneImporter: Something went wrong while uploading the pkg.")
         else:
-            raise ProcessorError(
-                "WorkSpaceOneImporter: Did not receive a pkg_path from munkiimporter."
-            )
+            raise ProcessorError("WorkSpaceOneImporter: Did not receive a pkg_path from munkiimporter.")
 
         if pkg_info_path is not None:
             self.output("Uploading pkg_info...")
             # upload pkginfo plist (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                    api_base_url
-                    + "/api/mam/blobs/uploadblob?filename="
-                    + os.path.basename(pkg_info_path)
-                    + "&organizationGroupId="
-                    + str(ogid)
+                api_base_url
+                + "/api/mam/blobs/uploadblob?filename="
+                + os.path.basename(pkg_info_path)
+                + "&organizationGroupId="
+                + str(ogid)
             )
             try:
                 res = stream_file(pkg_info_path, posturl, headers)
                 pkginfo_id = res["Value"]
                 self.output(f"PkgInfo ID: {pkginfo_id}")
             except KeyError:
-                raise ProcessorError(
-                    "WorkSpaceOneImporter: Something went wrong while uploading the pkginfo."
-                )
+                raise ProcessorError("WorkSpaceOneImporter: Something went wrong while uploading the pkginfo.")
         else:
-            raise ProcessorError(
-                "WorkSpaceOneImporter: Did not receive a pkg_info_path from munkiimporter."
-            )
+            raise ProcessorError("WorkSpaceOneImporter: Did not receive a pkg_info_path from munkiimporter.")
 
         icon_id = ""
         if icon_path is not None:
@@ -887,11 +800,11 @@ class WorkSpaceOneImporter(Processor):
             # upload icon file (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                    api_base_url
-                    + "/api/mam/blobs/uploadblob?filename="
-                    + os.path.basename(icon_path)
-                    + "&organizationGroupId="
-                    + str(ogid)
+                api_base_url
+                + "/api/mam/blobs/uploadblob?filename="
+                + os.path.basename(icon_path)
+                + "&organizationGroupId="
+                + str(ogid)
             )
             try:
                 res = stream_file(icon_path, posturl, headers)
@@ -930,9 +843,7 @@ class WorkSpaceOneImporter(Processor):
         if not r.status_code == 201:
             result = r.json()
             self.output(f"App create result: {result}", verbose_level=3)
-            raise ProcessorError(
-                "WorkSpaceOneImporter: Unable to create the App Object."
-            )
+            raise ProcessorError("WorkSpaceOneImporter: Unable to create the App Object.")
 
         # Now get the new App ID from the server
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
@@ -960,12 +871,8 @@ class WorkSpaceOneImporter(Processor):
         """
         # get WS1 Smart Group ID from its name
         if not assignment_group == "none":
-            app_assignment = self.ws1_app_assignment_conf(
-                api_base_url, assignment_pushmode, assignment_group, headers
-            )
-            self.ws1_app_assign(
-                api_base_url, assignment_group, app_assignment, headers, ws1_app_id
-            )
+            app_assignment = self.ws1_app_assignment_conf(api_base_url, assignment_pushmode, assignment_group, headers)
+            self.ws1_app_assign(api_base_url, assignment_group, app_assignment, headers, ws1_app_id)
         else:
             self.ws1_app_assignments(api_base_url, app_assignments, headers, ws1_app_id)
 
@@ -985,14 +892,10 @@ class WorkSpaceOneImporter(Processor):
         """
         # call Get for internal app to get app UUID
         try:
-            r = requests.get(
-                f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers
-            )
+            r = requests.get(f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}", headers=headers)
             result = r.json()
         except requests.exceptions.RequestException as err:
-            raise ProcessorError(
-                f"API call to get internal app details failed, error: {err}"
-            )
+            raise ProcessorError(f"API call to get internal app details failed, error: {err}")
         if not r.status_code == 200:
             raise ProcessorError(
                 f"WorkSpaceOneImporter: Unable to get internal app details - message: {result['message']}."
@@ -1015,9 +918,7 @@ class WorkSpaceOneImporter(Processor):
                 )
                 result = r.json()
             except requests.exceptions.RequestException as err:
-                raise ProcessorError(
-                    f"API call to get existing app assignment rules failed, error: {err}"
-                )
+                raise ProcessorError(f"API call to get existing app assignment rules failed, error: {err}")
             if not r.status_code == 200:
                 raise ProcessorError(
                     f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 "
@@ -1064,11 +965,7 @@ class WorkSpaceOneImporter(Processor):
                     # no timezone is returned in UEM v.22.12 but suspect that might change
                     # datetime.fromisoformat() can't handle the above in current Python v3.10
                     # alternative would be to install python-dateutil but that would introduce a new dependency
-                    edate = "".join(
-                        result["assignments"][0]["distribution"][
-                            "effective_date"
-                        ].split("T", 1)[:1]
-                    )
+                    edate = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
                     self.output(
                         f"Deployment date found in existing assignment #0: {[edate]} ",
                         verbose_level=2,
@@ -1082,16 +979,12 @@ class WorkSpaceOneImporter(Processor):
                 f"Assignments recipe input var is of type: [{type(app_assignments)}]",
                 verbose_level=3,
             )
-            self.output(
-                f"App assignments data input: {app_assignments}", verbose_level=2
-            )
+            self.output(f"App assignments data input: {app_assignments}", verbose_level=2)
             skip_remaining_assignments = False
             report_assignment_rules = []
             priority_index = 0
             for priority_index, app_assignment in enumerate(app_assignments):
-                app_assignment["priority"] = str(
-                    priority_index
-                )  # rules must be passed in order of ascending priority
+                app_assignment["priority"] = str(priority_index)  # rules must be passed in order of ascending priority
                 app_assignment["distribution"]["smart_groups"] = []
                 report_assignment_rules.append(
                     {
@@ -1099,25 +992,19 @@ class WorkSpaceOneImporter(Processor):
                         "name": app_assignment["distribution"]["name"],
                     }
                 )
-                for smart_group_name in app_assignment["distribution"][
-                    "smart_group_names"
-                ]:
+                for smart_group_name in app_assignment["distribution"]["smart_group_names"]:
                     self.output(
                         f"App assignment[{priority_index}] Smart Group name: [{smart_group_name}]",
                         verbose_level=2,
                     )
-                    sg_id, sg_uuid = self.get_smartgroup_id(
-                        api_base_url, smart_group_name, headers
-                    )
+                    sg_id, sg_uuid = self.get_smartgroup_id(api_base_url, smart_group_name, headers)
                     app_assignment["distribution"]["smart_groups"].append(sg_uuid)
                 # smart_group_names is used as input, NOT in API call
                 del app_assignment["distribution"]["smart_group_names"]
                 distr_delay_days = app_assignment["distribution"]["distr_delay_days"]
                 self.output(f"distr_delay_days: {distr_delay_days}", verbose_level=3)
                 if distr_delay_days == "0":
-                    app_assignment["distribution"][
-                        "effective_date"
-                    ] = ws1_app_ass_day0.isoformat()
+                    app_assignment["distribution"]["effective_date"] = ws1_app_ass_day0.isoformat()
                 else:
                     # calculate effective_date to use in API call
                     num_delay_days = int(distr_delay_days)
@@ -1144,21 +1031,15 @@ class WorkSpaceOneImporter(Processor):
                     if deploy_date > datetime.today().date():
                         skip_remaining_assignments = True
                         break
-                    app_assignment["distribution"][
-                        "effective_date"
-                    ] = deploy_date.isoformat()
+                    app_assignment["distribution"]["effective_date"] = deploy_date.isoformat()
                 # distr_delay_days is used as input, NOT in API call
                 del app_assignment["distribution"]["distr_delay_days"]
 
                 if app_assignment["distribution"]["keep_app_updated_automatically"]:
                     # need to pass auto_update_devices_with_previous_versions as well to have apps update automatically
-                    app_assignment["distribution"][
-                        "auto_update_devices_with_previous_versions"
-                    ] = True
+                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = True
                 else:
-                    app_assignment["distribution"][
-                        "auto_update_devices_with_previous_versions"
-                    ] = False
+                    app_assignment["distribution"]["auto_update_devices_with_previous_versions"] = False
 
                 # If we made it to the last assignment...
                 if priority_index == (len(app_assignments) - 1):
@@ -1177,18 +1058,14 @@ class WorkSpaceOneImporter(Processor):
                 )
 
             # remove existing assignments from report_assignment_rules
-            report_assignment_rules = report_assignment_rules[
-                                      len(result["assignments"]):
-                                      ]
+            report_assignment_rules = report_assignment_rules[len(result["assignments"]) :]
 
             # if the same number of assignments exist already, bail out
             if len(app_assignments) <= len(result["assignments"]):
                 self.output("No new assignments to make at this time.", verbose_level=1)
                 return
             else:
-                self.output(
-                    f"App assignments data to send: {app_assignments}", verbose_level=3
-                )
+                self.output(f"App assignments data to send: {app_assignments}", verbose_level=3)
                 try:
                     assignment_rules = {"assignments": app_assignments}
                     payload = json.dumps(assignment_rules)
@@ -1197,9 +1074,7 @@ class WorkSpaceOneImporter(Processor):
                         verbose_level=2,
                     )
                 except ValueError as err:
-                    raise ProcessorError(
-                        f"Failed parsing app assignments as json, error: {err}"
-                    )
+                    raise ProcessorError(f"Failed parsing app assignments as json, error: {err}")
 
                 try:
                     # Make the WS1 APIv2 call to assign the App
@@ -1218,13 +1093,9 @@ class WorkSpaceOneImporter(Processor):
                         f"Setting App assignment rules failed: {result['errorCode']} - {result['message']}",
                         verbose_level=2,
                     )
-                    raise ProcessorError(
-                        f"Unable to set assignment rules for [{app_name}] version [{app_version}]"
-                    )
+                    raise ProcessorError(f"Unable to set assignment rules for [{app_name}] version [{app_version}]")
 
-                self.output(
-                    f"Successfully set assignment rules for [{app_name}] version [{app_version}]"
-                )
+                self.output(f"Successfully set assignment rules for [{app_name}] version [{app_version}]")
                 new_assignment_rules = ""
                 for rule in report_assignment_rules:
                     new_assignment_rules += f"[{rule['priority']}: {rule['name']}] "
@@ -1250,22 +1121,12 @@ class WorkSpaceOneImporter(Processor):
                         },
                     }
                 else:
-                    ws1_importer_summary_result = self.env.get(
-                        "ws1_importer_summary_result"
-                    )
-                    ws1_importer_summary_result["report_fields"].append(
-                        "new_assignment_rules"
-                    )
-                    ws1_importer_summary_result["data"][
-                        "new_assignment_rules"
-                    ] = new_assignment_rules
-                    self.env["ws1_importer_summary_result"] = (
-                        ws1_importer_summary_result
-                    )
+                    ws1_importer_summary_result = self.env.get("ws1_importer_summary_result")
+                    ws1_importer_summary_result["report_fields"].append("new_assignment_rules")
+                    ws1_importer_summary_result["data"]["new_assignment_rules"] = new_assignment_rules
+                    self.env["ws1_importer_summary_result"] = ws1_importer_summary_result
 
-    def ws1_app_assignment_conf(
-            self, api_base_url, assignment_pushmode, assignment_group, headers
-    ):
+    def ws1_app_assignment_conf(self, api_base_url, assignment_pushmode, assignment_group, headers):
         """assemble app_assignment to pass in API V1 call"""
         sg_id, sg_uuid = self.get_smartgroup_id(api_base_url, assignment_group, headers)
         if assignment_pushmode == "Auto":
@@ -1285,18 +1146,14 @@ class WorkSpaceOneImporter(Processor):
         }
         return app_assignment
 
-    def ws1_app_assign(
-            self, base_url, smart_group, app_assignment, headers, ws1_app_id
-    ):
+    def ws1_app_assign(self, base_url, smart_group, app_assignment, headers, ws1_app_id):
         """Call WS1 API V1 assignments for to smart group(s) with the deployment settings
         MAM (Mobile Application Management) REST API V1  - POST /apps/internal/{applicationId}/assignments
         https://as135.awmdm.com/api/help/#!/InternalAppsV1/InternalAppsV1_AddAssignmentsWithFlexibleDeploymentParametersAsync
         """  # noqa: E501
         try:
             payload = json.dumps(app_assignment)
-            self.output(
-                f"App assignments data to send: {app_assignment}", verbose_level=2
-            )
+            self.output(f"App assignments data to send: {app_assignment}", verbose_level=2)
         except ValueError:
             raise ProcessorError("failed to parse App assignment as json")
 
@@ -1317,24 +1174,16 @@ class WorkSpaceOneImporter(Processor):
                 f"App assignments failed: {result['errorCode']} - {result['message']}",
                 verbose_level=2,
             )
-            raise ProcessorError(
-                f"Unable to assign the app [{self.env['NAME']}] to the group [{smart_group}]"
-            )
+            raise ProcessorError(f"Unable to assign the app [{self.env['NAME']}] to the group [{smart_group}]")
         self.env["ws1_app_assignments_changed"] = True
-        self.output(
-            f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]"
-        )
+        self.output(f"Successfully assigned the app [{self.env['NAME']}] to the group [{smart_group}]")
 
     def ws1_app_versions_prune(self, api_base_url, headers, app_name, search_results):
         """
         get ws1_app_versions_to_keep_default, defaults to 5
         """
-        keep_versions_default_str = self.env.get(
-            "ws1_app_versions_to_keep_default", "5"
-        )
-        keep_versions_default = extract_first_integer_from_string(
-            keep_versions_default_str
-        )
+        keep_versions_default_str = self.env.get("ws1_app_versions_to_keep_default", "5")
+        keep_versions_default = extract_first_integer_from_string(keep_versions_default_str)
         if keep_versions_default < 1:
             self.output(
                 f"ws1_app_versions_to_keep_default setting {keep_versions_default:d} is out of range, "
@@ -1358,25 +1207,21 @@ class WorkSpaceOneImporter(Processor):
             )
             keep_versions = keep_versions_default
         else:
-            self.output(
-                f"ws1_app_versions_to_keep is set to: {keep_versions}", verbose_level=2
-            )
+            self.output(f"ws1_app_versions_to_keep is set to: {keep_versions}", verbose_level=2)
 
         if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
             app_versions_prune = "True"
         elif self.env.get("ws1_app_versions_prune", "False").lower() in (
-                "false",
-                "1",
-                "f",
+            "false",
+            "1",
+            "f",
         ):
             # app_versions_prune = "False"
             self.output("app_versions_prune is set to False, skipping")
             return None
         else:
             app_versions_prune = "dry_run"
-        self.output(
-            f"ws1_app_versions_prune is set to: {app_versions_prune}", verbose_level=2
-        )
+        self.output(f"ws1_app_versions_prune is set to: {app_versions_prune}", verbose_level=2)
 
         num_versions_found = 0
 
@@ -1398,9 +1243,7 @@ class WorkSpaceOneImporter(Processor):
                     )
                     result = r.json()
                 except requests.exceptions.RequestException:
-                    raise ProcessorError(
-                        "API call to get existing app assignment rules failed"
-                    )
+                    raise ProcessorError("API call to get existing app assignment rules failed")
                 if not r.status_code == 200:
                     raise ProcessorError(
                         f"WorkSpaceOneImporter: Unable to get existing app assignment rules from WS1 "
@@ -1413,18 +1256,12 @@ class WorkSpaceOneImporter(Processor):
                     datetime.fromisoformat() can't handle the above in current Python v3.10
                     alternative would be to install python-dateutil but that would introduce a new dependency
                     """
-                    e_date = "".join(
-                        result["assignments"][0]["distribution"][
-                            "effective_date"
-                        ].split("T", 1)[:1]
-                    )
+                    e_date = "".join(result["assignments"][0]["distribution"]["effective_date"].split("T", 1)[:1])
                     self.output(
                         f"Deployment date found in assignment #0: {[e_date]} ",
                         verbose_level=4,
                     )
-                    ws1_app_ass_day0_str = (
-                        datetime.fromisoformat(e_date).date().isoformat()
-                    )
+                    ws1_app_ass_day0_str = datetime.fromisoformat(e_date).date().isoformat()
 
                     num_versions_found += 1
                     app_list.append(
@@ -1472,9 +1309,7 @@ class WorkSpaceOneImporter(Processor):
             pruned_versions = ""
             for row in app_list:
                 if row["status"] == "TO BE PRUNED":
-                    self.output(
-                        f"Deleting old version {row['version']}...", verbose_level=3
-                    )
+                    self.output(f"Deleting old version {row['version']}...", verbose_level=3)
                     try:
                         r = requests.delete(
                             f"{api_base_url}/api/mam/apps/internal/{row['App_ID']}",
@@ -1485,15 +1320,11 @@ class WorkSpaceOneImporter(Processor):
                             f"ws1_app_versions_prune - delete of pre-existing app failed, error: {err}, aborting."
                         )
                     if not r.status_code == 202 and not r.status_code == 204:
-                        self.output(
-                            f"App delete status code: {r.status_code}", verbose_level=4
-                        )
+                        self.output(f"App delete status code: {r.status_code}", verbose_level=4)
                         self.output(f"App delete response: {r.text}", verbose_level=4)
                         result = r.json()
                         self.output(f"App delete result: {result}", verbose_level=3)
-                        raise ProcessorError(
-                            "ws1_app_versions_prune - delete of old app version failed, aborting."
-                        )
+                        raise ProcessorError("ws1_app_versions_prune - delete of old app version failed, aborting.")
                     else:
                         self.output(
                             f"Successfully deleted old version {row['version']}",
@@ -1503,9 +1334,7 @@ class WorkSpaceOneImporter(Processor):
                         pruned_versions += f"[{row['version']}] "
                         num_pruned += 1
             if num_pruned > 0:
-                self.output(
-                    f"Successfully deleted {num_pruned} old versions", verbose_level=1
-                )
+                self.output(f"Successfully deleted {num_pruned} old versions", verbose_level=1)
                 self.env["ws1_pruned"] = True
                 self.env["ws1_importer_summary_result"] = {
                     "summary_text": "Old software versions pruned",
@@ -1526,9 +1355,7 @@ class WorkSpaceOneImporter(Processor):
         self.env["ws1_imported_new"] = False
         self.env["ws1_app_assignments_changed"] = False
 
-        cache_dir = get_pref("CACHE_DIR") or os.path.expanduser(
-            "~/Library/AutoPkg/Cache"
-        )
+        cache_dir = get_pref("CACHE_DIR") or os.path.expanduser("~/Library/AutoPkg/Cache")
         current_run_results_plist = os.path.join(cache_dir, "autopkg_results.plist")
         try:
             with open(current_run_results_plist, "rb") as f:
@@ -1547,9 +1374,7 @@ class WorkSpaceOneImporter(Processor):
 
         # key munki_importer_summary_result might not exist, nor data or pkginfo_path, try-catch is simplest
         try:
-            pkginfo_path = self.env["munki_importer_summary_result"]["data"][
-                "pkginfo_path"
-            ]
+            pkginfo_path = self.env["munki_importer_summary_result"]["data"]["pkginfo_path"]
         except (KeyError, TypeError):
             pkginfo_path = None
 
@@ -1587,17 +1412,13 @@ class WorkSpaceOneImporter(Processor):
 
             # use pkg_repo_path env var set by MunkiImporter to find an existing installer in repo
             pkg = self.env["pkg_repo_path"]
-            self.output(
-                f"matching installer already exists in repo [{pkg}]", verbose_level=2
-            )
+            self.output(f"matching installer already exists in repo [{pkg}]", verbose_level=2)
 
             munki_repo = self.env["MUNKI_REPO"]
             self.output(f"MUNKI_REPO: {munki_repo}", verbose_level=2)
             if os.path.isfile(pkg):
                 itemsize = int(os.path.getsize(pkg))
-                installer_item_path = pkg[
-                                      len(munki_repo) + 1:
-                                      ]  # get path relative from repo
+                installer_item_path = pkg[len(munki_repo) + 1 :]  # get path relative from repo
                 if not itemsize == citemsize:
                     self.output(
                         "size of item in local munki repo differs from cached, might be a Git LFS shortcut, "
@@ -1614,13 +1435,9 @@ class WorkSpaceOneImporter(Processor):
                                 "your recipe has a DmgCreator step; checking dmg checksum.",
                                 verbose_level=2,
                             )
-                            result = subprocess.run(
-                                ["hdiutil", "verify", "-quiet", pkg]
-                            )
+                            result = subprocess.run(["hdiutil", "verify", "-quiet", pkg])
                             if not result.returncode == 0:
-                                raise ProcessorError(
-                                    f"Installer dmg verification failed for [{pkg}]"
-                                )
+                                raise ProcessorError(f"Installer dmg verification failed for [{pkg}]")
                         else:
                             raise ProcessorError(
                                 "Installer item in Munki repo differs from cached installer, please check."
@@ -1654,13 +1471,8 @@ class WorkSpaceOneImporter(Processor):
                         except IOError:
                             raise ProcessorError(f"Could not read pkg_info file [{pi}]")
                         except Exception as err:
-                            raise ProcessorError(
-                                f"Could not parse pkg_info file [{pi}] error: {err}"
-                            )
-                        if (
-                                "installer_item_hash" in pkg_info
-                                and pkg_info["installer_item_hash"] == itemhash
-                        ):
+                            raise ProcessorError(f"Could not parse pkg_info file [{pi}] error: {err}")
+                        if "installer_item_hash" in pkg_info and pkg_info["installer_item_hash"] == itemhash:
                             found_match = True
                             iih = pkg_info["installer_item_hash"]
                             self.output(
@@ -1675,9 +1487,7 @@ class WorkSpaceOneImporter(Processor):
                         )
                         break
                 if not found_match:
-                    raise ProcessorError(
-                        f"Failed to find matching pkginfo in [{installer_info_dir}]"
-                    )
+                    raise ProcessorError(f"Failed to find matching pkginfo in [{installer_info_dir}]")
             else:
                 #
                 raise ProcessorError(f"Failed to read installer [{pkg}]")
