@@ -32,9 +32,7 @@ from urllib.parse import urlparse
 import macsesh  # dependency, needs to be installed
 import requests  # dependency, needs to be installed
 from autopkglib import Processor, ProcessorError, get_pref
-
-# from autopkglib.munkirepolibs.AutoPkgLib import AutoPkgLib
-from requests_toolbelt import StreamingIterator  # dependency from requests
+from requests_toolbelt import StreamingIterator  # dependency from requests, needs to be installed
 
 __all__ = ["WorkSpaceOneImporter"]
 
@@ -46,7 +44,7 @@ def getsha256hash(filename):
     Args:
         filename: The file name to calculate the hash value of.
     Returns:
-        The hashvalue of the given file as hex string.
+        The hash of the given file as hex string.
     """
     hasher = hashlib.sha256()
     if not os.path.isfile(filename):
@@ -54,7 +52,7 @@ def getsha256hash(filename):
     try:
         fileref = open(filename, "rb")
         while True:
-            chunk = fileref.read(2**16)
+            chunk = fileref.read(2 ** 16)
             if not chunk:
                 break
             hasher.update(chunk)
@@ -113,6 +111,22 @@ def extract_first_integer_from_string(s):
     return None
 
 
+# validate if a URL was supplied (in input variable) - thanks https://stackoverflow.com/a/52455972
+def is_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
+
+
+def stream_file(filepath, url, headers):
+    """expects headers w/ token, auth, and content-type"""
+    streamer = StreamingIterator(os.path.getsize(filepath), open(filepath, "rb"))
+    r = requests.post(url, data=streamer, headers=headers)
+    return r.json()
+
+
 class WorkSpaceOneImporter(Processor):
     """Uploads apps from Munki repo to WorkSpace ONE"""
 
@@ -120,17 +134,17 @@ class WorkSpaceOneImporter(Processor):
         "ws1_api_url": {
             "required": True,
             "description": "Base url of WorkSpace ONE UEM REST API server "
-            "(eg. https://myorg.awmdm.com)",
+                           "(eg. https://myorg.awmdm.com)",
         },
         "ws1_console_url": {
             "required": False,
             "description": "Base url of WorkSpace ONE UEM Console server for easy result lookup "
-            "(eg. https://admin-mobile.myorg.com)",
+                           "(eg. https://admin-mobile.myorg.com)",
         },
         "ws1_groupid": {
             "required": True,
             "description": "Group ID of WorkSpace ONE Organization Group "
-            "where files should be uploaded.",
+                           "where files should be uploaded.",
         },
         "ws1_api_token": {
             "required": False,
@@ -139,27 +153,27 @@ class WorkSpaceOneImporter(Processor):
         "ws1_api_username": {
             "required": False,
             "description": "WorkSpace ONE REST API Username. Either api_username and api_password or "
-            "b64encoded_api_credentials are required for Basic authentication.",
+                           "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_api_password": {
             "required": False,
             "description": "WorkSpace ONE REST API User Password. Either api_username and api_password or "
-            "b64encoded_api_credentials are required for Basic authentication.",
+                           "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_b64encoded_api_credentials": {
             "required": False,
             "description": '"Basic " + Base64 encoded username:password. Either api_username and api_password or '
-            "b64encoded_api_credentials are required for Basic authentication.",
+                           "b64encoded_api_credentials are required for Basic authentication.",
         },
         "ws1_oauth_client_id": {
             "required": False,
             "description": "Client ID for Oauth 2.0 authorization - a more secure and recommended replacement for Basic"
-            " authentication.",
+                           " authentication.",
         },
         "ws1_oauth_client_secret": {
             "required": False,
             "description": "Client Secret for Oauth 2.0 authorization - a more secure and recommended replacement for "
-            "Basic authentication.",
+                           "Basic authentication.",
         },
         "ws1_oauth_token_url": {
             "required": False,
@@ -202,7 +216,7 @@ class WorkSpaceOneImporter(Processor):
         "ws1_smart_group_name": {
             "required": False,
             "description": "The name of the first smart group the app should be assigned to, typically testers / "
-            "early access.",
+                           "early access.",
         },
         "ws1_push_mode": {
             "required": False,
@@ -211,9 +225,9 @@ class WorkSpaceOneImporter(Processor):
         "ws1_assignment_rules": {
             "required": False,
             "description": 'Define recipe Input-variable "ws1_app_assignments" instead of this documentation '
-            "placeholder. NOT as Processor input var as it is "
-            "too complex to be be substituted. MUST override.\n\n"
-            "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n",
+                           "placeholder. NOT as Processor input var as it is "
+                           "too complex to be be substituted. MUST override.\n\n"
+                           "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n",
         },
         "ws1_app_versions_to_keep": {
             "required": False,
@@ -234,7 +248,7 @@ class WorkSpaceOneImporter(Processor):
             "required": False,
             "default": "dry_run",
             "description": "Whether to prune old versions of an app on WS1. Possible values: True or False or "
-            "dry_run. Default:dry_run. See also app_versions_to_keep",
+                           "dry_run. Default:dry_run. See also app_versions_to_keep",
         },
     }
 
@@ -286,20 +300,6 @@ class WorkSpaceOneImporter(Processor):
         """pull specific LFS filename from git origin"""
         gitcmd = ["lfs", "pull", f'--include="{filename}"']
         self.git_run(repo, gitcmd)
-
-    def streamFile(self, filepath, url, headers):
-        """expects headers w/ token, auth, and content-type"""
-        streamer = StreamingIterator(os.path.getsize(filepath), open(filepath, "rb"))
-        r = requests.post(url, data=streamer, headers=headers)
-        return r.json()
-
-    # validate if a URL was supplied (in input variable) - thanks https://stackoverflow.com/a/52455972
-    def is_url(self, url):
-        try:
-            result = urlparse(url)
-            return all([result.scheme, result.netloc])
-        except ValueError:
-            return False
 
     def oauth_keychain_init(self, password):
         """
@@ -440,9 +440,9 @@ class WorkSpaceOneImporter(Processor):
 
         timestamp = get_timestamp()
         if (
-            oauth_token is None
-            or oauth_token_renew_timestamp is None
-            or timestamp >= oauth_token_renew_timestamp
+                oauth_token is None
+                or oauth_token_renew_timestamp is None
+                or timestamp >= oauth_token_renew_timestamp
         ):
             # need to get e new token
             self.output("Renewing OAuth access token", verbose_level=3)
@@ -545,7 +545,7 @@ class WorkSpaceOneImporter(Processor):
             )
             ws1_api_basicauth_b64 = None
 
-        if self.is_url(oauth_token_url) and oauth_client_id and oauth_client_secret:
+        if is_url(oauth_token_url) and oauth_client_id and oauth_client_secret:
             self.output(
                 "Oauth client credentials were supplied, proceeding to use these."
             )
@@ -555,7 +555,7 @@ class WorkSpaceOneImporter(Processor):
         else:
             # create baseline headers
             if (
-                ws1_api_basicauth_b64
+                    ws1_api_basicauth_b64
             ):  # if specified, take precedence over USERNAME and PASSWORD
                 basicauth = ws1_api_basicauth_b64
                 self.output(
@@ -565,10 +565,10 @@ class WorkSpaceOneImporter(Processor):
                 )
             else:  # if NOT specified, use USERNAME and PASSWORD
                 hashed_auth = base64.b64encode(
-                    "{}:{}".format(ws1_api_username, ws1_api_password).encode("UTF-8")
+                    f"{ws1_api_username}:{ws1_api_password}".encode("UTF-8")
                 )
-                basicauth = "Basic {}".format(hashed_auth.decode("utf-8"))
-            self.output("Authorization header: {}".format(basicauth), verbose_level=3)
+                basicauth = f"Basic {hashed_auth}".decode("utf-8")
+            self.output(f"Authorization header: {basicauth}", verbose_level=3)
             headers = {
                 "aw-tenant-code": ws1_api_token,
                 "Accept": "application/json",
@@ -594,6 +594,7 @@ class WorkSpaceOneImporter(Processor):
             raise ProcessorError(
                 f"WorkSpaceOneImporter: No SmartGroup ID found for SmartGroup {smartgroup} - bailing out."
             )
+        sg_uuid = sg_id = ""
         try:
             smart_group_results = r.json()
             for sg in smart_group_results["SmartGroups"]:
@@ -630,11 +631,9 @@ class WorkSpaceOneImporter(Processor):
         # init result
         self.env["ws1_imported_new"] = False
 
-        if not self.is_url(console_url):
+        if not is_url(console_url):
             self.output(
-                "WS1 Console URL input value [{}] does not look like a valid URL, setting example value".format(
-                    console_url
-                ),
+                f"WS1 Console URL input value [{console_url}] does not look like a valid URL, setting example value",
                 verbose_level=2,
             )
             console_url = "https://my-mobile-admin-console.my-org.org"
@@ -671,6 +670,7 @@ class WorkSpaceOneImporter(Processor):
         headers, headers_v2 = self.ws1_auth_prep()
 
         # get OG ID from GROUPID
+        result = ""
         try:
             r = requests.get(
                 api_base_url + "/api/system/groups/search?groupid=" + org_group_id,
@@ -691,9 +691,10 @@ class WorkSpaceOneImporter(Processor):
             ProcessorError(
                 f"WorkSpaceOneImporter: Error making the OG ID API call: {e}"
             )
+        ogid = ""
         if org_group_id in result["OrganizationGroups"][0]["GroupId"]:
             ogid = result["OrganizationGroups"][0]["Id"]
-        self.output("Organisation group ID: {}".format(ogid), verbose_level=2)
+        self.output(f"Organisation group ID: {ogid}", verbose_level=2)
 
         # Check for app versions already present on WS1 server
         try:
@@ -716,9 +717,9 @@ class WorkSpaceOneImporter(Processor):
             # handle any updates that might be needed for the latest app version already present on WS1 UEM
             for app in search_results["Application"]:
                 if (
-                    app["Platform"] == 10
-                    and app["ActualFileVersion"] == str(app_version)
-                    and app["ApplicationName"] in app_name
+                        app["Platform"] == 10
+                        and app["ActualFileVersion"] == str(app_version)
+                        and app["ApplicationName"] in app_name
                 ):
                     ws1_app_id = app["Id"]["Value"]
                     self.env["ws1_app_id"] = ws1_app_id
@@ -727,7 +728,7 @@ class WorkSpaceOneImporter(Processor):
                         f"Pre-existing App version: {app_version}", verbose_level=2
                     )
                     self.output(
-                        "Pre-existing App platform: {}".format(app["Platform"]),
+                        f"Pre-existing App platform: {app['Platform']}",
                         verbose_level=3,
                     )
                     # if not self.env.get("ws1_force_import").lower() == "true":
@@ -797,27 +798,23 @@ class WorkSpaceOneImporter(Processor):
                         if not r.status_code == 202 and not r.status_code == 204:
                             result = r.json()
                             self.output(
-                                "App delete result: {}".format(result), verbose_level=3
+                                f"App delete result: {result}", verbose_level=3
                             )
                             raise ProcessorError(
                                 "ws1_force_import - delete of pre-existing app failed, aborting."
                             )
                         try:
                             r = requests.get(
-                                "{}/api/mam/apps/internal/{}".format(
-                                    api_base_url, ws1_app_id
-                                ),
+                                f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}",
                                 headers=headers,
                             )
                             if not r.status_code == 401:
                                 result = r.json()
                                 self.output(
-                                    "App not deleted yet, status: {} - retrying".format(
-                                        result["Status"]
-                                    ),
+                                    f"App not deleted yet, status: {result['Status']} - retrying",
                                     verbose_level=2,
                                 )
-                                r = requests.delete(
+                                requests.delete(
                                     f"{api_base_url}/api/mam/apps/internal/{ws1_app_id}",
                                     headers=headers,
                                 )
@@ -826,17 +823,13 @@ class WorkSpaceOneImporter(Processor):
                                 f"ws1_force_import - delete of pre-existing app failed, error: {err} aborting."
                             )
                         self.output(
-                            "Pre-existing App [ID: {}] now successfully deleted".format(
-                                ws1_app_id
-                            )
+                            f"Pre-existing App [ID: {ws1_app_id}] now successfully deleted"
                         )
                         break
         elif r.status_code == 204:
             # app not found on WS1 server, so we're fine to proceed with upload
             self.output(
-                "App [{}] version [{}] is not yet present on server, will attempt upload".format(
-                    app_name, app_version
-                )
+                f"App [{app_name}] version [{app_version}] is not yet present on server, will attempt upload"
             )
 
         # proceed with upload
@@ -845,16 +838,16 @@ class WorkSpaceOneImporter(Processor):
             # upload pkg, dmg, mpkg file (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                api_base_url
-                + "/api/mam/blobs/uploadblob?filename="
-                + os.path.basename(pkg_path)
-                + "&organizationGroupId="
-                + str(ogid)
+                    api_base_url
+                    + "/api/mam/blobs/uploadblob?filename="
+                    + os.path.basename(pkg_path)
+                    + "&organizationGroupId="
+                    + str(ogid)
             )
             try:
-                res = self.streamFile(pkg_path, posturl, headers)
+                res = stream_file(pkg_path, posturl, headers)
                 pkg_id = res["Value"]
-                self.output("Pkg ID: {}".format(pkg_id))
+                self.output(f"Pkg ID: {pkg_id}")
             except KeyError:
                 raise ProcessorError(
                     "WorkSpaceOneImporter: Something went wrong while uploading the pkg."
@@ -869,16 +862,16 @@ class WorkSpaceOneImporter(Processor):
             # upload pkginfo plist (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                api_base_url
-                + "/api/mam/blobs/uploadblob?filename="
-                + os.path.basename(pkg_info_path)
-                + "&organizationGroupId="
-                + str(ogid)
+                    api_base_url
+                    + "/api/mam/blobs/uploadblob?filename="
+                    + os.path.basename(pkg_info_path)
+                    + "&organizationGroupId="
+                    + str(ogid)
             )
             try:
-                res = self.streamFile(pkg_info_path, posturl, headers)
+                res = stream_file(pkg_info_path, posturl, headers)
                 pkginfo_id = res["Value"]
-                self.output("PkgInfo ID: {}".format(pkginfo_id))
+                self.output(f"PkgInfo ID: {pkginfo_id}")
             except KeyError:
                 raise ProcessorError(
                     "WorkSpaceOneImporter: Something went wrong while uploading the pkginfo."
@@ -888,27 +881,26 @@ class WorkSpaceOneImporter(Processor):
                 "WorkSpaceOneImporter: Did not receive a pkg_info_path from munkiimporter."
             )
 
+        icon_id = ""
         if icon_path is not None:
             self.output("Uploading icon...")
             # upload icon file (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                api_base_url
-                + "/api/mam/blobs/uploadblob?filename="
-                + os.path.basename(icon_path)
-                + "&organizationGroupId="
-                + str(ogid)
+                    api_base_url
+                    + "/api/mam/blobs/uploadblob?filename="
+                    + os.path.basename(icon_path)
+                    + "&organizationGroupId="
+                    + str(ogid)
             )
             try:
-                res = self.streamFile(icon_path, posturl, headers)
+                res = stream_file(icon_path, posturl, headers)
                 icon_id = res["Value"]
-                self.output("Icon ID: {}".format(icon_id))
+                self.output(f"Icon ID: {icon_id}")
             except KeyError:
                 self.output("Something went wrong while uploading the icon.")
                 self.output("Continuing app object creation...")
                 pass
-        else:
-            icon_id = ""
 
         # Create a dict with the app details to be passed to WS1 to create the App object
         # include applicationIconId only if we have one
@@ -929,7 +921,7 @@ class WorkSpaceOneImporter(Processor):
 
         # Make the API call to create the App object
         self.output("Creating App Object in WorkSpaceOne...")
-        self.output("app_details: {}".format(app_details), verbose_level=3)
+        self.output(f"app_details: {app_details}", verbose_level=3)
         r = requests.post(
             api_base_url + "/api/mam/groups/%s/macos/apps" % ogid,
             headers=headers,
@@ -937,24 +929,20 @@ class WorkSpaceOneImporter(Processor):
         )
         if not r.status_code == 201:
             result = r.json()
-            self.output("App create result: {}".format(result), verbose_level=3)
+            self.output(f"App create result: {result}", verbose_level=3)
             raise ProcessorError(
                 "WorkSpaceOneImporter: Unable to create the App Object."
             )
 
         # Now get the new App ID from the server
         # When status_code is 201, the response header "Location" URL holds the ApplicationId after last slash
-        self.output(
-            "App create response headers: {}".format(r.headers), verbose_level=4
-        )
+        self.output(f"App create response headers: {r.headers}", verbose_level=4)
         ws1_app_id = r.headers["Location"].rsplit("/", 1)[-1]
-        self.output("App create ApplicationId: {}".format(ws1_app_id), verbose_level=3)
+        self.output(f"App create ApplicationId: {ws1_app_id}", verbose_level=3)
         self.env["ws1_app_id"] = ws1_app_id
         self.env["ws1_imported_new"] = True
-        app_ws1console_loc = "{}/AirWatch/#/AirWatch/Apps/Details/Internal/{}".format(
-            console_url, ws1_app_id
-        )
-        self.output("App created, see in WS1 console at: {}".format(app_ws1console_loc))
+        app_ws1console_loc = f"{console_url}/AirWatch/#/AirWatch/Apps/Details/Internal/{ws1_app_id}"
+        self.output(f"App created, see in WS1 console at: {app_ws1console_loc}")
         self.env["ws1_importer_summary_result"] = {
             "summary_text": "The following new app was imported in WS1:",
             "report_fields": ["name", "version", "console_location"],
@@ -1069,6 +1057,7 @@ class WorkSpaceOneImporter(Processor):
 
                 # if there's an existing assignment rule, use its effective_date as base deployment date, else
                 # use today's date
+                ws1_app_ass_day0 = datetime.min
                 if result["assignments"][0]["distribution"]["effective_date"]:
                     # ugly hack to split just the date at the T from the returned ISO-8601 as we don't care about the
                     # time may have a float as seconds or an int
@@ -1098,6 +1087,7 @@ class WorkSpaceOneImporter(Processor):
             )
             skip_remaining_assignments = False
             report_assignment_rules = []
+            priority_index = 0
             for priority_index, app_assignment in enumerate(app_assignments):
                 app_assignment["priority"] = str(
                     priority_index
@@ -1188,8 +1178,8 @@ class WorkSpaceOneImporter(Processor):
 
             # remove existing assignments from report_assignment_rules
             report_assignment_rules = report_assignment_rules[
-                len(result["assignments"]) :
-            ]
+                                      len(result["assignments"]):
+                                      ]
 
             # if the same number of assignments exist already, bail out
             if len(app_assignments) <= len(result["assignments"]):
@@ -1274,20 +1264,20 @@ class WorkSpaceOneImporter(Processor):
                     )
 
     def ws1_app_assignment_conf(
-        self, api_base_url, assignment_pushmode, assignment_group, headers
+            self, api_base_url, assignment_pushmode, assignment_group, headers
     ):
         """assemble app_assignment to pass in API V1 call"""
         sg_id, sg_uuid = self.get_smartgroup_id(api_base_url, assignment_group, headers)
         if assignment_pushmode == "Auto":
-            setMacOsDesiredStateManagement = True
+            set_macos_desired_state_management = True
         else:
-            setMacOsDesiredStateManagement = False
+            set_macos_desired_state_management = False
         app_assignment = {
             "SmartGroupIds": [sg_id],
             "DeploymentParameters": {
                 "PushMode": assignment_pushmode,
                 "AssignmentId": 1,
-                "MacOsDesiredStateManagement": setMacOsDesiredStateManagement,
+                "MacOsDesiredStateManagement": set_macos_desired_state_management,
                 "RemoveOnUnEnroll": False,
                 "AutoUpdateDevicesWithPreviousVersion": True,
                 "VisibleInAppCatalog": True,
@@ -1296,7 +1286,7 @@ class WorkSpaceOneImporter(Processor):
         return app_assignment
 
     def ws1_app_assign(
-        self, base_url, smart_group, app_assignment, headers, ws1_app_id
+            self, base_url, smart_group, app_assignment, headers, ws1_app_id
     ):
         """Call WS1 API V1 assignments for to smart group(s) with the deployment settings
         MAM (Mobile Application Management) REST API V1  - POST /apps/internal/{applicationId}/assignments
@@ -1375,9 +1365,9 @@ class WorkSpaceOneImporter(Processor):
         if self.env.get("ws1_app_versions_prune", "True").lower() in ("true", "0", "t"):
             app_versions_prune = "True"
         elif self.env.get("ws1_app_versions_prune", "False").lower() in (
-            "false",
-            "1",
-            "f",
+                "false",
+                "1",
+                "f",
         ):
             # app_versions_prune = "False"
             self.output("app_versions_prune is set to False, skipping")
@@ -1464,7 +1454,7 @@ class WorkSpaceOneImporter(Processor):
         self.output("Sorting app version list by date", verbose_level=4)
 
         # PyCharm code inspection complains about this, not sure if it is
-        # see https://stackoverflow.com/q/78764269/4326287
+        # see: https://stackoverflow.com/q/78764269/4326287
         # Unexpected type(s):((x: Any) -> Any)Possible type(s):(None)(Callable[Any, SupportsDunderLT | SupportsDunderGT]) # noqa: E501
         app_list.sort(key=lambda x: x["date"])
 
@@ -1606,8 +1596,8 @@ class WorkSpaceOneImporter(Processor):
             if os.path.isfile(pkg):
                 itemsize = int(os.path.getsize(pkg))
                 installer_item_path = pkg[
-                    len(munki_repo) + 1 :
-                ]  # get path relative from repo
+                                      len(munki_repo) + 1:
+                                      ]  # get path relative from repo
                 if not itemsize == citemsize:
                     self.output(
                         "size of item in local munki repo differs from cached, might be a Git LFS shortcut, "
@@ -1648,6 +1638,7 @@ class WorkSpaceOneImporter(Processor):
                     verbose_level=2,
                 )
                 found_match = False
+                pi = ""
                 for path, _subdirs, files in os.walk(installer_info_dir):
                     for name in files:
                         if name == ".DS_Store":
@@ -1667,8 +1658,8 @@ class WorkSpaceOneImporter(Processor):
                                 f"Could not parse pkg_info file [{pi}] error: {err}"
                             )
                         if (
-                            "installer_item_hash" in pkg_info
-                            and pkg_info["installer_item_hash"] == itemhash
+                                "installer_item_hash" in pkg_info
+                                and pkg_info["installer_item_hash"] == itemhash
                         ):
                             found_match = True
                             iih = pkg_info["installer_item_hash"]
@@ -1701,29 +1692,20 @@ class WorkSpaceOneImporter(Processor):
             with open(pi, "rb") as fp:
                 pkg_info = plistlib.load(fp)
         except IOError:
-            raise ProcessorError(
-                "Could not read pkg_info file [{}] to check icon_name ".format(pi)
-            )
+            raise ProcessorError(f"Could not read pkg_info file [{pi}] to check icon_name ")
         except Exception:
-            raise ProcessorError(
-                "Failed to parse pkg_info file [{}] somehow.".format(pi)
-            )
+            raise ProcessorError(f"Failed to parse pkg_info file [{pi}] somehow.")
         if "icon_name" not in pkg_info:
             # if key isn't present, look for common icon file with same 'first' name as installer item
-            icon_path = self.env["MUNKI_REPO"] + "/icons/" + self.env["NAME"] + ".png"
-            self.output("Looking for icon file [{}]".format(icon_path), verbose_level=1)
+            icon_path = f"{self.env['MUNKI_REPO']}/icons/{self.env['NAME']}.png"
+            self.output(f"Looking for icon file [{icon_path}]", verbose_level=1)
         else:
             # when icon was specified for this installer version
-            icon_path = self.env["MUNKI_REPO"] + "/icons/" + pkg_info["icon_name"]
-            self.output(
-                "Icon file for this installer version was specified as [{}]".format(
-                    icon_path
-                ),
-                verbose_level=1,
-            )
+            icon_path = f"{self.env['MUNKI_REPO']}/icons/{pkg_info['icon_name']}"
+            self.output(f"Icon file for this installer version was specified as [{icon_path}]")
         # if we can't read or find any icon, proceed with upload regardless
         if not os.path.exists(icon_path):
-            self.output("Could not read icon file [{}] - skipping.".format(icon_path))
+            self.output(f"Could not read icon file [{icon_path}] - skipping.")
             icon_path = None
         elif icon_path is None:
             self.output("Could not find any icon file - skipping.")
