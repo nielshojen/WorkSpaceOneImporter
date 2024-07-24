@@ -1453,7 +1453,7 @@ class WorkSpaceOneImporter(Processor):
 
         self.output("Sorting app version list by date", verbose_level=4)
 
-        # PyCharm code inspection complains about this, not sure if it is
+        # works as intended, but PyCharm code inspection throws warning, not sure if it needs type hints or how
         # see: https://stackoverflow.com/q/78764269/4326287
         # Unexpected type(s):((x: Any) -> Any)Possible type(s):(None)(Callable[Any, SupportsDunderLT | SupportsDunderGT]) # noqa: E501
         app_list.sort(key=lambda x: x["date"])
