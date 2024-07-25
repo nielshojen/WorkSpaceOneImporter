@@ -99,13 +99,13 @@ Input:
 Process:
 - Processor: FlatPkgUnpacker
   Arguments:
-    destination_path: '%RECIPE_CACHE_DIR%/%NAME%'
+    destination_path: '%RECIPE_CACHE_DIR%/GlobalProtect'
     flat_pkg_path: '%pathname%'
 
 - Processor: PkgPayloadUnpacker
   Arguments:
-    destination_path: '%RECIPE_CACHE_DIR%/%NAME%'
-    pkg_payload_path: '%RECIPE_CACHE_DIR%/%NAME%/gp.pkg/Payload'
+    destination_path: '%RECIPE_CACHE_DIR%/GlobalProtect'
+    pkg_payload_path: '%RECIPE_CACHE_DIR%/GlobalProtect/gp.pkg/Payload'
 
 - Processor: Copier
   Arguments:
