@@ -41,7 +41,6 @@ ToDo:
  * cleanup code, consistent use of f-strings
  * expand usage documentation in wiki
  * maybe establish separate demo repo
- * maybe remove request dependency by porting to cURL calls [as suggested by Nick McSpadden in MacAdmins Slack](https://macadmins.slack.com/archives/C056155B4/p1577123804089700) - possibly using using URLGetter and pass it to download_with_curl()
 
 ---
 
@@ -246,7 +245,7 @@ https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/Suspicio
 
 ---
 ### yaml format in recipes
-My ws1 recipes are in yaml format thanks to the convincing examples from [Graham Pughs recipes](https://github.com/autopkg/grahampugh-recipes/tree/main#wait-these-are-all-yaml-files).  His [plist-yaml-plist conversion tool](https://github.com/grahampugh/plist-yaml-plist) has helped me as well, especially when writing new recipes.
+My ws1 recipes are in yaml format thanks to the convincing examples from [Graham Pugh's recipes](https://github.com/autopkg/grahampugh-recipes/tree/main#wait-these-are-all-yaml-files).  His [plist-yaml-plist conversion tool](https://github.com/grahampugh/plist-yaml-plist) has helped me as well, especially when writing new recipes.
 
 
 ___
