@@ -526,7 +526,7 @@ class WorkSpaceOneImporter(Processor):
                 "authorization": basicauth,
             }
         headers_v2 = dict(headers)
-        headers_v2["Accept"] = headers["Accept"] + ";version=2"
+        headers_v2["Accept"] = f"{headers['Accept']};version=2"
         self.output(f"API v.2 call headers: {headers_v2}", verbose_level=4)
 
         return headers, headers_v2
@@ -537,7 +537,7 @@ class WorkSpaceOneImporter(Processor):
         # we need to replace any spaces with '%20' for the API call
         condensed_sg = smartgroup.replace(" ", "%20")
         r = requests.get(
-            base_url + "/api/mdm/smartgroups/search?name=%s" % condensed_sg,
+            f"{base_url}/api/mdm/smartgroups/search?name={condensed_sg}",
             headers=headers,
         )
         if not r.status_code == 200:
@@ -615,7 +615,7 @@ class WorkSpaceOneImporter(Processor):
         result = ""
         try:
             r = requests.get(
-                api_base_url + "/api/system/groups/search?groupid=" + org_group_id,
+                f"{api_base_url}/api/system/groups/search?groupid={org_group_id}",
                 headers=headers_v2,
             )
             result = r.json()
@@ -759,11 +759,8 @@ class WorkSpaceOneImporter(Processor):
             # upload pkg, dmg, mpkg file (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                api_base_url
-                + "/api/mam/blobs/uploadblob?filename="
-                + os.path.basename(pkg_path)
-                + "&organizationGroupId="
-                + str(ogid)
+                f"{api_base_url}/api/mam/blobs/uploadblob?filename={os.path.basename(pkg_path)}"
+                f"&organizationGroupId={str(ogid)}"
             )
             try:
                 res = stream_file(pkg_path, posturl, headers)
@@ -779,11 +776,8 @@ class WorkSpaceOneImporter(Processor):
             # upload pkginfo plist (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                api_base_url
-                + "/api/mam/blobs/uploadblob?filename="
-                + os.path.basename(pkg_info_path)
-                + "&organizationGroupId="
-                + str(ogid)
+                f"{api_base_url}/api/mam/blobs/uploadblob?filename={os.path.basename(pkg_info_path)}"
+                f"&organizationGroupId={str(ogid)}"
             )
             try:
                 res = stream_file(pkg_info_path, posturl, headers)
@@ -800,11 +794,8 @@ class WorkSpaceOneImporter(Processor):
             # upload icon file (application/json)
             headers["Content-Type"] = "application/json"
             posturl = (
-                api_base_url
-                + "/api/mam/blobs/uploadblob?filename="
-                + os.path.basename(icon_path)
-                + "&organizationGroupId="
-                + str(ogid)
+                f"{api_base_url}/api/mam/blobs/uploadblob?filename={os.path.basename(icon_path)}"
+                f"&organizationGroupId={str(ogid)}"
             )
             try:
                 res = stream_file(icon_path, posturl, headers)
@@ -836,7 +827,7 @@ class WorkSpaceOneImporter(Processor):
         self.output("Creating App Object in WorkSpaceOne...")
         self.output(f"app_details: {app_details}", verbose_level=3)
         r = requests.post(
-            api_base_url + "/api/mam/groups/%s/macos/apps" % ogid,
+            f"{api_base_url}/api/mam/groups/{ogid}/macos/apps",
             headers=headers,
             json=app_details,
         )
@@ -907,7 +898,7 @@ class WorkSpaceOneImporter(Processor):
         if not app_assignments == "none":
             # prepare API V2 headers
             headers_v2 = dict(headers)
-            headers_v2["Accept"] = headers["Accept"] + ";version=2"
+            headers_v2["Accept"] = f"{headers['Accept']};version=2"
             self.output(f"API v.2 call headers: {headers_v2}", verbose_level=4)
 
             # get any existing assignment rules and see if they need updating
@@ -1227,7 +1218,7 @@ class WorkSpaceOneImporter(Processor):
 
         # prepare API V2 headers
         headers_v2 = dict(headers)
-        headers_v2["Accept"] = headers["Accept"] + ";version=2"
+        headers_v2["Accept"] = f"{headers['Accept']};version=2"
         self.output(f"API v.2 call headers: {headers_v2}", verbose_level=4)
 
         self.output(f"Looking for old versions of {app_name} on WorkspaceONE")
