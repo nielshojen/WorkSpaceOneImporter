@@ -1,13 +1,15 @@
-Comment:
+Comment: |
+  Import to WS1 as native app to deploy as update. Avoids issue with No hub deployed on newly enrolled Macs, which
+  is triggered by asking VMWare support to seed new versions in UEM
 Description: |
-  Downloads and Creates a munki package for Mac Admins Python Recommended, imports it into
+  Downloads and Creates a munki package for VMWare Workspace ONE Intelligent Hub, imports it into
   WorkSpace ONE UEM, and makes assignment rules.
-Identifier: com.github.codeskipper.ws1.MacAdminsPython
-ParentRecipe: com.github.codeskipper.munki.MacAdminsPython
+Identifier: com.github.nielshojen.ws1.WorkspaceONEIntelligentHub
+ParentRecipe: io.github.hjuutilainen.munki.WorkspaceONEIntelligentHub
 MinimumVersion: '2.3'
 
 Input:
-  NAME: MacAdmins Python Recommended
+  NAME: VMWare Workspace ONE Intelligent Hub
 
   # WS1 specific input,  secrets
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
@@ -22,7 +24,6 @@ Input:
   WS1_GROUPID: GROUP_ID_HERE
   WS1_SMART_GROUP_NAME: SMART_GROUP_NAME_HERE
   WS1_PUSH_MODE: PUSH_MODE_SETTING
-
 
   # WS1 - testing new AppsV2 assignments feature
   ws1_app_assignments:
@@ -44,7 +45,7 @@ Input:
             prevent_removal: false
 
 Process:
-- Processor: com.github.codeskipper.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
+- Processor: com.github.nielshojen.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
   Arguments:
     ws1_oauth_client_id: '%WS1_OAUTH_CLIENT_ID%'
     ws1_oauth_client_secret: '%WS1_OAUTH_CLIENT_SECRET%'

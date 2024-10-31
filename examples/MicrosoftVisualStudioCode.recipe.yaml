@@ -1,22 +1,27 @@
-Comment:
-Description: Creates a munki package for GitHub CLI, and imports it into WorkSpace ONE.
-Identifier: com.github.codeskipper.ws1.GitHubCLI
-ParentRecipe: com.github.homebysix.munki.GitHubCLI
+Comment: |
+  recipe with ws1_assignments for AppsV2 API style assignment-rules
+  See https://as135.awmdm.com/API/help/#!/apis/10001?!%2FAppsV2%2FAppsV2_UpdateAssignmentRuleAsync
+Description: Downloads and Creates a munki package for Microsoft Company Portal, imports it into WorkSpace ONE UEM, and makes assignment rules.
+Identifier: com.github.nielshojen.ws1.MicrosoftVisualStudioCode
+ParentRecipe: com.github.killahquam.munki.visualstudiocode
 MinimumVersion: '2.3'
 
 Input:
-  MUNKI_REPO_SUBDIR: 'apps/%NAME%'
-  MUNKI_CATEGORY: 'Development'
+  NAME: Microsoft Visual Studio Code
+  DISPLAY_NAME: Microsoft Visual Studio Code
+  MUNKI_REPO_SUBDIR: apps/Microsoft
   pkginfo:
     catalogs:
     - testing
-    description: Command line interface for managing your GitHub projects. See https://cli.github.com/
-    developer: GitHub, Inc.
-    display_name: '%NAME%'
+    category: Development
+    developer: Microsoft
+    description: |
+      Code combines the streamlined UI of a modern editor with rich code assistance and navigation, and an integrated debugging experience – without the need for a full IDE.
+    display_name: '%DISPLAY_NAME%'
     name: '%NAME%'
-    category: '%MUNKI_CATEGORY%'
     unattended_install: true
     unattended_uninstall: true
+
 
   # WS1 specific input,  secrets
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
@@ -52,7 +57,7 @@ Input:
             prevent_removal: false
 
 Process:
-- Processor: com.github.codeskipper.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
+- Processor: com.github.nielshojen.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
   Arguments:
     ws1_oauth_client_id: '%WS1_OAUTH_CLIENT_ID%'
     ws1_oauth_client_secret: '%WS1_OAUTH_CLIENT_SECRET%'

@@ -1,7 +1,7 @@
 #!/usr/local/autopkg/python
 #
 # WorkSpaceOneImporter.py - a custom Autopkg processor
-# Copyright 2022 Martinus Verburg https://github.com/codeskipper
+# Copyright 2022 Martinus Verburg https://github.com/nielshojen
 # Adapted from https://github.com/jprichards/AirWatchImporter/blob/master/AirWatchImporter.py by
 #     John Richards https://github.com/jprichards and
 #     Jeremy Baker https://github.com/jbaker10
@@ -29,7 +29,7 @@ import subprocess
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
-import macsesh  # dependency, needs to be installed
+# import macsesh  # dependency, needs to be installed
 import requests  # dependency, needs to be installed
 from autopkglib import Processor, ProcessorError, get_pref
 from requests_toolbelt import StreamingIterator  # dependency from requests, needs to be installed
@@ -223,7 +223,7 @@ class WorkSpaceOneImporter(Processor):
             "description": 'Define recipe Input-variable "ws1_app_assignments" instead of this documentation '
             "placeholder. NOT as Processor input var as it is "
             "too complex to be be substituted. MUST override.\n\n"
-            "See https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments\n",
+            "See https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_app_assignments\n",
         },
         "ws1_app_versions_to_keep": {
             "required": False,
@@ -606,7 +606,7 @@ class WorkSpaceOneImporter(Processor):
 
         # Init the MacSesh so we can use the trusted certs in macOS Keychains to verify SSL.
         # Needed especially in networks with TLS packet inspection and custom certificates.
-        macsesh.inject_into_requests()
+        # macsesh.inject_into_requests()
 
         # take care of headers for WS1 REST API authentication
         headers, headers_v2 = self.ws1_auth_prep()

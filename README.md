@@ -71,13 +71,13 @@ As of AutoPkg 0.4.0 you can use this processor as a shared processor.
 Add the processor repo:
 
 ```
-autopkg repo-add https://github.com/codeskipper/WorkSpaceOneImporter.git
+autopkg repo-add https://github.com/nielshojen/WorkSpaceOneImporter.git
 ```
 
 Then use this as the processor in your recipes:
 
 ```
-com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter
+com.github.nielshojen.WorkSpaceOneImporter/WorkSpaceOneImporter
 ```
 
 ---
@@ -108,32 +108,32 @@ You'll need to specify credentials for either Oauth or Basic authentication.
 `ws1_app_versions_prune` lets you prune old software versions, it is set to `dry_run` per default. Behaviour can be controlled in detail by setting `ws1_app_versions_to_keep` and `ws1_app_versions_to_keep_default`.
 
 
-* [`ws1_api_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_url)
-* [`ws1_console_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_console_url)
-* [`ws1_oauth_client_id`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_oauth_client_id)
-* [`ws1_oauth_client_secret`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_oauth_client_secret)
-* [`ws1_oauth_token_url`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_oauth_token_url)
-* [`ws1_api_token`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_token)
-* [`ws1_api_username`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_username)
-* [`ws1_api_password`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_api_password)
-* [`ws1_b64encoded_api_credentials`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_b64encoded_api_credentials)
-* [`ws1_force_import`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_force_import)
-* [`ws1_import_new_only`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_import_new_only)
-* [`ws1_groupid`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_groupid)
-* [`ws1_smart_group_name`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_smart_group_name)
-* [`ws1_push_mode`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_push_mode)
-* [`ws1_app_assignments`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_assignments)
-* [`ws1_update_assignments`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_update_assignments)
-* [`ws1_app_versions_to_keep`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep)
-* [`ws1_app_versions_to_keep_default`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep_default)
-* [`ws1_app_versions_prune`](https://github.com/codeskipper/WorkSpaceOneImporter/wiki/ws1_app_versions_prune)
+* [`ws1_api_url`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_api_url)
+* [`ws1_console_url`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_console_url)
+* [`ws1_oauth_client_id`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_oauth_client_id)
+* [`ws1_oauth_client_secret`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_oauth_client_secret)
+* [`ws1_oauth_token_url`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_oauth_token_url)
+* [`ws1_api_token`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_api_token)
+* [`ws1_api_username`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_api_username)
+* [`ws1_api_password`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_api_password)
+* [`ws1_b64encoded_api_credentials`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_b64encoded_api_credentials)
+* [`ws1_force_import`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_force_import)
+* [`ws1_import_new_only`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_import_new_only)
+* [`ws1_groupid`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_groupid)
+* [`ws1_smart_group_name`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_smart_group_name)
+* [`ws1_push_mode`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_push_mode)
+* [`ws1_app_assignments`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_app_assignments)
+* [`ws1_update_assignments`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_update_assignments)
+* [`ws1_app_versions_to_keep`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep)
+* [`ws1_app_versions_to_keep_default`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_app_versions_to_keep_default)
+* [`ws1_app_versions_prune`](https://github.com/nielshojen/WorkSpaceOneImporter/wiki/ws1_app_versions_prune)
 
 
 ### List available input variables
 You can list the custom processor info, including input variables from cli like so:
 
 ````
-autopkg processor-info WorkSpaceOneImporter --recipe com.github.codeskipper.WorkSpaceOneImporter
+autopkg processor-info WorkSpaceOneImporter --recipe com.github.nielshojen.WorkSpaceOneImporter
 ````
 
 ---
@@ -144,7 +144,7 @@ autopkg processor-info WorkSpaceOneImporter --recipe com.github.codeskipper.Work
 <array>
 	<dict>
 		<key>Processor</key>
-		<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
+		<string>com.github.nielshojen.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
 		<key>Arguments</key>
 		<dict>
 			<key>ws1_munki_repo_path</key>
@@ -175,7 +175,7 @@ autopkg processor-info WorkSpaceOneImporter --recipe com.github.codeskipper.Work
 ## Example AutoPkg Recipe
 
 Example recipe below for Suspicious Package.ws1.recipe  is from:
-https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/SuspiciousPackage.ws1-plist.recipe
+https://github.com/nielshojen/WorkSpaceOneImporter/blob/main/ws1-plist/SuspiciousPackage.ws1-plist.recipe
 
 ```
 <?xml version="1.0" encoding="UTF-8"?>
@@ -185,7 +185,7 @@ https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/Suspicio
 	<key>Description</key>
 	<string>Creates a munki package for Suspicious Package, imports it into WorkSpace ONE.</string>
 	<key>Identifier</key>
-	<string>com.github.codeskipper.ws1.SuspiciousPackage</string>
+	<string>com.github.nielshojen.ws1.SuspiciousPackage</string>
 	<key>Input</key>
 	<dict>
 		<key>WS1_API_TOKEN</key>
@@ -208,14 +208,14 @@ https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1-plist/Suspicio
 		<string>PUSH_MODE</string>
 	</dict>
 	<key>ParentRecipe</key>
-	<string>com.github.codeskipper.munki.SuspiciousPackage</string>
+	<string>com.github.nielshojen.munki.SuspiciousPackage</string>
 	<key>MinimumVersion</key>
 	<string>0.4.0</string>
 	<key>Process</key>
 	<array>
 		<dict>
 			<key>Processor</key>
-			<string>com.github.codeskipper.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
+			<string>com.github.nielshojen.WorkSpaceOneImporter/WorkSpaceOneImporter</string>
 			<key>Arguments</key>
 			<dict>
 				<key>ws1_munki_repo_path</key>

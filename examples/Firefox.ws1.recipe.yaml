@@ -1,18 +1,13 @@
-Comment: |
-  Name changed to add Classic after Microsoft pivot to new name in October 2023.
-  Identifier stays the same, parent recipe did not change name either, but added new name to Installs array.
-
-  recipe deprecated due to product name change by Microsoft, new product is Microsoft Teams (work or school)
-Description: Creates a munki package for Microsoft Teams Classic, and imports it into WorkSpace ONE.
-Identifier: com.github.codeskipper.ws1.MicrosoftTeams
-ParentRecipe: com.github.apettinen.munki.MSTeams
+Comment:
+Description: Downloads and Creates a munki package for Mozilla Firefox, imports it into WorkSpace ONE UEM, and makes assignment rules.
+Identifier: com.github.nielshojen.ws1.MozillaFirefox
+ParentRecipe: com.github.autopkg.munki.firefox-rc-en_US
 MinimumVersion: '2.3'
 
 Input:
-  NAME: Microsoft Teams Classic
-  DISPLAY_NAME: Microsoft Teams Classic
-  MUNKI_REPO_SUBDIR: apps/Microsoft
-  MUNKI_CATEGORY: Productivity
+  NAME: Mozilla Firefox
+  LOCALE: en-US
+  RELEASE: latest-esr
 
   # WS1 specific input,  secrets
   WS1_OAUTH_CLIENT_ID: OAUTH2_CLIENT_ID_HERE
@@ -28,18 +23,27 @@ Input:
   WS1_SMART_GROUP_NAME: SMART_GROUP_NAME_HERE
   WS1_PUSH_MODE: PUSH_MODE_SETTING
 
+  # WS1 - testing new AppsV2 assignments feature
+  ws1_app_assignments:
+      - distribution:
+          name: ASSIGNMENT_NAME
+          description: ASSIGNMENT_DESCRIPTION
+          smart_group_names:
+            - SMART_GROUP_NAME1
+            - SMART_GROUP_NAME2
+          app_delivery_method: AUTO_OR_ON_DEMAND
+          distr_delay_days: DISTRIBUTION_DELAY_DAYS
+          display_in_app_catalog: true
+          is_default_assignment: false
+          keep_app_updated_automatically: true
+        restriction:
+            remove_on_unenroll: false
+            managed_access: false
+            desired_state_management: false
+            prevent_removal: false
+
 Process:
-- Processor: DeprecationWarning
-  Arguments:
-    warning_message: |
-      Due to Microsoft changing the name of the application this recipe has been deprecated. Please use the new Microsoft Teams Recipes here:
-
-      https://github.com/codeskipper/WorkSpaceOneImporter/blob/main/ws1/MicrosoftTeams.ws1.recipe.yaml
-
-- Processor: StopProcessingIf
-  Arguments:
-    predicate: TRUEPREDICATE
-- Processor: com.github.codeskipper.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
+- Processor: com.github.nielshojen.VMWARE-WorkSpaceOneImporter/WorkSpaceOneImporter
   Arguments:
     ws1_oauth_client_id: '%WS1_OAUTH_CLIENT_ID%'
     ws1_oauth_client_secret: '%WS1_OAUTH_CLIENT_SECRET%'
@@ -53,5 +57,3 @@ Process:
     ws1_groupid: '%WS1_GROUPID%'
     ws1_smart_group_name: '%WS1_SMART_GROUP_NAME%'
     ws1_push_mode: '%WS1_PUSH_MODE%'
-
-
